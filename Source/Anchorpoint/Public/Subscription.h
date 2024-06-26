@@ -49,5 +49,5 @@ private:
     FTimerHandle _TimerHandle;
     float _ElapsedTime = 0.0f;
     
-    const std::string _IpcTopic = "APUE";
+    const std::string _IpcTopic = "AnchorpointIPC";
 };

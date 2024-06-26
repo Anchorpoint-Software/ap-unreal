@@ -25,7 +25,9 @@
 DEFINE_LOG_CATEGORY(LogAnchorpoint);
 
 USubscription::~USubscription(){
-    _IpcApi->unsubscribe(_IpcSubscription);
+    if (_IpcApi) {
+        _IpcApi->unsubscribe(_IpcSubscription);
+    }
 }
 
 void USubscription::Init(std::shared_ptr<apsync::Api> Api) {
