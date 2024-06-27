@@ -42,6 +42,7 @@ enum class SyncError {
     ExportError,
     ImportError,
     ReusedContextError,
+    SysAdminNotAllowed,
     OfflineNotSupported
 };
 

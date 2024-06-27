@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#pragma warning(disable : 4668)
 #include "util/outcome.hpp"
 
 namespace apsync {

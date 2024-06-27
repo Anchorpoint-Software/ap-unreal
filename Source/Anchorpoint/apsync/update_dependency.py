@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+import platform
 
 # Read APSYNC_DIR
 apsync_dir = os.getenv("APSYNC_DIR")
@@ -26,15 +27,24 @@ os.chdir(script_dir)
 # Change to the build_dir
 os.chdir(build_dir)
 
+generator = "Ninja"
+if platform.system() == "Windows":
+    generator = "Visual Studio 17 2022"
+
+if platform.system() == "Windows":
+    flags = "/O2 /MD"
+else:
+    flags = "-O3 -g"
+
 # Run cmake and build
 subprocess.run(
     [
         "cmake",
         apsync_dir,
         "-G",
-        "Ninja",
+        generator,
         "-DCMAKE_BUILD_TYPE=Release",
-        "-DCMAKE_CXX_FLAGS_RELEASE=-O3 -g",
+        f"-DCMAKE_CXX_FLAGS_RELEASE={flags}",
         "-DAPSYNC_STATIC=OFF",
         "-DBUILD_PYTHON_MODULE=OFF",
         "-DBUILD_UNIVERSAL_LIB=ON",
@@ -44,7 +54,7 @@ subprocess.run(
 
 subprocess.run(["cmake", "--build", ".", "--config", "Release"], check=True)
 
-if sys.platform == "darwin":
+if platform.system() == "Darwin":
     # macOS specific commands
     subprocess.run(
         ["strip", "-x", os.path.join(build_dir, "libsync.dylib")], check=True
@@ -81,18 +91,18 @@ shutil.copy(
     os.path.join(include_dir, "sole.cpp"),
 )
 
-if sys.platform == "darwin":
+if platform.system() == "Darwin":
     mac_dir = os.path.join(script_dir, "mac")
     if not os.path.exists(mac_dir):
         os.makedirs(mac_dir)
     shutil.copy(
         os.path.join(build_dir, "libsync.dylib"), os.path.join(mac_dir, "libsync.dylib")
     )
-elif sys.platform == "windows":
+elif platform.system() == "Windows":
     win_dir = os.path.join(script_dir, "win")
     if not os.path.exists(win_dir):
         os.makedirs(win_dir)
-    shutil.copy(os.path.join(build_dir, "sync.dll"), os.path.join(win_dir, "sync.dll"))
-    shutil.copy(os.path.join(build_dir, "sync.lib"), os.path.join(win_dir, "sync.lib"))
+    shutil.copy(os.path.join(build_dir, "Release", "sync.dll"), os.path.join(win_dir, "sync.dll"))
+    shutil.copy(os.path.join(build_dir, "Release", "sync.lib"), os.path.join(win_dir, "../../../../Binaries/Win64/sync.lib"))
 
 print("Build completed successfully.")

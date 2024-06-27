@@ -17,15 +17,24 @@ public class Anchorpoint : ModuleRules
             }
             );
         
-        
-        PublicAdditionalLibraries.AddRange(
-            new string[] {
-                // ... add public include paths required here ...
-                Path.Combine(ModuleDirectory, "apsync", "mac", "libsync.dylib")
-            }
+		if (Target.Platform == UnrealTargetPlatform.Win64) {
+			PublicAdditionalLibraries.AddRange(
+				new string[] {
+					// ... add public include paths required here ...
+					Path.Combine(ModuleDirectory, "apsync", "win", "sync.lib")
+				}
             );
-
-            
+			RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "apsync", "win", "sync.dll"));
+		}
+		else if (Target.Platform == UnrealTargetPlatform.Mac) {
+			PublicAdditionalLibraries.AddRange(
+				new string[] {
+					// ... add public include paths required here ...
+					Path.Combine(ModuleDirectory, "apsync", "mac", "libsync.dylib")
+				}
+            );
+			RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "apsync", "mac", "libsync.dylib"));
+		}
         
 		PublicIncludePaths.AddRange(
 			new string[] {

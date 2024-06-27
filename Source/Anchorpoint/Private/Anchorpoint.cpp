@@ -11,6 +11,13 @@
 #include <memory>
 #include "UObject/UObjectBaseUtility.h"
 
+#include "apsync/projects/projects_api.h"
+#include "apsync/account/account_api.h"
+#include "apsync/locks/locks_api.h"
+
+#include "GenericPlatform/GenericPlatformMisc.h"
+#undef GetEnvironmentVariable
+
 #define LOCTEXT_NAMESPACE "FAnchorpointModule"
 
 using namespace std;
@@ -64,13 +71,17 @@ void FAnchorpointModule::StartupModule()
          return;
      }
     
-     auto Api = ApiResult.value();
-     auto Account = StdStringToFString(Api->getAccount());
+     _Api = ApiResult.value();
+     auto Account = StdStringToFString(_Api->getAccount());
      UE_LOG(LogAnchorpoint, Log, TEXT("Logged in as: %s"), *Account);
     
      _SubscriptionHandler = NewObject<USubscription>();
-     _SubscriptionHandler->Init(Api);
+     _SubscriptionHandler->Init(_Api);
      _SubscriptionHandler->AddToRoot();
+     
+     // Examples
+     _SubscriptionHandler->RequestPush();
+     ApiExample();
 }
 
 void FAnchorpointModule::ShutdownModule()
@@ -79,6 +90,75 @@ void FAnchorpointModule::ShutdownModule()
 	// we call this function before unloading the module.
      UE_LOG(LogAnchorpoint, Log, TEXT("Shutting down Anchorpoint plugin"));
      _SubscriptionHandler->RemoveFromRoot();
+}
+
+void FAnchorpointModule::ApiExample() const {
+    // Just some examples how to do things using apsync
+    
+    // Create our APIs
+    auto ProjectsApi = std::make_shared<apsync::ProjectsApi>(_Api);
+    auto AccountApi = std::make_shared<apsync::AccountApi>(_Api);
+    auto LocksApi = std::make_shared<apsync::LocksApi>(_Api);
+
+    auto ProjectDir = FPaths::ProjectDir();
+    UE_LOG(LogTemp, Log, TEXT("Current Project Path: %s"), *ProjectDir);
+
+    // Load the Anchorpoint Project
+    auto ProjectDirStd = FStringToStdString(ProjectDir);
+    auto ProjectResult = ProjectsApi->getProjectByPath(ProjectDirStd);
+    if (ProjectResult.has_error()) {
+        UE_LOG(LogAnchorpoint, Error, TEXT("Error loading Anchorpoint Project"));
+    }
+
+    std::string WorkspaceID = "";
+
+    auto ProjectOptional = ProjectResult.value();
+    if (!ProjectOptional.has_value()) {
+        UE_LOG(LogAnchorpoint, Warning, TEXT("No Anchorpoint Project Found"));
+
+        // No project found, so we will use the authenticated users private workspace
+        auto UserResult = AccountApi->getUser(true);
+        if (UserResult.has_error()) {
+            UE_LOG(LogAnchorpoint, Error, TEXT("Error loading Anchorpoint User"));
+            return;
+        }
+
+        auto User = UserResult.value();
+        WorkspaceID = User.getUserspaceId();
+    }
+    else {
+        // We found a project, use the workspace ID of that project
+        auto Project = ProjectOptional.value();
+        WorkspaceID = Project.workspaceId;
+    }
+
+    auto FWorkspaceID = StdStringToFString(WorkspaceID);
+    UE_LOG(LogAnchorpoint, Log, TEXT("Workspace ID: %s"), *FWorkspaceID);
+
+    // Handle Locks, return if ProjectOptional is not set as Locks only exist within Projects
+    if (!ProjectOptional.has_value()) {
+        return;
+    }
+
+    auto Project = ProjectOptional.value();
+
+    // Get all active file locks of the workspace or project
+    auto LocksResult = LocksApi->getLocks(WorkspaceID, ProjectOptional);
+    if (LocksResult.has_error()) {
+        UE_LOG(LogAnchorpoint, Error, TEXT("Error loading Anchorpoint Locks"));
+        return;
+    }
+        
+    auto Locks = LocksResult.value();
+    for (const auto& Lock : Locks) {
+        auto PathResult = LocksApi->getLockedPath(Lock, Project);
+        if (PathResult.has_error()) {
+            UE_LOG(LogAnchorpoint, Error, TEXT("Error loading Anchorpoint Locked Path"));
+            continue;
+        }
+        auto LockedPath = StdStringToFString(PathResult.value());
+        UE_LOG(LogAnchorpoint, Log, TEXT("Path Locked: %s"), *LockedPath);
+    }
 }
 
 #undef LOCTEXT_NAMESPACE

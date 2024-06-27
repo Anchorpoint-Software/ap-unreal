@@ -26,7 +26,10 @@ DEFINE_LOG_CATEGORY(LogAnchorpoint);
 
 USubscription::~USubscription(){
     if (_IpcApi) {
-        _IpcApi->unsubscribe(_IpcSubscription);
+        auto result = _IpcApi->unsubscribe(_IpcSubscription);
+        if (result.has_error()) {
+            UE_LOG(LogAnchorpoint, Log, TEXT("Failed to unsubscribe from Anchorpoint IPC"));
+        }
     }
 }
 
@@ -82,7 +85,19 @@ void USubscription::Tick(float DeltaTime)
     }
 }
 
-void USubscription::PublishMessage(apsync::IpcMessage& Message){
+void USubscription::RequestPush() {
+    apsync::IpcMessage Request;
+
+    Request.setKind("request-push");
+    std::unordered_map<std::string, std::string> Header = { {"project_path","TODO"} };
+    Request.setHeader(Header);
+
+    UE_LOG(LogAnchorpoint, Log, TEXT("Example: Request Push"));
+
+    PublishMessage(Request);
+}
+
+void USubscription::PublishMessage(apsync::IpcMessage& Message) {
     Message.setTopic(_IpcTopic);
     
     auto result = _IpcApi->publish(Message);
@@ -91,10 +106,10 @@ void USubscription::PublishMessage(apsync::IpcMessage& Message){
     }
 }
 
-void USubscription::HandleMessage(const apsync::IpcMessage& Message){
+void USubscription::HandleMessage(const apsync::IpcMessage& Message) {
     std::optional<apsync::IpcMessage> ResultOpt;
-    if (Message.getKind() == "request-thumbnail"){
-        ResultOpt = HandleThumbnailRequest(Message);
+    if (Message.getKind() == "request-release-packages"){
+        ResultOpt = HandleRequestReleasePackages(Message);
     }
     else {
         UE_LOG(LogAnchorpoint, Error, TEXT("Could not handle Anchorpoint IPC message, unknown kind: %s"), *FString(ANSI_TO_TCHAR(Message.getKind().c_str())));
@@ -105,334 +120,87 @@ void USubscription::HandleMessage(const apsync::IpcMessage& Message){
     }
 }
 
-std::optional<apsync::IpcMessage> USubscription::HandleThumbnailRequest(const apsync::IpcMessage& Message){
+std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(const apsync::IpcMessage& Message) {
+    // Pulling in Anchorpoint is not possible if Unreal Engine is running.
+    // Unload packages similar to UnlinkPackages in Engine code
+    // After that's done, let Anchorpoint know that we did so
+
     apsync::IpcMessage Response;
-    Response.setKind("response-thumbnail");
+    Response.setKind("response-release-packages");
     
-    auto WorkspaceId = Message.getHeader().at("workspace_id");
-    auto ProjectId = Message.getHeader().at("project_id");
-    auto ProjectPath= Message.getHeader().at("project_path");
-    auto ProjectResult = _ProjectsApi->getProjectForPath({ProjectPath, true});
-    if (ProjectResult.has_error()) {
-        UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Project"));
-        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Invalid Project"}};
-        Response.setHeader(header);
-        return Response;
-    }
-    auto Project = ProjectResult.value();
-    
-    auto JsonString = FString(UTF8_TO_TCHAR(Message.getBody().c_str()));
-    TArray<TSharedPtr<FJsonValue>> JsonValues;
-    
-    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
-    if (FJsonSerializer::Deserialize(Reader, JsonValues))
-    {
-        auto ColorConfigResult = _ColorApi->getConfig(WorkspaceId, Project);
-        if (ColorConfigResult.has_error()) {
-            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config"));
-            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config is Invalid"}};
-            Response.setHeader(header);
-            return Response;
-        }
-        
-        auto ColorConfigHashResult = _ColorApi->getConfigHash(ColorConfigResult.value());
-        if (ColorConfigHashResult.has_error()) {
-            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config Hash"));
-            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config Hash is Invalid"}};
-            Response.setHeader(header);
-            return Response;
-        }
-        auto ColorConfigHash = ColorConfigHashResult.value();
-        
-        TArray<FString> StringArray;
-        for (const TSharedPtr<FJsonValue>& Value : JsonValues)
-        {
-            FString Item = Value->AsString();
-            StringArray.Add(Item);
-            UE_LOG(LogAnchorpoint, Log, TEXT("Received Path for Thumbnail: %s"), *Item);
-            
-            auto PreviewPathOpt = apsync::ThumbnailService::getPreviewImagePath(std::string(TCHAR_TO_UTF8(*Item)), ColorConfigHash);
-            if (!PreviewPathOpt){
-                UE_LOG(LogAnchorpoint, Error, TEXT("Could not get preview path for: %s"), *Item);
-                continue;
-            } else {
-                UE_LOG(LogAnchorpoint, Log, TEXT("Saving Thumbnail to: %s"), UTF8_TO_TCHAR(PreviewPathOpt->c_str()));
-            }
-            
-            SaveThumbnail(Item, FString(UTF8_TO_TCHAR(PreviewPathOpt->c_str())));
-        }
-        
-        std::unordered_map<std::string, std::string> header = {{"success","true"}};
-        Response.setHeader(header);
-        return Response;
-    } else {
-        UE_LOG(LogAnchorpoint, Error, TEXT("Could not parse request json"));
-        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Could not parse request body"}};
-        Response.setHeader(header);
-        return Response;
-    }
-    
-    return std::nullopt;
+    std::unordered_map<std::string, std::string> Header = { {"success","true"} };
+    Response.setHeader(Header);
+
+    return Response;
 }
 
-FString GetPathFromPackage(FString PackagePath) //path to uasset
-{
-    // TODO:
-    // Convert Path to Unreal Path
-
-    /*FString result;
-    FString failureReason;
-    if (!FPackageName::TryConvertFilenameToLongPackageName(PackagePath, result, &failureReason)){
-        UE_LOG(LogAnchorpoint, Warning, TEXT("Error: %s"), *failureReason)
-        return PackagePath;
-    }
-    
-    return result;*/
-    
-    auto MyPackage = UPackageTools::LoadPackage(PackagePath);
-    if (MyPackage)
-    {
-        TArray<UObject*> ObjectsInPackage;
-        GetObjectsWithPackage(MyPackage, ObjectsInPackage);
-        for (UObject* PotentialActor : ObjectsInPackage)
-        {
-            auto ClassName = PotentialActor->GetClass()->GetName();
-            
-            auto ActorCast = Cast<AActor>(PotentialActor);
-            if (ActorCast)
-            {
-                auto Name = ActorCast->GetActorNameOrLabel();
-                UE_LOG(LogAnchorpoint, Warning, TEXT("ActorName: %s"), *Name);
-            }
-
-            // Gets Unreal Path Name
-            auto UPathName = GetPathNameSafe(PotentialActor);
-            
-            // returns Pathname if the class is a StaticMesh or a Blueprint
-            if (ClassName == "StaticMesh" || ClassName == "Blueprint") {
-                UE_LOG(LogAnchorpoint, Warning, TEXT("ClassName: %s"), *ClassName);
-                UE_LOG(LogAnchorpoint, Warning, TEXT("UName: %s"), *UPathName);
-                return UPathName;
-            }
-        }
-    }
-    // if the class is none of the above, then return false -> doesnt generate thumbnail
-    return "False";
-}
-
-FString ConvertSystemPath(const FString& SystemPath) {
-    FString AssetPath = SystemPath;
-    FString ContentDir = FPaths::ProjectContentDir();
-    FPaths::MakePathRelativeTo(AssetPath, *ContentDir);
-    UE_LOG(LogAnchorpoint, Log, TEXT("ContentDir: %s"), *ContentDir);
-    AssetPath = TEXT("/Game/") + AssetPath;
-    AssetPath.RemoveFromEnd(TEXT(".uasset"));
-    AssetPath.RemoveFromEnd(TEXT(".umap"));
-    return AssetPath;
-}
-
-bool SaveThumbnailToDisk(FObjectThumbnail* Thumbnail, FString OutputPath) {
-    if (Thumbnail == nullptr)
-    {
-       return false;
-    }
-    
-    // Convert the thumbnail data to a raw image format
-    auto RawImageData = Thumbnail->GetUncompressedImageData();
-
-    // Ensure the image wrapper module is loaded
-    IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-    TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(EImageFormat::JPEG);
-
-    if (!ImageWrapper.IsValid())
-    {
-       return false;
-    }
-
-    //Set the raw image data
-    if (!ImageWrapper->SetRaw(RawImageData.GetData(), RawImageData.Num(), Thumbnail->GetImageWidth(), Thumbnail->GetImageHeight(), ERGBFormat::BGRA, 8))
-    {
-       return false;
-    }
-
-    // Save the image data to a PNG file
-    const TArray64<uint8>& CompressedByteArray = ImageWrapper->GetCompressed();
-    if (FFileHelper::SaveArrayToFile(CompressedByteArray, *OutputPath))
-    {
-        UE_LOG(LogAnchorpoint, Log, TEXT("Save Completed"));
-        return true;
-    }
-    
-
-    return false;
-}
-
-//const bool bUsesGenericThumbnail = [ObjectBeingModified, this]() -> bool                        // No need to dirty generic thumbnails
-//{
-//    if (FThumbnailRenderingInfo* RenderingInfo = GetRenderingInfo(ObjectBeingModified))
-//    {
-//        return RenderingInfo->Renderer == nullptr;
+//
+//std::optional<apsync::IpcMessage> USubscription::HandleThumbnailRequest(const apsync::IpcMessage& Message){
+//    apsync::IpcMessage Response;
+//    Response.setKind("response-thumbnail");
+//    
+//    auto WorkspaceId = Message.getHeader().at("workspace_id");
+//    auto ProjectId = Message.getHeader().at("project_id");
+//    auto ProjectPath= Message.getHeader().at("project_path");
+//    auto ProjectResult = _ProjectsApi->getProjectForPath({ProjectPath, true});
+//    if (ProjectResult.has_error()) {
+//        UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Project"));
+//        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Invalid Project"}};
+//        Response.setHeader(header);
+//        return Response;
 //    }
-//    else
+//    auto Project = ProjectResult.value();
+//    
+//    auto JsonString = FString(UTF8_TO_TCHAR(Message.getBody().c_str()));
+//    TArray<TSharedPtr<FJsonValue>> JsonValues;
+//    
+//    TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonString);
+//    if (FJsonSerializer::Deserialize(Reader, JsonValues))
 //    {
-//        return true;
+//        auto ColorConfigResult = _ColorApi->getConfig(WorkspaceId, Project);
+//        if (ColorConfigResult.has_error()) {
+//            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config"));
+//            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config is Invalid"}};
+//            Response.setHeader(header);
+//            return Response;
+//        }
+//        
+//        auto ColorConfigHashResult = _ColorApi->getConfigHash(ColorConfigResult.value());
+//        if (ColorConfigHashResult.has_error()) {
+//            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config Hash"));
+//            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config Hash is Invalid"}};
+//            Response.setHeader(header);
+//            return Response;
+//        }
+//        auto ColorConfigHash = ColorConfigHashResult.value();
+//        
+//        TArray<FString> StringArray;
+//        for (const TSharedPtr<FJsonValue>& Value : JsonValues)
+//        {
+//            FString Item = Value->AsString();
+//            StringArray.Add(Item);
+//            UE_LOG(LogAnchorpoint, Log, TEXT("Received Path for Thumbnail: %s"), *Item);
+//            
+//            auto PreviewPathOpt = apsync::ThumbnailService::getPreviewImagePath(std::string(TCHAR_TO_UTF8(*Item)), ColorConfigHash);
+//            if (!PreviewPathOpt){
+//                UE_LOG(LogAnchorpoint, Error, TEXT("Could not get preview path for: %s"), *Item);
+//                continue;
+//            } else {
+//                UE_LOG(LogAnchorpoint, Log, TEXT("Saving Thumbnail to: %s"), UTF8_TO_TCHAR(PreviewPathOpt->c_str()));
+//            }
+//            
+//            SaveThumbnail(Item, FString(UTF8_TO_TCHAR(PreviewPathOpt->c_str())));
+//        }
+//        
+//        std::unordered_map<std::string, std::string> header = {{"success","true"}};
+//        Response.setHeader(header);
+//        return Response;
+//    } else {
+//        UE_LOG(LogAnchorpoint, Error, TEXT("Could not parse request json"));
+//        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Could not parse request body"}};
+//        Response.setHeader(header);
+//        return Response;
 //    }
-//}();
-
-AActor* GetOFPA(const FString& ActorFilePath) {
-    auto Package = UPackageTools::LoadPackage(ActorFilePath);
-    if (!Package)
-    {
-        return nullptr;
-    }
-    
-    TArray<UObject*> ObjectsInPackage;
-    GetObjectsWithPackage(Package, ObjectsInPackage);
-    bool ObjectFound = false;
-    for (UObject* Object : ObjectsInPackage)
-    {
-        if (AActor* Actor = Cast<AActor>(Object)) {
-            return Actor;
-        }
-    }
-    
-    return nullptr;
-}
-
-bool GetAssetFromActor(const FString& ActorFilePath, FString& OutAssetPath) {
-    auto Actor = GetOFPA(ActorFilePath);
-    if (!Actor) {
-        return false;
-    }
-    
-    auto GetAssetPath = [](const FAssetData& AssetData){
-        auto PackagePath = AssetData.GetPackage()->GetLoadedPath();
-        return FPaths::ConvertRelativePathToFull(PackagePath.GetLocalFullPath());
-    };
-    
-    // See UEditorEngine::GetAssetsToSyncToContentBrowser
-    const FString& BrowseToAssetOverride = Actor->GetBrowseToAssetOverride();
-    if (!BrowseToAssetOverride.IsEmpty()) {
-        if (IAssetRegistry* AssetRegistry = IAssetRegistry::Get())
-        {
-            TArray<FAssetData> FoundAssets;
-            if (AssetRegistry->GetAssetsByPackageName(*BrowseToAssetOverride, FoundAssets) && FoundAssets.Num() > 0) {
-                OutAssetPath = GetAssetPath(FoundAssets[0]);
-                return true;
-            }
-        }
-    }
-    
-    // If the actor is an instance of a blueprint, just add the blueprint.
-    UBlueprint* GeneratingBP = Cast<UBlueprint>(Actor->GetClass()->ClassGeneratedBy);
-    if (GeneratingBP != NULL)
-    {
-        OutAssetPath = GetAssetPath(FAssetData(GeneratingBP));
-        return true;
-    }
-    // Cooked editor sometimes only contains UBlueprintGeneratedClass with no UBlueprint
-    else if (UBlueprintGeneratedClass* BlueprintGeneratedClass = Cast<UBlueprintGeneratedClass>(Actor->GetClass()))
-    {
-        OutAssetPath = GetAssetPath(FAssetData(BlueprintGeneratedClass));
-        return true;
-    }
-    // Otherwise, add the results of the GetReferencedContentObjects call
-    else
-    {
-        TArray<UObject*> Objects;
-        Actor->GetReferencedContentObjects(Objects);
-        for (UObject* Object : Objects)
-        {
-            UE_LOG(LogAnchorpoint, Log, TEXT("GetReferencedContentObjects: %s"), *Object->GetFullName());
-            OutAssetPath = GetAssetPath(FAssetData(Object));
-            return true;
-        }
-
-        TArray<FSoftObjectPath> SoftObjects;
-        Actor->GetSoftReferencedContentObjects(SoftObjects);
-
-        if (SoftObjects.Num())
-        {
-            IAssetRegistry& AssetRegistry = IAssetRegistry::GetChecked();
-
-            for (const FSoftObjectPath& SoftObject : SoftObjects)
-            {
-                FAssetData AssetData = AssetRegistry.GetAssetByObjectPath(SoftObject);
-
-                if (AssetData.IsValid())
-                {
-                    OutAssetPath = GetAssetPath(FAssetData(AssetData));
-                    return true;
-                }
-            }
-        }
-    }
-    
-    return false;
-}
-
-// Returns true when the uasset on disk is within __ExternalActors__
-bool IsUAssetOFPA(const FString& PathToFileOnDisk)
-{
-    // look for the __External_Actors__ Folder because the OFPA Files are saved in this folder
-    if (PathToFileOnDisk.Contains(FPackagePath::GetExternalActorsFolderName())) {
-        return true;
-    }
-    return false;
-}
-
-bool USubscription::SaveThumbnail(FString FilePath, FString OutputPath)
-{
-    if (IsUAssetOFPA(FilePath)) {
-        if (!GetAssetFromActor(FilePath, FilePath)){
-            return false;
-        }
-    }
-
-    FString AssetPath = ConvertSystemPath(FilePath);
-    UE_LOG(LogAnchorpoint, Log, TEXT("AssetPath: %s"), *AssetPath);
-    
-    FObjectThumbnail* ObjectThumbnail = nullptr;
-    
-    UObject* Asset = StaticLoadObject(UObject::StaticClass(), nullptr, *AssetPath);
-    if (Asset) {
-        auto AssetName = FName(*Asset->GetFullName());
-        UE_LOG(LogAnchorpoint, Log, TEXT("AssetName: %s"), *Asset->GetFullName());
-        ObjectThumbnail = ThumbnailTools::GetThumbnailForObject(Asset);
-        
-        if (!ObjectThumbnail){
-            FThumbnailMap LoadedThumbnails;
-            if (ThumbnailTools::LoadThumbnailsFromPackage(FilePath, {AssetName}, LoadedThumbnails)) {
-                for (auto it = LoadedThumbnails.begin(); it != LoadedThumbnails.end(); ++it) {
-                    UE_LOG(LogAnchorpoint, Log, TEXT("LoadedThumbnails Key: %s"), *it.Key().ToString());
-                }
-                
-                ObjectThumbnail = LoadedThumbnails.Find(AssetName);
-                if(!ObjectThumbnail || ObjectThumbnail->GetImageWidth() == 0 || ObjectThumbnail->GetImageHeight() == 0) {
-                    ObjectThumbnail = ThumbnailTools::GenerateThumbnailForObjectToSaveToDisk(Asset);
-                } else {
-                    auto UncompressedImageData = ObjectThumbnail->GetUncompressedImageData();
-                    if (!UncompressedImageData.GetData()){
-                        // Image could not be uncompressed, re-render
-                        ObjectThumbnail = ThumbnailTools::GenerateThumbnailForObjectToSaveToDisk(Asset);
-                    }
-                }
-            } else {
-                ObjectThumbnail = ThumbnailTools::GenerateThumbnailForObjectToSaveToDisk(Asset);
-            }
-        }
-        
-        if (ObjectThumbnail){
-            if (!SaveThumbnailToDisk(ObjectThumbnail, OutputPath))
-            {
-                UE_LOG(LogAnchorpoint, Error, TEXT("Could not save thumbnail for: %s"), *FilePath);
-                return false;
-            }
-        }
-        
-        return true;
-        
-    }
-    
-    return false;
-}
+//    
+//    return std::nullopt;
+//}

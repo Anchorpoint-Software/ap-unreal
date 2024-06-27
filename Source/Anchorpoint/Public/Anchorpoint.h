@@ -14,6 +14,9 @@ public:
 	virtual void ShutdownModule() override;
     
 private:
-    USubscription* _SubscriptionHandler;
+	void ApiExample() const;
+
+	std::shared_ptr<apsync::Api> _Api = nullptr;
+	USubscription* _SubscriptionHandler;
 };
  

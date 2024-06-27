@@ -64,3 +64,18 @@
 
 # Cache files for the editor to use
 **/DerivedDataCache/*
+
+# Allow apsync dependencies
+!**/apsync/**
+
+# Ignore everything in Binaries
+Binaries/*
+
+# Do not ignore Binaries/Win64
+!Binaries/Win64/
+
+# Ignore everything in Binaries/Win64
+Binaries/Win64/*
+
+# Do not ignore Binaries/Win64/sync.dll
+!Binaries/Win64/sync.dll

@@ -109,9 +109,9 @@ public:
 class SYNC_EXPORT AuthenticatedUser
 {
 public:
-    const UserNew& getUser() const { return user; }
+    const std::string& getEmail() const { return email; }
 
-    void setUser(const UserNew& user_) { this->user = user_; }
+    void setEmail(const std::string& email_) { this->email = email_; }
 
     const std::string& getToken() const { return token; }
 
@@ -121,10 +121,15 @@ public:
 
     void setApi(const std::string& api_) { this->api = api_; }
 
+    const std::string& getGrpcApi() const { return grpcApi; }
+
+    void setGrpcApi(const std::string& grpcApi_) { this->grpcApi = grpcApi_; }
+
 public:
-    UserNew user;
+    std::string email;
     std::string token;
     std::string api;
+    std::string grpcApi;
 };
 
 } //namespace apsync

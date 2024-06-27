@@ -13,7 +13,8 @@ class SyncContext;
 class SYNC_EXPORT Api
 {
 public:
-    Api(const std::string& clientName, const std::string& api, const std::string& account);
+    Api(const std::string& clientName, const std::string& api, const std::string& apiGrpc,
+        const std::string& account);
     virtual ~Api() = default;
 
     static Result<std::shared_ptr<Api>> createFromAuthenticatedUser(const std::string& clientName);
@@ -29,12 +30,14 @@ public:
     const std::string& getClientName() const;
     const std::string& getAddress() const;
     const std::string& getApi() const;
+    const std::string& getGrpcApi() const;
     const std::string& getAccount() const;
     std::shared_ptr<SyncContext> getSyncContext() const;
 
     void setClientName(const std::string& name);
     void setAddress(const std::string& address);
     void setApi(const std::string& api);
+    void setGrpcApi(const std::string& grpcApi);
     void setAccount(const std::string& account);
 
     friend class ObjectApi;

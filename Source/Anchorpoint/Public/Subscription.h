@@ -31,13 +31,14 @@ public:
     bool IsTickableInEditor() const override;
     TStatId GetStatId() const override;
     void Tick(float DeltaTime) override;
+
+    void RequestPush();
     
 private:
     void PublishMessage(apsync::IpcMessage& Message);
     void HandleMessage(const apsync::IpcMessage& Message);
-    std::optional<apsync::IpcMessage> HandleThumbnailRequest(const apsync::IpcMessage& Message);
     
-    bool SaveThumbnail(FString ObjectPath, FString OutputPath);
+    std::optional<apsync::IpcMessage> HandleRequestReleasePackages(const apsync::IpcMessage& Message);
     
     std::shared_ptr<apsync::Api> _Api = nullptr;
     std::shared_ptr<apsync::IpcApi> _IpcApi = nullptr;

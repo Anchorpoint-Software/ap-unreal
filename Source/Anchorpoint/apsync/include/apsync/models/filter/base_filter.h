@@ -15,6 +15,7 @@ namespace apsync {
 
 struct SYNC_EXPORT BaseFilter {
 
+    virtual ~BaseFilter() = default;
     std::string id;
     FilterType type;
 
@@ -123,12 +124,9 @@ struct SYNC_EXPORT BaseNumberFilter: public BaseFilter {
 
 struct SYNC_EXPORT TimeTrackingFilter: public BaseNumberFilter {
     const std::vector<FilterOperationType> allowedOperations = {
-        FilterOperationType::greaterThan(),
-        FilterOperationType::lessThan(),
-        FilterOperationType::zero(),
-        FilterOperationType::notZero(),
-        FilterOperationType::equals(),
-        FilterOperationType::doesNotEqual(),
+        FilterOperationType::greaterThan(), FilterOperationType::lessThan(),
+        FilterOperationType::zero(),        FilterOperationType::notZero(),
+        FilterOperationType::equals(),      FilterOperationType::doesNotEqual(),
         FilterOperationType::between()};
     TimeTrackingFilter() { type = FilterType::timeTracking(); }
 
@@ -140,10 +138,8 @@ using TimeTrackingFilterRef = std::shared_ptr<TimeTrackingFilter>;
 
 struct SYNC_EXPORT FileSizeFilter: public BaseNumberFilter {
     const std::vector<FilterOperationType> allowedOperations = {
-        FilterOperationType::greaterThan(),
-        FilterOperationType::lessThan(),
-        FilterOperationType::equals(),
-        FilterOperationType::doesNotEqual(),
+        FilterOperationType::greaterThan(), FilterOperationType::lessThan(),
+        FilterOperationType::equals(), FilterOperationType::doesNotEqual(),
         FilterOperationType::between()};
     FileSizeFilter() { type = FilterType::fileSize(); }
 
