@@ -12,7 +12,7 @@
 	
 	1) IPC from Anchorpoint to Unreal Engine
 	2) Implement a Source Control Provider using IPC from Unreal Engine to Anchorpoint
-	3) Show state in Unreal, e.g. Locked Files
+	3) Show state in Unreal, e.g. Locked Files and lock files automatically on change
 
 	Use Cases:
 
