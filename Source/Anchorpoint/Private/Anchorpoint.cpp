@@ -14,6 +14,7 @@
 #include "apsync/projects/projects_api.h"
 #include "apsync/account/account_api.h"
 #include "apsync/locks/locks_api.h"
+#include "apsync/service/object_api.h"
 
 #include "GenericPlatform/GenericPlatformMisc.h"
 #undef GetEnvironmentVariable
@@ -99,9 +100,11 @@ void FAnchorpointModule::ApiExample() const {
     auto ProjectsApi = std::make_shared<apsync::ProjectsApi>(_Api);
     auto AccountApi = std::make_shared<apsync::AccountApi>(_Api);
     auto LocksApi = std::make_shared<apsync::LocksApi>(_Api);
+    auto ObjectsApi = std::make_shared<apsync::ObjectApi>(_Api);
 
-    auto ProjectDir = FPaths::ProjectDir();
-    UE_LOG(LogTemp, Log, TEXT("Current Project Path: %s"), *ProjectDir);
+    FString RelativeProjectDir = FPaths::ProjectDir();
+    FString ProjectDir = IFileManager::Get().ConvertToAbsolutePathForExternalAppForRead(*RelativeProjectDir);
+    UE_LOG(LogAnchorpoint, Log, TEXT("Current Project Path: %s"), *ProjectDir);
 
     // Load the Anchorpoint Project
     auto ProjectDirStd = FStringToStdString(ProjectDir);
@@ -156,8 +159,21 @@ void FAnchorpointModule::ApiExample() const {
             UE_LOG(LogAnchorpoint, Error, TEXT("Error loading Anchorpoint Locked Path"));
             continue;
         }
-        auto LockedPath = StdStringToFString(PathResult.value());
+        auto Path = PathResult.value();
+        auto LockedPath = StdStringToFString(Path);
         UE_LOG(LogAnchorpoint, Log, TEXT("Path Locked: %s"), *LockedPath);
+    }
+
+    // Example how to lock a file
+    // In Anchorpoint, a file (or folder) needs to be uniquely identified before we can work with it
+    std::string ExampleFilePath = "some file path";
+    auto FExampleFilePath = StdStringToFString(ExampleFilePath);
+
+    if (FPlatformFileManager::Get().GetPlatformFile().FileExists(*FExampleFilePath)) {
+        auto FileObject = ObjectsApi->identifyFile(ExampleFilePath, WorkspaceID, Project) err_ignore; // don't just ignore errors
+
+        // Metadata is telling Anchorpoint it's locked by Git so that it automatically gets unlocked after changes have been pushed
+        LocksApi->lock({ FileObject }, Project, std::nullopt, { {"type", "git"} }) err_ignore;
     }
 }
 
