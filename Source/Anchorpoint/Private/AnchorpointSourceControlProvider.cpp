@@ -4,9 +4,12 @@
 
 #include <SourceControlHelpers.h>
 
+#include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "ScopedSourceControlProgress.h"
+
+#define LOCTEXT_NAMESPACE "Anchorpoint"
 
 void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate)
 {
@@ -15,6 +18,14 @@ void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, cons
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
+	if (bForceConnection)
+	{
+		UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
+		const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false;
+
+		// TODO: Error Handling
+		checkf(bSuccess, TEXT("What should we do if Anchorpoint fails to load on startup?"));
+	}
 }
 
 void FAnchorpointSourceControlProvider::Close()
@@ -241,12 +252,12 @@ void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpoint
 {
 	FMessageLog SourceControlLog("SourceControl");
 
-	for(int32 ErrorIndex = 0; ErrorIndex < InCommand.ErrorMessages.Num(); ++ErrorIndex)
+	for (int32 ErrorIndex = 0; ErrorIndex < InCommand.ErrorMessages.Num(); ++ErrorIndex)
 	{
 		SourceControlLog.Error(FText::FromString(InCommand.ErrorMessages[ErrorIndex]));
 	}
 
-	for(int32 InfoIndex = 0; InfoIndex < InCommand.InfoMessages.Num(); ++InfoIndex)
+	for (int32 InfoIndex = 0; InfoIndex < InCommand.InfoMessages.Num(); ++InfoIndex)
 	{
 		SourceControlLog.Info(FText::FromString(InCommand.InfoMessages[InfoIndex]));
 	}
@@ -293,7 +304,8 @@ void FAnchorpointSourceControlProvider::Tick()
 
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
-	return SNew(STextBlock).Text(INVTEXT("Hello from Anchorpoint settings"));
+	return SNew(STextBlock)
+		.Text(LOCTEXT("LogInViaDesktopApp", "Press 'Accept Settings' to authentificate via the Anchorpoint Desktop App."));
 }
 
 TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::CreateWorker(const FName& OperationName)
@@ -372,3 +384,5 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 		return InCommand.ReturnResults();
 	}
 }
+
+#undef LOCTEXT_NAMESPACE

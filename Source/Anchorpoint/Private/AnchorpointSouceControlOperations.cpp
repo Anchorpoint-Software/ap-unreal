@@ -2,6 +2,9 @@
 
 #include "AnchorpointSouceControlOperations.h"
 
+#include "AnchorpointCommunicationSubsystem.h"
+
+
 FName FAnchorpointConnectWorker::GetName() const
 {
 	return "Connect";
@@ -9,7 +12,9 @@ FName FAnchorpointConnectWorker::GetName() const
 
 bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	return true;
+	UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
+	const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false; 
+	return bSuccess; 
 }
 
 bool FAnchorpointConnectWorker::UpdateStates() const
