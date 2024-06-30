@@ -1,6 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Anchorpoint.h"
+
+#include "AnchorpointSouceControlOperations.h"
+
 #include "apsync/version.h"
 #include "apsync/service/api.h"
 #include "apsync/launcher.h"
@@ -37,8 +40,20 @@ FString StdStringToFString(const string& StdString)
     return UTF8_TO_TCHAR(StdString.c_str());
 }
 
+template<typename Type>
+static TSharedRef<IAnchorpointSourceControlWorker> CreateWorker()
+{
+	return MakeShared<Type>();
+}
+
 void FAnchorpointModule::StartupModule()
 {
+	// Register our operations
+	AnchorpointSourceControlProvider.RegisterWorker("Connect", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));
+	AnchorpointSourceControlProvider.RegisterWorker("CheckOut", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));
+
+	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
+
 	// This will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
      UE_LOG(LogAnchorpoint, Log, TEXT("Hello from Anchorpoint Plugin: %s"), *FString(AP_VERSION));
     
@@ -87,6 +102,9 @@ void FAnchorpointModule::StartupModule()
 
 void FAnchorpointModule::ShutdownModule()
 {
+	AnchorpointSourceControlProvider.Close();
+	IModularFeatures::Get().UnregisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
+
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
      UE_LOG(LogAnchorpoint, Log, TEXT("Shutting down Anchorpoint plugin"));

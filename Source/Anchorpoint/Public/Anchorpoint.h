@@ -6,6 +6,8 @@
 #include "Modules/ModuleManager.h"
 #include "Subscription.h"
 
+#include "AnchorpointSourceControlProvider.h"
+
 /**
 
 	Anchorpoint in Unreal Engine does 3 things from a technical point of view.
@@ -43,5 +45,7 @@ private:
 
 	std::shared_ptr<apsync::Api> _Api = nullptr;
 	USubscription* _SubscriptionHandler;
+
+	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
 };
  
