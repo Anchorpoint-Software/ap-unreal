@@ -83,7 +83,8 @@ void FAnchorpointModule::StartupModule()
 
      auto ApiResult = apsync::Api::createFromAuthenticatedUser(IpcSenderId);
      if (!ApiResult) {
-         UE_LOG(LogAnchorpoint, Error, TEXT("Failed to create API: %s"), UTF8_TO_TCHAR(ApiResult.error().message().c_str()));
+     	FString ErrorMessage = StdStringToFString(ApiResult.error().message());
+         UE_LOG(LogAnchorpoint, Error, TEXT("Failed to create API: %s"), *ErrorMessage);
          return;
      }
     
