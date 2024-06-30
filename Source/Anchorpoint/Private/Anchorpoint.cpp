@@ -50,10 +50,11 @@ void FAnchorpointModule::StartupModule()
 {
 	// Register our operations
 	AnchorpointSourceControlProvider.RegisterWorker("Connect", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("CheckOut", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));
+	AnchorpointSourceControlProvider.RegisterWorker("CheckOut", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCheckOutWorker>));
 
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 
+	return;
 	// This will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
      UE_LOG(LogAnchorpoint, Log, TEXT("Hello from Anchorpoint Plugin: %s"), *FString(AP_VERSION));
     
