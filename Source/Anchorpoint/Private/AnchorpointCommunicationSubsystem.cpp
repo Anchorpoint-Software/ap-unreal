@@ -2,6 +2,7 @@
 
 #include "AnchorpointCommunicationSubsystem.h"
 
+#include "AnchorpointLog.h"
 #include "apsync/service/api.h"
 
 bool UAnchorpointCommunicationSubsystem::OpenDesktopApp(bool bMinimized /* = true */)
@@ -9,18 +10,18 @@ bool UAnchorpointCommunicationSubsystem::OpenDesktopApp(bool bMinimized /* = tru
 	const apsync::Result<void> Result = apsync::Api::startAnchorpoint(std::nullopt, bMinimized);
 	if (Result.has_error())
 	{
+		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to open Anchorpoint: %s"), *FString(Result.error().message().c_str()));
 		return false;
 	}
 
 	apsync::Result<std::shared_ptr<apsync::Api>> ApiResult = apsync::Api::createFromAuthenticatedUser(TCHAR_TO_UTF8(*IpcSenderId));
 	if (ApiResult.has_error())
 	{
-		const std::string Error = ApiResult.error().message();
-		//TODO: Replace with Anchorpoint Log category
-		UE_LOG(LogTemp, Error, TEXT("Failed to create API: %s"), *FString(Error.c_str()));
+		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to create API: %s"), *FString(ApiResult.error().message().c_str()));
 		return false;
 	}
 
+	UE_LOG(LogAnchorpoint, Verbose, TEXT("Successfully connected to Desktop App"));
 	return ApiResult.value().get() != nullptr;
 }
 

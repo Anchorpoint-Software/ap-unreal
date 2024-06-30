@@ -2,6 +2,8 @@
 
 #include "Anchorpoint.h"
 
+#include "AnchorpointLog.h"
+#include "AnchorpointLogger.h"
 #include "AnchorpointSouceControlOperations.h"
 
 #include "apsync/version.h"
@@ -53,6 +55,9 @@ void FAnchorpointModule::StartupModule()
 	AnchorpointSourceControlProvider.RegisterWorker("CheckOut", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCheckOutWorker>));
 
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
+
+	Logger = std::make_shared<FAnchorpointLogger>();
+	// apsync::Api::setLogger(Logger);
 
 	return;
 	// This will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
@@ -110,7 +115,10 @@ void FAnchorpointModule::ShutdownModule()
 	// This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
 	// we call this function before unloading the module.
      UE_LOG(LogAnchorpoint, Log, TEXT("Shutting down Anchorpoint plugin"));
+	if(_SubscriptionHandler)
+	{
      _SubscriptionHandler->RemoveFromRoot();
+	}
 }
 
 void FAnchorpointModule::ApiExample() const {

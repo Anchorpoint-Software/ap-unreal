@@ -33,6 +33,8 @@
 
 **/
 
+class FAnchorpointLogger;
+
 class FAnchorpointModule : public IModuleInterface
 {
 public:
@@ -47,5 +49,6 @@ private:
 	USubscription* _SubscriptionHandler;
 
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
+	std::shared_ptr<FAnchorpointLogger> Logger;
 };
  

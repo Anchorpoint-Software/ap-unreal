@@ -1,6 +1,7 @@
 // Copyright Anchorpoint Software GmbH. All Rights Reserved.
 
 #include "Subscription.h"
+
 #include "TimerManager.h"
 
 #include "Dom/JsonObject.h"
@@ -20,9 +21,7 @@
 #include "Engine/BlueprintGeneratedClass.h"
 
 #include "apsync/service/thumbnail/thumbnail_service.h"
-
-
-DEFINE_LOG_CATEGORY(LogAnchorpoint);
+#include "AnchorpointLog.h"
 
 USubscription::~USubscription(){
     if (_IpcApi) {
@@ -202,5 +201,4 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //        return Response;
 //    }
 //    
-//    return std::nullopt;
-//}
+//
