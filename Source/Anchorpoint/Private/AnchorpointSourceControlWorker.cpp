@@ -1,0 +1,3 @@
+﻿// Some copyright should be here...
+
+#include "AnchorpointSourceControlWorker.h"
