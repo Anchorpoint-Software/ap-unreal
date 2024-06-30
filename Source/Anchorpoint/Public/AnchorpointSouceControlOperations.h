@@ -23,3 +23,13 @@ public:
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
 };
+
+class FAnchorpointUpdateStatusWorker final : public IAnchorpointSourceControlWorker
+{
+public:
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+};

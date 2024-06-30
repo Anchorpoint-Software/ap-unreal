@@ -36,3 +36,18 @@ bool FAnchorpointCheckOutWorker::UpdateStates() const
 {
 	return true;
 }
+
+FName FAnchorpointUpdateStatusWorker::GetName() const
+{
+	return "UpdateStatus";
+}
+
+bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	return true;
+}
+
+bool FAnchorpointUpdateStatusWorker::UpdateStates() const
+{
+	return true;
+}
