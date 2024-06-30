@@ -12,6 +12,7 @@ public class Anchorpoint : ModuleRules
 		{
 			"Core",
 			"CoreUObject",
+			"EditorSubsystem",
 			"Engine",
 			"Slate",
 			"SlateCore", 
