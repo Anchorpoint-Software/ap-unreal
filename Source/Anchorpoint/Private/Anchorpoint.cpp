@@ -58,7 +58,7 @@ void FAnchorpointModule::StartupModule()
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 
 	Logger = std::make_shared<FAnchorpointLogger>();
-	// apsync::Api::setLogger(Logger);
+	apsync::Api::setLogger(Logger);
 
 	return;
 	// This will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
