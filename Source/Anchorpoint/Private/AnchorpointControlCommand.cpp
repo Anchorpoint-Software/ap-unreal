@@ -4,9 +4,7 @@
 
 #include "AnchorpointSourceControlWorker.h"
 
-FAnchorpointSourceControlCommand::FAnchorpointSourceControlCommand(const TSharedRef<ISourceControlOperation>& InOperation,
-                                                                   const TSharedRef<IAnchorpointSourceControlWorker>& InWorker,
-                                                                   const FSourceControlOperationComplete& InOperationCompleteDelegate)
+FAnchorpointSourceControlCommand::FAnchorpointSourceControlCommand(const TSharedRef<ISourceControlOperation>& InOperation, const TSharedRef<IAnchorpointSourceControlWorker>& InWorker, const FSourceControlOperationComplete& InOperationCompleteDelegate)
 	: Operation(InOperation)
 	  , Worker(InWorker)
 	  , OperationCompleteDelegate(InOperationCompleteDelegate)
@@ -15,11 +13,7 @@ FAnchorpointSourceControlCommand::FAnchorpointSourceControlCommand(const TShared
 	  , bAutoDelete(true)
 	  , Concurrency(EConcurrency::Synchronous)
 {
-	// grab the providers settings here, so we don't access them once the worker thread is launched
 	check(IsInGameThread());
-	//FAnchorpointSourceControlModule& AnchorpointSourceControl = FModuleManager::LoadModuleChecked<FAnchorpointSourceControlModule>("AnchorpointSourceControl");
-	//PathToAnchorpointBinary = AnchorpointSourceControl.AccessSettings().GetBinaryPath();
-	//PathToRepositoryRoot = AnchorpointSourceControl.GetProvider().GetPathToRepositoryRoot();
 }
 
 bool FAnchorpointSourceControlCommand::DoWork()

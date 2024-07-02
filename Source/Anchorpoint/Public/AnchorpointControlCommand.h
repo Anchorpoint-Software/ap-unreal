@@ -5,15 +5,15 @@
 #include <ISourceControlProvider.h>
 #include <Misc/IQueuedWork.h>
 
+class IAnchorpointSourceControlWorker;
+
 /**
  * Used to execute Anchorpoint commands multi-threaded.
  */
 class FAnchorpointSourceControlCommand : public IQueuedWork
 {
 public:
-	FAnchorpointSourceControlCommand(const TSharedRef<class ISourceControlOperation>& InOperation,
-	                                 const TSharedRef<class IAnchorpointSourceControlWorker>& InWorker,
-	                                 const FSourceControlOperationComplete& InOperationCompleteDelegate = FSourceControlOperationComplete());
+	FAnchorpointSourceControlCommand(const TSharedRef<ISourceControlOperation>& InOperation, const TSharedRef<IAnchorpointSourceControlWorker>& InWorker, const FSourceControlOperationComplete& InOperationCompleteDelegate = FSourceControlOperationComplete());
 
 	/**
 	 * This is where the real thread work is done. All work that is done for
@@ -38,17 +38,11 @@ public:
 	/** Save any results and call any registered callbacks. */
 	ECommandResult::Type ReturnResults();
 
-	/** Path to the Anchorpoint binary */
-	FString PathToAnchorpointBinary;
-
-	/** Path to the root of the Anchorpoint repository: can be the ProjectDir itself, or any parent directory (found by the "Connect" operation) */
-	FString PathToRepositoryRoot;
-
 	/** Operation we want to perform - contains outward-facing parameters & results */
-	TSharedRef<class ISourceControlOperation, ESPMode::ThreadSafe> Operation;
+	TSharedRef<ISourceControlOperation> Operation;
 
 	/** The object that will actually do the work */
-	TSharedRef<class IAnchorpointSourceControlWorker, ESPMode::ThreadSafe> Worker;
+	TSharedRef<IAnchorpointSourceControlWorker> Worker;
 
 	/** Delegate to notify when this operation completes */
 	FSourceControlOperationComplete OperationCompleteDelegate;
