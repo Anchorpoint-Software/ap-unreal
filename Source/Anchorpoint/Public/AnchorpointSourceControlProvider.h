@@ -4,6 +4,7 @@
 
 #include <ISourceControlProvider.h>
 
+class FAnchorpointControlState;
 class FAnchorpointSourceControlCommand;
 class IAnchorpointSourceControlWorker;
 
@@ -14,6 +15,7 @@ public:
 
 	void RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate);
 
+	//~ Begin ISourceControlProvider Interface
 	virtual void Init(bool bForceConnection) override;
 	virtual void Close() override;
 	virtual const FName& GetName() const override;
@@ -25,17 +27,11 @@ public:
 	virtual void RegisterStateBranches(const TArray<FString>& BranchNames, const FString& ContentRoot) override;
 	virtual int32 GetStateBranchIndex(const FString& BranchName) const override;
 	virtual ECommandResult::Type GetState(const TArray<FString>& InFiles, TArray<FSourceControlStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage) override;
-	virtual ECommandResult::Type GetState(const TArray<FSourceControlChangelistRef>& InChangelists,
-	                                      TArray<FSourceControlChangelistStateRef>& OutState,
-	                                      EStateCacheUsage::Type InStateCacheUsage) override;
+	virtual ECommandResult::Type GetState(const TArray<FSourceControlChangelistRef>& InChangelists, TArray<FSourceControlChangelistStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage) override;
 	virtual TArray<FSourceControlStateRef> GetCachedStateByPredicate(TFunctionRef<bool(const FSourceControlStateRef&)> Predicate) const override;
 	virtual FDelegateHandle RegisterSourceControlStateChanged_Handle(const FSourceControlStateChanged::FDelegate& SourceControlStateChanged) override;
 	virtual void UnregisterSourceControlStateChanged_Handle(FDelegateHandle Handle) override;
-	virtual ECommandResult::Type Execute(const FSourceControlOperationRef& InOperation,
-	                                     FSourceControlChangelistPtr InChangelist,
-	                                     const TArray<FString>& InFiles,
-	                                     EConcurrency::Type InConcurrency,
-	                                     const FSourceControlOperationComplete& InOperationCompleteDelegate) override;
+	virtual ECommandResult::Type Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency = EConcurrency::Synchronous, const FSourceControlOperationComplete& InOperationCompleteDelegate = FSourceControlOperationComplete()) override;
 	virtual bool CanExecuteOperation(const FSourceControlOperationRef& InOperation) const override;
 	virtual bool CanCancelOperation(const FSourceControlOperationRef& InOperation) const override;
 	virtual void CancelOperation(const FSourceControlOperationRef& InOperation) override;
@@ -50,19 +46,21 @@ public:
 	virtual bool AllowsDiffAgainstDepot() const override;
 	virtual TOptional<bool> IsAtLatestRevision() const override;
 	virtual TOptional<int> GetNumLocalChanges() const override;
-	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	virtual void Tick() override;
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
+	//~ End ISourceControlProvider Interface
 
+	TSharedRef<FAnchorpointControlState> GetStateInternal(const FString& Filename);
+
+	TMap<FString, TSharedRef<FAnchorpointControlState>> StateCache;
+
+	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);
 	ECommandResult::Type ExecuteSynchronousCommand(FAnchorpointSourceControlCommand& InCommand, const FText& Task);
 	ECommandResult::Type IssueCommand(FAnchorpointSourceControlCommand& InCommand);
 
 	TMap<FName, FGetAnchorpointSourceControlWorker> WorkersMap;
 
-	bool bGitRepositoryFound = false;
 	FSourceControlStateChanged OnSourceControlStateChanged;
-	TMap<FString, TSharedRef<class FGitSourceControlState>> StateCache;
-
 	TArray<FAnchorpointSourceControlCommand*> CommandQueue;
 };

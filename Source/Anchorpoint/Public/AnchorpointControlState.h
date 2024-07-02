@@ -10,8 +10,8 @@
 class FAnchorpointControlState : public ISourceControlState
 {
 public:
-	explicit FAnchorpointControlState(FString&& InLocalFilename)
-		: LocalFilename(MoveTemp(InLocalFilename))
+	explicit FAnchorpointControlState(const FString& InLocalFilename)
+		: LocalFilename(InLocalFilename)
 	{
 	}
 

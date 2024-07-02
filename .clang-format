@@ -32,7 +32,7 @@ BreakBeforeBraces: Custom
 BinPackArguments: false
 BinPackParameters: false
 BreakConstructorInitializers: AfterColon
-ColumnLimit: 200 
+ColumnLimit: 1000 
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: '.*\.generated\.h'

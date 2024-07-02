@@ -9,6 +9,7 @@
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointControlState.h"
 #include "ScopedSourceControlProgress.h"
+#include "SourceControlOperations.h"
 
 #define LOCTEXT_NAMESPACE "Anchorpoint"
 
@@ -19,6 +20,8 @@ void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, cons
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
+	// ToImplement: Here we should do any initialization we might need.
+
 	if (bForceConnection)
 	{
 		UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
@@ -31,6 +34,7 @@ void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 
 void FAnchorpointSourceControlProvider::Close()
 {
+	// ToImplement: Here we should do any deinitialization we might need.
 }
 
 const FName& FAnchorpointSourceControlProvider::GetName() const
@@ -41,24 +45,25 @@ const FName& FAnchorpointSourceControlProvider::GetName() const
 
 FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
+	// ToImplement: Here we should display the project's state in a string 
 	return INVTEXT("TODO: GetStatusText");
 }
 
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
 {
+	// ToImplement: Here we should fill out as many information points as we can
+
 	TMap<EStatus, FString> Result;
 	Result.Add(EStatus::Enabled, true ? TEXT("Yes") : TEXT("No"));
 	Result.Add(EStatus::Connected, true ? TEXT("Yes") : TEXT("No"));
 
-	//Result.Add(EStatus::User, UserName);
-	//Result.Add(EStatus::Repository, PathToRepositoryRoot);
-	//Result.Add(EStatus::Remote, RemoteUrl);
-	//Result.Add(EStatus::Branch, BranchName);
-	//Result.Add(EStatus::Email, UserEmail);
-
 	//Port,
 	//User,
 	//Client,
+	//Repository,
+	//Remote,
+	//Branch,
+	//Email,
 	//ScmVersion,
 	//PluginVersion,
 	//Workspace,
@@ -70,61 +75,74 @@ TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider
 
 bool FAnchorpointSourceControlProvider::IsEnabled() const
 {
+	// As long as the plugin is installed and available, we want to display Anchorpoint in the provider list no matter what
+	// even if the Anchorpoint Desktop App is not installed, the user will be prompted to do so during setup
 	return true;
 }
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
+	// ToImplement: Here we should check if the current project is an Anchorpoint project (or can become one)
 	return true;
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)
 {
+	// This seems to be a Perforce specific implementation we can safely ignore
 	return false;
 }
 
 void FAnchorpointSourceControlProvider::RegisterStateBranches(const TArray<FString>& BranchNames, const FString& ContentRoot)
 {
+	// ToImplement: Here we should specify what branches we care about checking check-out operations for.
+	// For Anchorpoint specific, I think we care about all the branches, so we might be able to ignore this. Need to double-check with team.
 }
 
 int32 FAnchorpointSourceControlProvider::GetStateBranchIndex(const FString& BranchName) const
 {
+	// Same as RegisterStateBranches. Need to double-check with the team
 	return INDEX_NONE;
 }
 
 ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FString>& InFiles, TArray<FSourceControlStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage)
 {
-	for(int i = 0; i < InFiles.Num(); i++)
+	if (!IsEnabled())
 	{
-		OutState.Add(MakeShared<FAnchorpointControlState>(TEXT("TODO")));
+		return ECommandResult::Failed;
+	}
+
+	TArray<FString> AbsoluteFiles = SourceControlHelpers::AbsoluteFilenames(InFiles);
+
+	if (InStateCacheUsage == EStateCacheUsage::ForceUpdate)
+	{
+		ISourceControlProvider::Execute(ISourceControlOperation::Create<FUpdateStatus>(), AbsoluteFiles);
+	}
+
+	for (const FString& AbsoluteFile : AbsoluteFiles)
+	{
+		OutState.Add(GetStateInternal(*AbsoluteFile));
 	}
 
 	return ECommandResult::Succeeded;
 }
 
-ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FSourceControlChangelistRef>& InChangelists,
-                                                                 TArray<FSourceControlChangelistStateRef>& OutState,
-                                                                 EStateCacheUsage::Type InStateCacheUsage)
+ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FSourceControlChangelistRef>& InChangelists, TArray<FSourceControlChangelistStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage)
 {
+	// Git doesn't have changelists functionality, therefore we can ignore a changelist-based GetState
 	return ECommandResult::Failed;
 }
 
 TArray<FSourceControlStateRef> FAnchorpointSourceControlProvider::GetCachedStateByPredicate(TFunctionRef<bool(const FSourceControlStateRef&)> Predicate) const
 {
 	TArray<FSourceControlStateRef> Result;
-	for (const auto& CacheItem : StateCache)
+	for (const TTuple<FString, TSharedRef<FAnchorpointControlState>>& CacheItem : StateCache)
 	{
-		/*
-		 FSourceControlStateRef State = CacheItem.Value;
-		 if(Predicate(State))
-		 {
-			 Result.Add(State);
-		 }
-		 */
+		FSourceControlStateRef State = CacheItem.Value;
+		if (Predicate(State))
+		{
+			Result.Add(State);
+		}
 	}
-
-	Result.Add(MakeShared<FAnchorpointControlState>(TEXT("TODO")));
-
 	return Result;
 }
 
@@ -138,19 +156,16 @@ void FAnchorpointSourceControlProvider::UnregisterSourceControlStateChanged_Hand
 	OnSourceControlStateChanged.Remove(Handle);
 }
 
-ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceControlOperationRef& InOperation,
-                                                                FSourceControlChangelistPtr InChangelist,
-                                                                const TArray<FString>& InFiles,
-                                                                EConcurrency::Type InConcurrency,
-                                                                const FSourceControlOperationComplete& InOperationCompleteDelegate)
+ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency, const FSourceControlOperationComplete& InOperationCompleteDelegate)
 {
+	// ToImplement: Everything in this function needs to be checked 
+
 	// Only Connect operation allowed while not Enabled (Connected)
 	if (!IsEnabled() && !(InOperation->GetName() == "Connect"))
 	{
 		(void)InOperationCompleteDelegate.ExecuteIfBound(InOperation, ECommandResult::Failed);
 		return ECommandResult::Failed;
 	}
-
 
 	TSharedPtr<IAnchorpointSourceControlWorker> Worker = CreateWorker(InOperation->GetName());
 
@@ -203,7 +218,6 @@ void FAnchorpointSourceControlProvider::CancelOperation(const FSourceControlOper
 TArray<TSharedRef<ISourceControlLabel>> FAnchorpointSourceControlProvider::GetLabels(const FString& InMatchingSpec) const
 {
 	TArray<TSharedRef<ISourceControlLabel>> Tags;
-
 	return Tags;
 }
 
@@ -229,12 +243,12 @@ bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 
 bool FAnchorpointSourceControlProvider::UsesCheckout() const
 {
-	return false;
+	return true;
 }
 
 bool FAnchorpointSourceControlProvider::UsesFileRevisions() const
 {
-	return false;
+	return true;
 }
 
 bool FAnchorpointSourceControlProvider::UsesSnapshots() const
@@ -249,32 +263,20 @@ bool FAnchorpointSourceControlProvider::AllowsDiffAgainstDepot() const
 
 TOptional<bool> FAnchorpointSourceControlProvider::IsAtLatestRevision() const
 {
+	// ToImplement: Here we should check if the file is up to date with the latest
 	return TOptional<bool>();
 }
 
 TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 {
+	// ToImplement: Here we should check have many files we changed on disk
 	return TOptional<int>();
 }
 
-void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const
-{
-	FMessageLog SourceControlLog("SourceControl");
-
-	for (int32 ErrorIndex = 0; ErrorIndex < InCommand.ErrorMessages.Num(); ++ErrorIndex)
-	{
-		SourceControlLog.Error(FText::FromString(InCommand.ErrorMessages[ErrorIndex]));
-	}
-
-	for (int32 InfoIndex = 0; InfoIndex < InCommand.InfoMessages.Num(); ++InfoIndex)
-	{
-		SourceControlLog.Info(FText::FromString(InCommand.InfoMessages[InfoIndex]));
-	}
-}
-
-
 void FAnchorpointSourceControlProvider::Tick()
 {
+	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
+
 	bool bStatesUpdated = false;
 	for (int32 CommandIndex = 0; CommandIndex < CommandQueue.Num(); ++CommandIndex)
 	{
@@ -313,8 +315,22 @@ void FAnchorpointSourceControlProvider::Tick()
 
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
+	// ToImplement: Here we should display something, maybe the .exe to use ?
+
 	return SNew(STextBlock)
 		.Text(LOCTEXT("LogInViaDesktopApp", "Press 'Accept Settings' to authentificate via the Anchorpoint Desktop App."));
+}
+
+TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)
+{
+	if (TSharedRef<FAnchorpointControlState>* State = StateCache.Find(Filename))
+	{
+		return *State;
+	}
+
+	TSharedRef<FAnchorpointControlState> NewState = MakeShared<FAnchorpointControlState>(Filename);
+	StateCache.Add(Filename, NewState);
+	return NewState;
 }
 
 TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::CreateWorker(const FName& OperationName)
@@ -325,6 +341,21 @@ TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::C
 	}
 
 	return nullptr;
+}
+
+void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const
+{
+	FMessageLog SourceControlLog("SourceControl");
+
+	for (int32 ErrorIndex = 0; ErrorIndex < InCommand.ErrorMessages.Num(); ++ErrorIndex)
+	{
+		SourceControlLog.Error(FText::FromString(InCommand.ErrorMessages[ErrorIndex]));
+	}
+
+	for (int32 InfoIndex = 0; InfoIndex < InCommand.InfoMessages.Num(); ++InfoIndex)
+	{
+		SourceControlLog.Info(FText::FromString(InCommand.InfoMessages[InfoIndex]));
+	}
 }
 
 
