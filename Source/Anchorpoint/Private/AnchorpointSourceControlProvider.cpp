@@ -7,6 +7,7 @@
 #include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
+#include "AnchorpointControlState.h"
 #include "ScopedSourceControlProgress.h"
 
 #define LOCTEXT_NAMESPACE "Anchorpoint"
@@ -46,8 +47,8 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
 {
 	TMap<EStatus, FString> Result;
-	Result.Add(EStatus::Enabled, IsEnabled() ? TEXT("Yes") : TEXT("No"));
-	Result.Add(EStatus::Connected, (IsEnabled() && IsAvailable()) ? TEXT("Yes") : TEXT("No"));
+	Result.Add(EStatus::Enabled, true ? TEXT("Yes") : TEXT("No"));
+	Result.Add(EStatus::Connected, true ? TEXT("Yes") : TEXT("No"));
 
 	//Result.Add(EStatus::User, UserName);
 	//Result.Add(EStatus::Repository, PathToRepositoryRoot);
@@ -69,12 +70,12 @@ TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider
 
 bool FAnchorpointSourceControlProvider::IsEnabled() const
 {
-	return bGitRepositoryFound;
+	return true;
 }
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
-	return bGitRepositoryFound;
+	return true;
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)
@@ -93,6 +94,11 @@ int32 FAnchorpointSourceControlProvider::GetStateBranchIndex(const FString& Bran
 
 ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FString>& InFiles, TArray<FSourceControlStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage)
 {
+	for(int i = 0; i < InFiles.Num(); i++)
+	{
+		OutState.Add(MakeShared<FAnchorpointControlState>(TEXT("TODO")));
+	}
+
 	return ECommandResult::Succeeded;
 }
 
@@ -116,6 +122,9 @@ TArray<FSourceControlStateRef> FAnchorpointSourceControlProvider::GetCachedState
 		 }
 		 */
 	}
+
+	Result.Add(MakeShared<FAnchorpointControlState>(TEXT("TODO")));
+
 	return Result;
 }
 
