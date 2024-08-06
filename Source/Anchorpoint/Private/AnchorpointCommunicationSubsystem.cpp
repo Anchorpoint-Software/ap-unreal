@@ -7,6 +7,7 @@
 
 bool UAnchorpointCommunicationSubsystem::OpenDesktopApp(bool bMinimized /* = true */)
 {
+	return true;
 	const apsync::Result<void> Result = apsync::Api::startAnchorpoint(std::nullopt, bMinimized);
 	if (Result.has_error())
 	{

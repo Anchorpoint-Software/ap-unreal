@@ -4,6 +4,15 @@
 
 #include <ISourceControlState.h>
 
+enum class EAnchorpointState
+{
+	DontKnow,
+	Staged,
+	NotStaged,
+	Locked,
+	OutDated,
+	};
+
 /**
  * 
  */
@@ -11,8 +20,8 @@ class FAnchorpointControlState : public ISourceControlState
 {
 public:
 	explicit FAnchorpointControlState(const FString& InLocalFilename)
-		: LocalFilename(InLocalFilename)
 	{
+		LocalFilename = InLocalFilename;
 	}
 
 	FAnchorpointControlState() = delete;
@@ -112,8 +121,10 @@ public:
 	FString HeadUserName;
 
 	/** The last file modification time */
-	int64 HeadModTime;
+	int64 HeadModTime = 0;
 
 	/** The change list of the last modification */
-	int32 HeadChangeList;
+	int32 HeadChangeList = 0;
+
+	EAnchorpointState State;
 };

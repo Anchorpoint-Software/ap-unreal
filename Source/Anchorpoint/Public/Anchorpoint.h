@@ -41,7 +41,11 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
-    
+
+	static FAnchorpointModule& Get();
+
+	FAnchorpointSourceControlProvider& GetProvider();
+
 private:
 	void ApiExample() const;
 
@@ -51,4 +55,3 @@ private:
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
 	std::shared_ptr<FAnchorpointLogger> Logger;
 };
- 

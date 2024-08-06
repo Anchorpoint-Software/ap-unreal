@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "AnchorpointControlState.h"
 #include "AnchorpointSourceControlWorker.h"
 
 class FAnchorpointConnectWorker final : public IAnchorpointSourceControlWorker
@@ -32,4 +33,6 @@ public:
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray<FAnchorpointControlState> States;
 };

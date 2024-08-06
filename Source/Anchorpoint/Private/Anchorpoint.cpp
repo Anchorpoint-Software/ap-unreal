@@ -122,6 +122,16 @@ void FAnchorpointModule::ShutdownModule()
 	}
 }
 
+FAnchorpointModule& FAnchorpointModule::Get()
+{
+	return FModuleManager::GetModuleChecked<FAnchorpointModule>("Anchorpoint");
+}
+
+FAnchorpointSourceControlProvider& FAnchorpointModule::GetProvider()
+{
+	return AnchorpointSourceControlProvider;
+}
+
 void FAnchorpointModule::ApiExample() const {
     // Just some examples how to do things using apsync
     

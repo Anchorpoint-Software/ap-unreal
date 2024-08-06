@@ -2,7 +2,27 @@
 
 #include "AnchorpointSouceControlOperations.h"
 
+#include "Anchorpoint.h"
+#include "AnchorpointCommunication.h"
 #include "AnchorpointCommunicationSubsystem.h"
+#include "AnchorpointControlCommand.h"
+#include "AnchorpointControlState.h"
+#include "AnchorpointSourceControlProvider.h"
+#include "SourceControlOperations.h"
+
+bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
+{
+	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
+
+	for (const FAnchorpointControlState& InState : InStates)
+	{
+		TSharedRef<FAnchorpointControlState> State = Provider.GetStateInternal(InState.LocalFilename);
+		State->State = InState.State;
+		State->TimeStamp = FDateTime::Now();
+	}
+
+	return !InStates.IsEmpty();
+}
 
 
 FName FAnchorpointConnectWorker::GetName() const
@@ -13,8 +33,8 @@ FName FAnchorpointConnectWorker::GetName() const
 bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
-	const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false; 
-	return bSuccess; 
+	const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false;
+	return bSuccess;
 }
 
 bool FAnchorpointConnectWorker::UpdateStates() const
@@ -44,10 +64,17 @@ FName FAnchorpointUpdateStatusWorker::GetName() const
 
 bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	return true;
+	check(InCommand.Operation->GetName() == GetName());
+
+	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
+
+	const TArray<FString> Files = InCommand.Files;
+	InCommand.bCommandSuccessful = AnchorpointCommunication::RunUpdateStatus(InCommand.Files, InCommand.ErrorMessages, States);
+
+	return InCommand.bCommandSuccessful;
 }
 
 bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 {
-	return true;
+	return UpdateCachedStates(States);
 }
