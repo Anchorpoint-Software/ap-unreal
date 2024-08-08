@@ -61,9 +61,13 @@ FSlateIcon FAnchorpointControlState::GetIcon() const
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.Conflicted");
 	case EAnchorpointState::NotControlled:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotInDepot");
+	case EAnchorpointState::OutDated:
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotAtHeadRevision");
+
 	case EAnchorpointState::Unknown:
 	case EAnchorpointState::Unchanged: // Unchanged is the same as "Pristine" (not checked out) for Perforce, ie no icon
 	case EAnchorpointState::Ignored:
+		return FSlateIcon();
 	default:
 		checkNoEntry();
 	}
@@ -99,6 +103,8 @@ FText FAnchorpointControlState::GetDisplayName() const
 		return LOCTEXT("NotControlled", "Not Under Revision Control");
 	case EAnchorpointState::Missing:
 		return LOCTEXT("Missing", "Missing");
+	case EAnchorpointState::OutDated:
+		return LOCTEXT("NotCurrent", "Not current");
 	default:
 		checkNoEntry();
 	}
@@ -132,6 +138,8 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 		return LOCTEXT("NotControlled_Tooltip", "Item is not under version control.");
 	case EAnchorpointState::Missing:
 		return LOCTEXT("Missing_Tooltip", "Item is missing (e.g., you moved or deleted it without using Git). This also indicates that a directory is incomplete (a checkout or update was interrupted).");
+	case EAnchorpointState::OutDated:
+		return LOCTEXT("NotCurrent_Tooltip", "The file(s) are not at the head revision");
 	default:
 		checkNoEntry();
 	}
@@ -192,8 +200,7 @@ bool FAnchorpointControlState::GetOtherBranchHeadModification(FString& HeadBranc
 
 bool FAnchorpointControlState::IsCurrent() const
 {
-	//TODO: Check if there is a newer version available 
-	return true;
+	return State != EAnchorpointState::OutDated;
 }
 
 bool FAnchorpointControlState::IsSourceControlled() const

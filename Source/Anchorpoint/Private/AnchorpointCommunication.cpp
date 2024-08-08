@@ -2,7 +2,6 @@
 
 #include "Anchorpoint.h"
 #include "AnchorpointControlState.h"
-#include "AnchorpointSourceControlProvider.h"
 #include "JsonObjectConverter.h"
 
 FAnchorpointStatus AnchorpointCommunication::GetStatus()
@@ -34,7 +33,7 @@ TMap<FString, EAnchorpointState> AnchorpointCommunication::GetStatusFileStates()
 {
 	TMap<FString, EAnchorpointState> Result;
 
-	const FString ProjectRoot = FPaths::GetProjectFilePath();
+	const FString ProjectRoot = FPaths::ProjectDir();
 
 	const FAnchorpointStatus Status = GetStatus();
 	for(const auto& StagedFile : Status.staged)
@@ -43,7 +42,7 @@ TMap<FString, EAnchorpointState> AnchorpointCommunication::GetStatusFileStates()
 	}
 	for(const auto& NotStagedFile : Status.not_staged)
 	{
-		Result.Emplace(ProjectRoot / NotStagedFile.Key, EAnchorpointState::NotStaged);
+		Result.Emplace(ProjectRoot / NotStagedFile.Key, EAnchorpointState::Modified);
 	}
 	for(const auto& LockedFile : Status.locked_files)
 	{

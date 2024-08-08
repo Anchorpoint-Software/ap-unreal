@@ -19,7 +19,6 @@ enum class EAnchorpointState
 	Ignored,
 
 	Staged,
-	NotStaged,
 	Locked,
 	OutDated,
 };
