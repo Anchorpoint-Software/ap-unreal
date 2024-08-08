@@ -17,7 +17,7 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 	for (const FAnchorpointControlState& InState : InStates)
 	{
 		TSharedRef<FAnchorpointControlState> State = Provider.GetStateInternal(InState.LocalFilename);
-		State->State = InState.State;
+		*State = InState;
 		State->TimeStamp = FDateTime::Now();
 	}
 

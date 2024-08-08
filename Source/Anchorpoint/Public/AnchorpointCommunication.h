@@ -1,35 +1,28 @@
 ﻿#pragma once
 #include "AnchorpointControlState.h"
 
-#include "AnchorpointCommunication.generated.h"
+enum class EAnchorpointFileOperation
+{
+	Invalid,
+	Added,
+	Modified,
+	Deleted,
+};
 
-USTRUCT()
+EAnchorpointFileOperation FromString(const FString& InString);
+
 struct FAnchorpointStatus
 {
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FString current_branch;
-
-	UPROPERTY()
-	TMap<FString, FString> staged;
-
-	UPROPERTY()
-	TMap<FString, FString> not_staged;
-
-	UPROPERTY()
-	TMap<FString, FString> locked_files;
-
-	UPROPERTY()
-	TArray<FString> outdated_files;
+	FString CurrentBranch;
+	TMap<FString, EAnchorpointFileOperation> Staged;
+	TMap<FString, EAnchorpointFileOperation> NotStaged;
+	TMap<FString, FString> LockedFiles;
+	TArray<FString> OutdatedFiles;
 };
 
 namespace AnchorpointCommunication
 {
 	FAnchorpointStatus GetStatus();
 
-	TMap<FString, EAnchorpointState> GetStatusFileStates(); 
-
 	bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FString>& OutErrorMessages, TArray<FAnchorpointControlState>& OutState);
 }
-

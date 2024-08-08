@@ -39,6 +39,7 @@ public:
 
 	FString LocalFilename;
 	FDateTime TimeStamp = 0;
+	FString OtherUserCheckedOut;
 	FResolveInfo PendingResolveInfo;
 	EAnchorpointState State = EAnchorpointState::Unknown;
 

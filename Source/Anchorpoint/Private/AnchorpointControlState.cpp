@@ -63,6 +63,8 @@ FSlateIcon FAnchorpointControlState::GetIcon() const
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotInDepot");
 	case EAnchorpointState::OutDated:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotAtHeadRevision");
+	case EAnchorpointState::Locked:
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.CheckedOutByOtherUser", NAME_None, "RevisionControl.CheckedOutByOtherUserBadge");
 
 	case EAnchorpointState::Unknown:
 	case EAnchorpointState::Unchanged: // Unchanged is the same as "Pristine" (not checked out) for Perforce, ie no icon
@@ -105,6 +107,8 @@ FText FAnchorpointControlState::GetDisplayName() const
 		return LOCTEXT("Missing", "Missing");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("NotCurrent", "Not current");
+	case EAnchorpointState::Locked:
+		return FText::Format(LOCTEXT("CheckedOutOther", "Checked out by: {0}"), FText::FromString(OtherUserCheckedOut));
 	default:
 		checkNoEntry();
 	}
@@ -140,6 +144,8 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 		return LOCTEXT("Missing_Tooltip", "Item is missing (e.g., you moved or deleted it without using Git). This also indicates that a directory is incomplete (a checkout or update was interrupted).");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("NotCurrent_Tooltip", "The file(s) are not at the head revision");
+	case EAnchorpointState::Locked:
+		return FText::Format(LOCTEXT("CheckedOutOther_Tooltip", "Checked out by: {0}"), FText::FromString(OtherUserCheckedOut));
 	default:
 		checkNoEntry();
 	}
@@ -168,19 +174,22 @@ bool FAnchorpointControlState::CanCheckIn() const
 
 bool FAnchorpointControlState::CanCheckout() const
 {
-	//TODO: This is true for git but it might not be for anchorpoint
 	return false;
 }
 
 bool FAnchorpointControlState::IsCheckedOut() const
 {
-	//TODO: This is true for git but it might not be for anchorpoint
 	return IsSourceControlled();
 }
 
 bool FAnchorpointControlState::IsCheckedOutOther(FString* Who) const
 {
-	return false;
+	if (Who != nullptr)
+	{
+		*Who = OtherUserCheckedOut;
+	}
+
+	return State == EAnchorpointState::Locked;
 }
 
 bool FAnchorpointControlState::IsCheckedOutInOtherBranch(const FString& CurrentBranch /* = FString() */) const
@@ -227,7 +236,6 @@ bool FAnchorpointControlState::IsIgnored() const
 
 bool FAnchorpointControlState::CanEdit() const
 {
-	//TODO: Check if someone else has the file locked
 	return true; // With Git all files in the working copy are always editable (as opposed to Perforce)
 }
 
