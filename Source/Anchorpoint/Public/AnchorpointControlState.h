@@ -6,12 +6,23 @@
 
 enum class EAnchorpointState
 {
-	DontKnow,
+	Unknown,
+	Unchanged,
+	Added,
+	Deleted,
+	Modified,
+	Renamed,
+	Copied,
+	Missing,
+	Conflicted,
+	NotControlled,
+	Ignored,
+
 	Staged,
 	NotStaged,
 	Locked,
 	OutDated,
-	};
+};
 
 /**
  * 
@@ -19,24 +30,26 @@ enum class EAnchorpointState
 class FAnchorpointControlState : public ISourceControlState
 {
 public:
-	explicit FAnchorpointControlState(const FString& InLocalFilename)
-	{
-		LocalFilename = InLocalFilename;
-	}
+	explicit FAnchorpointControlState(const FString& InLocalFilename);
 
 	FAnchorpointControlState() = delete;
-	FAnchorpointControlState(const FAnchorpointControlState& InState) = delete;
-	const FAnchorpointControlState& operator=(const FAnchorpointControlState& InState) = delete;
+	FAnchorpointControlState(const FAnchorpointControlState& Other) = default;
+	FAnchorpointControlState(FAnchorpointControlState&& Other) noexcept = default;
+	FAnchorpointControlState& operator=(const FAnchorpointControlState& Other) = default;
+	FAnchorpointControlState& operator=(FAnchorpointControlState&& Other) noexcept = default;
 
-	// debug log utility
-	const TCHAR* ToString() const;
+	FString LocalFilename;
+	FDateTime TimeStamp = 0;
+	FResolveInfo PendingResolveInfo;
+	EAnchorpointState State = EAnchorpointState::Unknown;
 
-	/** ISourceControlState interface */
+private:
+	/** Being ISourceControlState interface */
 	virtual int32 GetHistorySize() const override;
-	virtual TSharedPtr<class ISourceControlRevision, ESPMode::ThreadSafe> GetHistoryItem(int32 HistoryIndex) const override;
-	virtual TSharedPtr<class ISourceControlRevision, ESPMode::ThreadSafe> FindHistoryRevision(int32 RevisionNumber) const override;
-	virtual TSharedPtr<class ISourceControlRevision, ESPMode::ThreadSafe> FindHistoryRevision(const FString& InRevision) const override;
-	virtual TSharedPtr<class ISourceControlRevision, ESPMode::ThreadSafe> GetCurrentRevision() const override;
+	virtual TSharedPtr<ISourceControlRevision> GetHistoryItem(int32 HistoryIndex) const override;
+	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(int32 RevisionNumber) const override;
+	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(const FString& InRevision) const override;
+	virtual TSharedPtr<ISourceControlRevision> GetCurrentRevision() const override;
 	virtual FResolveInfo GetResolveInfo() const override;
 #if SOURCE_CONTROL_WITH_SLATE
 	virtual FSlateIcon GetIcon() const override;
@@ -48,7 +61,7 @@ public:
 	virtual bool CanCheckIn() const override;
 	virtual bool CanCheckout() const override;
 	virtual bool IsCheckedOut() const override;
-	virtual bool IsCheckedOutOther(FString* Who = nullptr) const override;
+	virtual bool IsCheckedOutOther(FString* Who) const override;
 	virtual bool IsCheckedOutInOtherBranch(const FString& CurrentBranch = FString()) const override;
 	virtual bool IsModifiedInOtherBranch(const FString& CurrentBranch = FString()) const override;
 	virtual bool IsCheckedOutOrModifiedInOtherBranch(const FString& CurrentBranch = FString()) const override { return IsCheckedOutInOtherBranch(CurrentBranch) || IsModifiedInOtherBranch(CurrentBranch); }
@@ -67,64 +80,5 @@ public:
 	virtual bool CanDelete() const override;
 	virtual bool IsConflicted() const override;
 	virtual bool CanRevert() const override;
-
-public:
-	/** Filename on disk */
-	FString LocalFilename;
-
-	/** Depot and Server info (in the form repo@server:port) */
-	FString RepSpec;
-
-	/** Pending rev info with which a file must be resolved, invalid if no resolve pending */
-	FResolveInfo PendingResolveInfo;
-
-	/** Unity Version Control Parameters of the merge in progress */
-	TArray<FString> PendingMergeParameters;
-
-	/** If a user (another or ourself) has this file locked, this contains their name. */
-	FString LockedBy;
-
-	/** Location (Workspace) where the file was exclusively checked-out. */
-	FString LockedWhere;
-
-	/** Branch where the file was Locked or is Retained. */
-	FString LockedBranch;
-
-	/** Item id of the locked file (for an admin to unlock it). */
-	int32 LockedId = INVALID_REVISION;
-
-	/** Date when the file was Locked. */
-	FDateTime LockedDate = 0;
-
-	/** If a user (another or ourself) has this file Retained on another branch, this contains their name. */
-	FString RetainedBy;
-
-	/** Latest revision number of the file in the depot (on the current branch) */
-	int32 DepotRevisionChangeset = INVALID_REVISION;
-
-	/** Latest revision number at which a file was synced to before being edited */
-	int32 LocalRevisionChangeset = INVALID_REVISION;
-
-	/** Original name in case of a Moved/Renamed file */
-	FString MovedFrom;
-
-	/** The timestamp of the last update */
-	FDateTime TimeStamp = 0;
-
-	/** The branch with the head change list */
-	FString HeadBranch;
-
-	/** The type of action of the last modification */
-	FString HeadAction;
-
-	/** The user of the last modification */
-	FString HeadUserName;
-
-	/** The last file modification time */
-	int64 HeadModTime = 0;
-
-	/** The change list of the last modification */
-	int32 HeadChangeList = 0;
-
-	EAnchorpointState State;
+	/** End ISourceControlState interface */
 };
