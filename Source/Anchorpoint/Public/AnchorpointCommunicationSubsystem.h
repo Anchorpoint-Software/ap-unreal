@@ -25,5 +25,9 @@ private:
 	virtual TStatId GetStatId() const override;
 	//~ End FTickableGameObject interface
 
+public:
+	void UnlinkPackages(const TArray<FString>& PackageNames);
+	void RelinkPackages(const TArray<FString>& PackageNames);
+
 	FString IpcSenderId = TEXT("Unreal Engine ") VERSION_STRINGIFY(ENGINE_MAJOR_VERSION) TEXT(".") VERSION_STRINGIFY(ENGINE_MINOR_VERSION) TEXT(".") VERSION_STRINGIFY(ENGINE_PATCH_VERSION);
 };

@@ -17,7 +17,8 @@ public class Anchorpoint : ModuleRules
 			"Slate",
 			"SlateCore", 
 			"SourceControl",
-			"JsonUtilities"
+			"JsonUtilities",
+			"AssetTools",
 		});
 
 		PublicDefinitions.AddRange(

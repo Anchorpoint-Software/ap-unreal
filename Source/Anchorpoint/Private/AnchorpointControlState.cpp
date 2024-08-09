@@ -108,7 +108,7 @@ FText FAnchorpointControlState::GetDisplayName() const
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("NotCurrent", "Not current");
 	case EAnchorpointState::Locked:
-		return FText::Format(LOCTEXT("CheckedOutOther", "Checked out by: {0}"), FText::FromString(OtherUserCheckedOut));
+		return FText::Format(LOCTEXT("CheckedOutOther", "Locked out by: {0}"), FText::FromString(OtherUserCheckedOut));
 	default:
 		checkNoEntry();
 	}
