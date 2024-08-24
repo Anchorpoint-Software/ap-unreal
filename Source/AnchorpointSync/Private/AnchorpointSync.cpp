@@ -2,6 +2,7 @@
 
 #include "AnchorpointSync.h"
 
+#include "AnchorpointLogger.h"
 #include "Subscription.h"
 
 #include "apsync/version.h"
@@ -33,9 +34,11 @@ FString StdStringToFString(const std::string& StdString)
     return UTF8_TO_TCHAR(StdString.c_str());
 }
 
-
 void FAnchorpointSyncModule::StartupModule()
 {
+	Logger = std::make_shared<FAnchorpointLogger>();
+	apsync::Api::setLogger(Logger);
+	
 	// This will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
      UE_LOG(LogAnchorpointSync, Log, TEXT("Hello from Anchorpoint Plugin: %s"), *FString(AP_VERSION));
     
