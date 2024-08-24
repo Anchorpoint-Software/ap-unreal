@@ -8,7 +8,6 @@
 #include "PackageTools.h"
 #include "SourceControlHelpers.h"
 #include "SourceControlOperations.h"
-#include "apsync/service/api.h"
 
 static FAutoConsoleCommand CVarAnchorpointUnlinkPackages(
 	TEXT("g.anchorpoint.packageaction"),
@@ -36,22 +35,6 @@ static FAutoConsoleCommand CVarAnchorpointUnlinkPackages(
 bool UAnchorpointCommunicationSubsystem::OpenDesktopApp(bool bMinimized /* = true */)
 {
 	return true;
-	const apsync::Result<void> Result = apsync::Api::startAnchorpoint(std::nullopt, bMinimized);
-	if (Result.has_error())
-	{
-		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to open Anchorpoint: %s"), *FString(Result.error().message().c_str()));
-		return false;
-	}
-
-	apsync::Result<std::shared_ptr<apsync::Api>> ApiResult = apsync::Api::createFromAuthenticatedUser(TCHAR_TO_UTF8(*IpcSenderId));
-	if (ApiResult.has_error())
-	{
-		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to create API: %s"), *FString(ApiResult.error().message().c_str()));
-		return false;
-	}
-
-	UE_LOG(LogAnchorpoint, Verbose, TEXT("Successfully connected to Desktop App"));
-	return ApiResult.value().get() != nullptr;
 }
 
 UWorld* UAnchorpointCommunicationSubsystem::GetTickableGameObjectWorld() const
