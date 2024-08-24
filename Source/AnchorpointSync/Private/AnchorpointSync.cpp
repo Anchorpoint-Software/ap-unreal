@@ -13,13 +13,6 @@
 #include "apsync/locks/locks_api.h"
 #include "apsync/service/object_api.h"
 
-#include "GenericPlatform/GenericPlatformMisc.h"
-#include "UObject/UObjectBaseUtility.h"
-#include "Misc/Paths.h"
-#include "HAL/PlatformMisc.h"
-
-#include <memory>
-
 std::string FStringToStdString(const FString& UnrealString)
 {
     // Convert FString to UTF-8 using FTCHARToUTF8
