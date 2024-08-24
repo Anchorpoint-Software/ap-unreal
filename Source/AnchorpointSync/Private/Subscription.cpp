@@ -1,7 +1,6 @@
 // Copyright Anchorpoint Software GmbH. All Rights Reserved.
 
 #include "Subscription.h"
-
 #include "TimerManager.h"
 
 #include "Dom/JsonObject.h"
@@ -21,13 +20,15 @@
 #include "Engine/BlueprintGeneratedClass.h"
 
 #include "apsync/service/thumbnail/thumbnail_service.h"
-#include "AnchorpointLog.h"
+
+
+DEFINE_LOG_CATEGORY(LogAnchorpointSync);
 
 USubscription::~USubscription(){
     if (_IpcApi) {
         auto result = _IpcApi->unsubscribe(_IpcSubscription);
         if (result.has_error()) {
-            UE_LOG(LogAnchorpoint, Log, TEXT("Failed to unsubscribe from Anchorpoint IPC"));
+            UE_LOG(LogAnchorpointSync, Log, TEXT("Failed to unsubscribe from Anchorpoint IPC"));
         }
     }
 }
@@ -41,9 +42,9 @@ void USubscription::Init(std::shared_ptr<apsync::Api> Api) {
     
     auto SubscriptionResult = _IpcApi->subscribe(_IpcTopic);
     if (SubscriptionResult.has_error()){
-        UE_LOG(LogAnchorpoint, Error, TEXT("Could not establish connection to Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(SubscriptionResult.error().message().c_str())));
+        UE_LOG(LogAnchorpointSync, Error, TEXT("Could not establish connection to Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(SubscriptionResult.error().message().c_str())));
     } else {
-        UE_LOG(LogAnchorpoint, Log, TEXT("Connected to Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(SubscriptionResult.value().getId().c_str())));
+        UE_LOG(LogAnchorpointSync, Log, TEXT("Connected to Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(SubscriptionResult.value().getId().c_str())));
         _IpcSubscription = SubscriptionResult.value();
     }
 }
@@ -71,11 +72,11 @@ void USubscription::Tick(float DeltaTime)
             while (_IpcApi->hasMessages(_IpcSubscription).value()) {
                 auto MessageOptResult = _IpcApi->tryGetMessage(_IpcSubscription);
                 if (MessageOptResult.has_error()){
-                    UE_LOG(LogAnchorpoint, Error, TEXT("Could not get message from Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(MessageOptResult.error().message().c_str())));
+                    UE_LOG(LogAnchorpointSync, Error, TEXT("Could not get message from Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(MessageOptResult.error().message().c_str())));
                 } else {
                     auto MessageOpt = MessageOptResult.value();
                     if (MessageOpt && MessageOpt->getSenderId() != IpcSenderId) {
-                        UE_LOG(LogAnchorpoint, Log, TEXT("Received a message from Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(MessageOpt->getSenderId().c_str())));
+                        UE_LOG(LogAnchorpointSync, Log, TEXT("Received a message from Anchorpoint: %s"), *FString(ANSI_TO_TCHAR(MessageOpt->getSenderId().c_str())));
                         HandleMessage(*MessageOpt);
                     }
                 }
@@ -91,7 +92,7 @@ void USubscription::RequestPush() {
     std::unordered_map<std::string, std::string> Header = { {"project_path","TODO"} };
     Request.setHeader(Header);
 
-    UE_LOG(LogAnchorpoint, Log, TEXT("Example: Request Push"));
+    UE_LOG(LogAnchorpointSync, Log, TEXT("Example: Request Push"));
 
     PublishMessage(Request);
 }
@@ -101,7 +102,7 @@ void USubscription::PublishMessage(apsync::IpcMessage& Message) {
     
     auto result = _IpcApi->publish(Message);
     if (result.has_error()){
-        UE_LOG(LogAnchorpoint, Error, TEXT("Could not publish Anchorpoint IPC message: %s"), *FString(ANSI_TO_TCHAR(result.error().message().c_str())));
+        UE_LOG(LogAnchorpointSync, Error, TEXT("Could not publish Anchorpoint IPC message: %s"), *FString(ANSI_TO_TCHAR(result.error().message().c_str())));
     }
 }
 
@@ -111,7 +112,7 @@ void USubscription::HandleMessage(const apsync::IpcMessage& Message) {
         ResultOpt = HandleRequestReleasePackages(Message);
     }
     else {
-        UE_LOG(LogAnchorpoint, Error, TEXT("Could not handle Anchorpoint IPC message, unknown kind: %s"), *FString(ANSI_TO_TCHAR(Message.getKind().c_str())));
+        UE_LOG(LogAnchorpointSync, Error, TEXT("Could not handle Anchorpoint IPC message, unknown kind: %s"), *FString(ANSI_TO_TCHAR(Message.getKind().c_str())));
     }
     
     if (ResultOpt) {
@@ -143,7 +144,7 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //    auto ProjectPath= Message.getHeader().at("project_path");
 //    auto ProjectResult = _ProjectsApi->getProjectForPath({ProjectPath, true});
 //    if (ProjectResult.has_error()) {
-//        UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Project"));
+//        UE_LOG(LogAnchorpointSync, Error, TEXT("Invalid Project"));
 //        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Invalid Project"}};
 //        Response.setHeader(header);
 //        return Response;
@@ -158,7 +159,7 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //    {
 //        auto ColorConfigResult = _ColorApi->getConfig(WorkspaceId, Project);
 //        if (ColorConfigResult.has_error()) {
-//            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config"));
+//            UE_LOG(LogAnchorpointSync, Error, TEXT("Invalid Color Config"));
 //            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config is Invalid"}};
 //            Response.setHeader(header);
 //            return Response;
@@ -166,7 +167,7 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //        
 //        auto ColorConfigHashResult = _ColorApi->getConfigHash(ColorConfigResult.value());
 //        if (ColorConfigHashResult.has_error()) {
-//            UE_LOG(LogAnchorpoint, Error, TEXT("Invalid Color Config Hash"));
+//            UE_LOG(LogAnchorpointSync, Error, TEXT("Invalid Color Config Hash"));
 //            std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Color Config Hash is Invalid"}};
 //            Response.setHeader(header);
 //            return Response;
@@ -178,14 +179,14 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //        {
 //            FString Item = Value->AsString();
 //            StringArray.Add(Item);
-//            UE_LOG(LogAnchorpoint, Log, TEXT("Received Path for Thumbnail: %s"), *Item);
+//            UE_LOG(LogAnchorpointSync, Log, TEXT("Received Path for Thumbnail: %s"), *Item);
 //            
 //            auto PreviewPathOpt = apsync::ThumbnailService::getPreviewImagePath(std::string(TCHAR_TO_UTF8(*Item)), ColorConfigHash);
 //            if (!PreviewPathOpt){
-//                UE_LOG(LogAnchorpoint, Error, TEXT("Could not get preview path for: %s"), *Item);
+//                UE_LOG(LogAnchorpointSync, Error, TEXT("Could not get preview path for: %s"), *Item);
 //                continue;
 //            } else {
-//                UE_LOG(LogAnchorpoint, Log, TEXT("Saving Thumbnail to: %s"), UTF8_TO_TCHAR(PreviewPathOpt->c_str()));
+//                UE_LOG(LogAnchorpointSync, Log, TEXT("Saving Thumbnail to: %s"), UTF8_TO_TCHAR(PreviewPathOpt->c_str()));
 //            }
 //            
 //            SaveThumbnail(Item, FString(UTF8_TO_TCHAR(PreviewPathOpt->c_str())));
@@ -195,10 +196,11 @@ std::optional<apsync::IpcMessage> USubscription::HandleRequestReleasePackages(co
 //        Response.setHeader(header);
 //        return Response;
 //    } else {
-//        UE_LOG(LogAnchorpoint, Error, TEXT("Could not parse request json"));
+//        UE_LOG(LogAnchorpointSync, Error, TEXT("Could not parse request json"));
 //        std::unordered_map<std::string, std::string> header = {{"success","false"}, {"message","Could not parse request body"}};
 //        Response.setHeader(header);
 //        return Response;
 //    }
 //    
-//
+//    return std::nullopt;
+//}

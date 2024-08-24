@@ -1,4 +1,4 @@
-﻿// Some copyright should be here...
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 using System;
 using System.IO;
@@ -8,52 +8,46 @@ public class Anchorpoint : ModuleRules
 {
 	public Anchorpoint(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new[]
-		{
-			"Core",
-			"CoreUObject",
-			"EditorSubsystem",
-			"Engine",
-			"Slate",
-			"SlateCore", 
-			"SourceControl",
-			"JsonUtilities",
-			"AssetTools",
-		});
-
-		PublicDefinitions.AddRange(
+		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+       
+		PrivateIncludePaths.AddRange(
 			new string[] {
-				"OUTCOME_ENABLE_CXX_MODULES=0",
-				"OUTCOME_FORCE_LEGACY_GCC_CXX_CONCEPTS=0"
+				// ... add other private include paths required here ...
 			}
 			);
-
-		if (Target.Platform == UnrealTargetPlatform.Win64)
-		{
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "apsync", "win", "sync.lib"));
-			RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "apsync", "win", "sync.dll"));
-		}
-		else if (Target.Platform == UnrealTargetPlatform.Mac)
-		{
-			PublicAdditionalLibraries.Add(Path.Combine(ModuleDirectory, "apsync", "mac", "libsync.dylib"));
-			RuntimeDependencies.Add(Path.Combine(ModuleDirectory, "apsync", "mac", "libsync.dylib"));
-		}
-
-		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "apsync", "include"));
-
+			
+		
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Core",
+				// ... add other public dependencies that you statically link with here ...
+			}
+			);
+			
+		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"Projects",
-				"InputCore",
-				"EditorFramework",
-				"UnrealEd",
-				"ToolMenus",
-				"CoreUObject",
-				"Engine",
-				"Slate",
-				"SlateCore",
-				"Json",
+                "InputCore",
+                "EditorFramework",
+                "UnrealEd",
+                "ToolMenus",
+                "CoreUObject",
+                "Engine",
+                "Slate",
+                "SlateCore",
+                "Json",
+				// ... add private dependencies that you statically link with here ...	
+			}
+			);
+		
+		
+		DynamicallyLoadedModuleNames.AddRange(
+			new string[]
+			{
+				// ... add any modules that your module loads dynamically here ...
 			}
 			);
 	}

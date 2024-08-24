@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
-#include "Subscription.h"
-
-#include "AnchorpointSourceControlProvider.h"
 
 /**
 
@@ -33,25 +30,7 @@
 
 **/
 
-class FAnchorpointLogger;
-
 class FAnchorpointModule : public IModuleInterface
 {
-public:
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
-
-	static FAnchorpointModule& Get();
-
-	FAnchorpointSourceControlProvider& GetProvider();
-
-private:
-	void ApiExample() const;
-
-	std::shared_ptr<apsync::Api> _Api = nullptr;
-	USubscription* _SubscriptionHandler;
-
-	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
-	std::shared_ptr<FAnchorpointLogger> Logger;
 };
+ 
