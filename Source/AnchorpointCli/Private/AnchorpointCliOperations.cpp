@@ -68,6 +68,7 @@ TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 	Args.Add(TEXT("--json"));
+	Args.Add(TEXT("--apiVersion 1"));
 
 	Args.Add(InCommand);
 
