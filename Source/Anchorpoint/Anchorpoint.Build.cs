@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Some copyright should be here...
 
 using System;
 using System.IO;
@@ -29,26 +29,23 @@ public class Anchorpoint : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"SourceControl",
+				"AssetTools",
 				"Projects",
-                "InputCore",
-                "EditorFramework",
-                "UnrealEd",
-                "ToolMenus",
-                "CoreUObject",
-                "Engine",
-                "Slate",
-                "SlateCore",
-                "Json",
-				// ... add private dependencies that you statically link with here ...	
-			}
-			);
-		
-		
-		DynamicallyLoadedModuleNames.AddRange(
-			new string[]
-			{
-				// ... add any modules that your module loads dynamically here ...
-			}
-			);
+				"InputCore",
+				"EditorFramework",
+				"UnrealEd",
+				"EditorSubsystem",
+				"JsonUtilities",
+				"ToolMenus",
+				"CoreUObject",
+				"Engine",
+				"Slate",
+				"SlateCore",
+				"Json", 
+				
+				// Anchorpoint
+				"AnchorpointCli",
+			});
 	}
 }

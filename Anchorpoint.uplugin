@@ -24,7 +24,10 @@
 		{
 			"Name": "AnchorpointSync",
 			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64"
+			]
 		},
 		{
 			"Name": "AnchorpointCli",

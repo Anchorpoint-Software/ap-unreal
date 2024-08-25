@@ -11,8 +11,7 @@ public class AnchorpointCli : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
-			"Slate",
-			"SlateCore"
+			"Json"
 		});
 	}
 }

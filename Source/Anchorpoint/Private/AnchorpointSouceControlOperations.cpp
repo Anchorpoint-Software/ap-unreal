@@ -3,10 +3,12 @@
 #include "AnchorpointSouceControlOperations.h"
 
 #include "Anchorpoint.h"
+#include "AnchorpointCliOperations.h"
 #include "AnchorpointCommunication.h"
 #include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointControlState.h"
+#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlProvider.h"
 #include "SourceControlOperations.h"
 
@@ -32,9 +34,14 @@ FName FAnchorpointConnectWorker::GetName() const
 
 bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
-	const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false;
-	return bSuccess;
+	TValueOrError<FString, FString> ConnectResult = AnchorpointCliOperations::Connect();
+
+	if(ConnectResult.HasError())
+	{
+		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to connect. Error: %s"), *ConnectResult.GetError());
+	}
+	
+	return ConnectResult.HasValue();
 }
 
 bool FAnchorpointConnectWorker::UpdateStates() const
