@@ -8,27 +8,11 @@ public class Anchorpoint : ModuleRules
 {
 	public Anchorpoint(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-       
-		PrivateIncludePaths.AddRange(
-			new string[] {
-				// ... add other private include paths required here ...
-			}
-			);
-			
-		
-		PublicDependencyModuleNames.AddRange(
-			new string[]
-			{
-				"Core",
-				// ... add other public dependencies that you statically link with here ...
-			}
-			);
-			
-		
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"Core",
+				"DeveloperSettings",
 				"SourceControl",
 				"AssetTools",
 				"Projects",
@@ -43,9 +27,10 @@ public class Anchorpoint : ModuleRules
 				"Slate",
 				"SlateCore",
 				"Json", 
+				"EditorScriptingUtilities",
 				
 				// Anchorpoint
-				"AnchorpointCli",
+				"AnchorpointCli", 
 			});
 	}
 }

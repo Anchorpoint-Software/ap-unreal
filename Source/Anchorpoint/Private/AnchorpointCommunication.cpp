@@ -12,6 +12,7 @@ bool AnchorpointCommunication::RunUpdateStatus(const TArray<FString>& InFiles, T
 	{
 		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
 
+		//TODO: Discuss what the priorities should be here - can I have a file in Add/Modified while else has it locked?
 		if (Status.OutdatedFiles.Contains(File))
 		{
 			NewState.State = EAnchorpointState::OutDated;
