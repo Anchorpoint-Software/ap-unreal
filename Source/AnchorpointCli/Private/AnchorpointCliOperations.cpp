@@ -48,6 +48,9 @@ TSharedPtr<FJsonObject> JsonStringToJsonObject(const FString& InJsonString)
 
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 {
+	// TODO: Right now we are running a `status` command for checking connection,
+	// but in the future we might want to use a dedicated command for it.
+	
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));
 	if (!Process || Process->GetReturnCode() != 0)
 	{
