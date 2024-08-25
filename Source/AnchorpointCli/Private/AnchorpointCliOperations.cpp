@@ -30,15 +30,18 @@ FAnchorpointStatus FAnchorpointStatus::FromString(const FString& InString)
 	FJsonObjectWrapper JsonObject;
 	JsonObject.JsonObjectFromString(InString);
 
+	FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+
+	// TODO: Talk with AP team - staged & unstaged are relative, but the locked files are full path
 	FAnchorpointStatus Result;
 	Result.CurrentBranch = JsonObject.JsonObject->GetStringField(TEXT("current_branch"));
 	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : JsonObject.JsonObject->GetObjectField(TEXT("staged"))->Values)
 	{
-		Result.Staged.Add(StagedFile.Key, LexFromString(StagedFile.Value->AsString()));
+		Result.Staged.Add(ProjectPath / StagedFile.Key, LexFromString(StagedFile.Value->AsString()));
 	}
 	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : JsonObject.JsonObject->GetObjectField(TEXT("not_staged"))->Values)
 	{
-		Result.NotStaged.Add(NotStagedFile.Key, LexFromString(NotStagedFile.Value->AsString()));
+		Result.NotStaged.Add(ProjectPath / NotStagedFile.Key, LexFromString(NotStagedFile.Value->AsString()));
 	}
 	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : JsonObject.JsonObject->GetObjectField(TEXT("locked_files"))->Values)
 	{
@@ -150,7 +153,12 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	LockParams.Add(TEXT("lock create"));
 	LockParams.Add(TEXT("--git"));
 	LockParams.Add(TEXT("--keep"));	
-	LockParams.Add(FString::Printf(TEXT("--files %s"), *FString::Join(InFiles, TEXT(" "))));	
+	LockParams.Add(TEXT("--files"));	
+
+	for(const FString& File : InFiles)
+	{
+		LockParams.Add(FString::Printf(TEXT("\"%s\""), *File));
+	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(LockCommand);
@@ -161,6 +169,13 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	}
 
 	const FString Output = Process->GetFullOutputWithoutDelegate();
+
+	//TODO: Check with AP team - for some reaosn this returns an empty response, is that intended?
+	if(Output.IsEmpty())
+	{
+		return MakeValue(TEXT("Success"));
+	}
+	
 	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
 
 	if(!Object.IsValid())

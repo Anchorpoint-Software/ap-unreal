@@ -174,12 +174,16 @@ bool FAnchorpointControlState::CanCheckIn() const
 
 bool FAnchorpointControlState::CanCheckout() const
 {
-	return false;
+	return State == EAnchorpointState::Unchanged;
 }
 
 bool FAnchorpointControlState::IsCheckedOut() const
 {
-	return IsSourceControlled();
+	return State == EAnchorpointState::Added
+		|| State == EAnchorpointState::Deleted
+		|| State == EAnchorpointState::Missing
+		|| State == EAnchorpointState::Modified
+		|| State == EAnchorpointState::Renamed;
 }
 
 bool FAnchorpointControlState::IsCheckedOutOther(FString* Who) const

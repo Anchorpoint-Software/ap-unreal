@@ -4,12 +4,9 @@
 
 #include "Anchorpoint.h"
 #include "AnchorpointCliOperations.h"
-#include "AnchorpointCommunication.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointControlState.h"
 #include "AnchorpointSourceControlProvider.h"
-
-#include <SourceControlOperations.h>
 
 bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 {
@@ -23,6 +20,73 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 	}
 
 	return !InStates.IsEmpty();
+}
+
+bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlState>& OutState)
+{
+	const auto StatusResult = AnchorpointCliOperations::GetStatus();
+	if(StatusResult.HasError())
+	{
+		return false;
+	}
+
+	const FAnchorpointStatus Status = StatusResult.GetValue();
+
+	for (const FString& File : InFiles)
+	{
+		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
+
+		//TODO: Discuss what the priorities should be here - can I have a file in Add/Modified while else has it locked?
+		if (auto StagedState = Status.Staged.Find(File))
+		{
+			switch (*StagedState)
+			{
+			case EAnchorpointFileOperation::Added:
+				NewState.State = EAnchorpointState::Added;
+				break;
+			case EAnchorpointFileOperation::Modified:
+				NewState.State = EAnchorpointState::Modified;
+				break;
+			case EAnchorpointFileOperation::Deleted:
+				NewState.State = EAnchorpointState::Deleted;
+				break;
+			default:
+				NewState.State = EAnchorpointState::Unknown;
+			}
+		}
+		else if (auto NotStagedState = Status.NotStaged.Find(File))
+		{
+			switch (*NotStagedState)
+			{
+			case EAnchorpointFileOperation::Added:
+				NewState.State = EAnchorpointState::Added;
+				break;
+			case EAnchorpointFileOperation::Modified:
+				NewState.State = EAnchorpointState::Modified;
+				break;
+			case EAnchorpointFileOperation::Deleted:
+				NewState.State = EAnchorpointState::Deleted;
+				break;
+			default:
+				NewState.State = EAnchorpointState::Unknown;
+			}
+		}
+		else if(Status.OutdatedFiles.Contains(File))
+		{
+			NewState.State = EAnchorpointState::OutDated;
+		}
+		else if (const FString* LockedBy = Status.LockedFiles.Find(File))
+		{
+			NewState.State = EAnchorpointState::Locked;
+			NewState.OtherUserCheckedOut = *LockedBy;
+		}
+		else
+		{
+			NewState.State = EAnchorpointState::Unchanged;
+		}
+	}
+
+	return true;
 }
 
 FName FAnchorpointConnectWorker::GetName() const
@@ -55,13 +119,23 @@ FName FAnchorpointCheckOutWorker::GetName() const
 
 bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	AnchorpointCliOperations::LockFiles(InCommand.Files);
-	return true;
+	TValueOrError<FString, FString> CheckoutResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+
+	if(CheckoutResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(CheckoutResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = CheckoutResult.HasValue();
+	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
+	UpdateCachedStates(States);
+	
+	return InCommand.bCommandSuccessful;
 }
 
 bool FAnchorpointCheckOutWorker::UpdateStates() const
 {
-	return true;
+	return UpdateCachedStates(States);
 }
 
 FName FAnchorpointUpdateStatusWorker::GetName() const
@@ -71,13 +145,7 @@ FName FAnchorpointUpdateStatusWorker::GetName() const
 
 bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	check(InCommand.Operation->GetName() == GetName());
-
-	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
-
-	const TArray<FString> Files = InCommand.Files;
-	InCommand.bCommandSuccessful = AnchorpointCommunication::RunUpdateStatus(InCommand.Files, InCommand.ErrorMessages, States);
-
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);;
 	return InCommand.bCommandSuccessful;
 }
 
