@@ -2,13 +2,19 @@
 
 #include "AnchorpointCliOperations.h"
 
-#include "JsonObjectConverter.h"
-#include "Misc/MonitoredProcess.h"
+#include <Misc/MonitoredProcess.h>
+
+#include "AnchorpointCli.h"
 
 TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
 {
-#if PLATFORM_MAC
-	const FString CommandLineExecutable = "/Users/alexandruoprea/Desktop/Clients/Anchorpoint/Anchorpoint.app/Contents/Frameworks/ap";
+	// "/Users/alexandruoprea/Desktop/Clients/Anchorpoint/Anchorpoint.app/Contents/Frameworks
+	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
+
+#if PLATFORM_WINDOWS
+	const FString CommandLineExecutable = CliDirectory / "ap.exe";
+# elif PLATFORM_MAC
+	const FString CommandLineExecutable = CliDirectory / "ap";
 #endif
 
 	TArray<FString> Args;

@@ -23,7 +23,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("InstallDirectoryLabel", "InstallDirectory"))
+				.Text(LOCTEXT("Install DirectoryLabel", "InstallDirectory"))
 				.ToolTipText(LOCTEXT("InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
 			]
 		]

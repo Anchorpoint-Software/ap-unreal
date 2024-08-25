@@ -4,6 +4,11 @@
 
 #include <Modules/ModuleInterface.h>
 
-class FAnchorpointCliModule : public IModuleInterface
+class ANCHORPOINTCLI_API FAnchorpointCliModule final : public IModuleInterface
 {
+public:
+	static FAnchorpointCliModule& Get();
+
+	TDelegate<FString()> GetCliPathDelegate;
+	FString GetCliPath() const;
 };

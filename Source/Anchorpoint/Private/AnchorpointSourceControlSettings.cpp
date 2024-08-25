@@ -29,4 +29,9 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 	FScopeLock ScopeLock(&CriticalSection);
 	const FString& IniFile = SourceControlHelpers::GetSettingsIni();
 	GConfig->GetString(*SettingsSection, TEXT("InstallDirectory"), InstallDirectory, IniFile);
+
+	if(InstallDirectory.IsEmpty())
+	{
+		InstallDirectory = TEXT("/Users/alexandruoprea/Desktop/Clients/Anchorpoint/Anchorpoint.app/Contents/Frameworks"); 
+	}
 }

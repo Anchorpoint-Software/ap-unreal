@@ -48,6 +48,8 @@ public:
 	FAnchorpointSourceControlSettings& GetSettings();
 
 private:
+	
+	FString GetCliPath();
 
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
 	FAnchorpointSourceControlSettings AnchorpointSourceControlSettings;
