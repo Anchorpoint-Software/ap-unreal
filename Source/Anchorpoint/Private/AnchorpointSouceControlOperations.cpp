@@ -5,12 +5,11 @@
 #include "Anchorpoint.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointCommunication.h"
-#include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointControlState.h"
-#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlProvider.h"
-#include "SourceControlOperations.h"
+
+#include <SourceControlOperations.h>
 
 bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 {
@@ -26,7 +25,6 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 	return !InStates.IsEmpty();
 }
 
-
 FName FAnchorpointConnectWorker::GetName() const
 {
 	return "Connect";
@@ -38,10 +36,11 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 
 	if(ConnectResult.HasError())
 	{
-		UE_LOG(LogAnchorpoint, Error, TEXT("Failed to connect. Error: %s"), *ConnectResult.GetError());
+		InCommand.ErrorMessages.Add(ConnectResult.GetError());
 	}
-	
-	return ConnectResult.HasValue();
+
+	InCommand.bCommandSuccessful = ConnectResult.HasValue();
+	return InCommand.bCommandSuccessful;
 }
 
 bool FAnchorpointConnectWorker::UpdateStates() const
@@ -56,6 +55,7 @@ FName FAnchorpointCheckOutWorker::GetName() const
 
 bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
+	AnchorpointCliOperations::LockFiles(InCommand.Files);
 	return true;
 }
 

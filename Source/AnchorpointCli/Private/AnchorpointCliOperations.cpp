@@ -3,12 +3,57 @@
 #include "AnchorpointCliOperations.h"
 
 #include <Misc/MonitoredProcess.h>
+#include <JsonObjectWrapper.h>
 
 #include "AnchorpointCli.h"
 
+EAnchorpointFileOperation LexFromString(const FString& InString)
+{
+	if (InString == TEXT("A"))
+	{
+		return EAnchorpointFileOperation::Added;
+	}
+	if (InString == TEXT("M"))
+	{
+		return EAnchorpointFileOperation::Modified;
+	}
+	if (InString == TEXT("D"))
+	{
+		return EAnchorpointFileOperation::Deleted;
+	}
+
+	return EAnchorpointFileOperation::Invalid;
+}
+
+FAnchorpointStatus FAnchorpointStatus::FromString(const FString& InString)
+{
+	FJsonObjectWrapper JsonObject;
+	JsonObject.JsonObjectFromString(InString);
+
+	FAnchorpointStatus Result;
+	Result.CurrentBranch = JsonObject.JsonObject->GetStringField(TEXT("current_branch"));
+	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : JsonObject.JsonObject->GetObjectField(TEXT("staged"))->Values)
+	{
+		Result.Staged.Add(StagedFile.Key, LexFromString(StagedFile.Value->AsString()));
+	}
+	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : JsonObject.JsonObject->GetObjectField(TEXT("not_staged"))->Values)
+	{
+		Result.NotStaged.Add(NotStagedFile.Key, LexFromString(NotStagedFile.Value->AsString()));
+	}
+	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : JsonObject.JsonObject->GetObjectField(TEXT("locked_files"))->Values)
+	{
+		Result.LockedFiles.Add(LockedFile.Key, LockedFile.Value->AsString());
+	}
+	for (const TSharedPtr<FJsonValue> OutDatedFile : JsonObject.JsonObject->GetArrayField(TEXT("outdated_files")))
+	{
+		Result.OutdatedFiles.Add(OutDatedFile->AsString());
+	}
+
+	return Result;
+}
+
 TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
 {
-	// "/Users/alexandruoprea/Desktop/Clients/Anchorpoint/Anchorpoint.app/Contents/Frameworks
 	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
 
 #if PLATFORM_WINDOWS
@@ -74,7 +119,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 	return MakeValue(TEXT("Success"));
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::GetStatus()
+TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 {
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));
 	if (!Process || Process->GetReturnCode() != 0)
@@ -83,5 +128,51 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetStatus()
 	}
 
 	const FString Output = Process->GetFullOutputWithoutDelegate();
-	return MakeValue(Output);
+	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
+
+	if(!Object.IsValid())
+	{
+		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
+	}
+
+	FString Error;
+	if(Object->TryGetStringField(TEXT("error"), Error))
+	{
+		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
+	}
+
+	return MakeValue(FAnchorpointStatus::FromString(Output));
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FString>& InFiles)
+{
+	TArray<FString> LockParams;
+	LockParams.Add(TEXT("lock create"));
+	LockParams.Add(TEXT("--git"));
+	LockParams.Add(TEXT("--keep"));	
+	LockParams.Add(FString::Printf(TEXT("--files %s"), *FString::Join(InFiles, TEXT(" "))));	
+
+	FString LockCommand = FString::Join(LockParams, TEXT(" "));
+	TSharedPtr<FMonitoredProcess> Process = RunApCli(LockCommand);
+	
+	if (!Process || Process->GetReturnCode() != 0)
+	{
+		return MakeError(TEXT("Failed to run CLI"));
+	}
+
+	const FString Output = Process->GetFullOutputWithoutDelegate();
+	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
+
+	if(!Object.IsValid())
+	{
+		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
+	}
+
+	FString Error;
+	if(Object->TryGetStringField(TEXT("error"), Error))
+	{
+		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
+	}
+
+	return MakeValue(TEXT("Success"));
 }
