@@ -8,6 +8,7 @@
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointControlState.h"
+#include "AnchorpointSourceControlSettingsWidget.h"
 #include "ScopedSourceControlProgress.h"
 #include "SourceControlOperations.h"
 
@@ -315,10 +316,7 @@ void FAnchorpointSourceControlProvider::Tick()
 
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
-	// ToImplement: Here we should display something, maybe the .exe to use ?
-
-	return SNew(STextBlock)
-		.Text(LOCTEXT("LogInViaDesktopApp", "Press 'Accept Settings' to authentificate via the Anchorpoint Desktop App."));
+	return SNew(SAnchorpointSourceControlSettingsWidget);
 }
 
 TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)

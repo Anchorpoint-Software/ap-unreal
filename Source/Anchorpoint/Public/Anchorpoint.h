@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
+#include "AnchorpointSourceControlProvider.h"
+#include "AnchorpointSourceControlSettings.h"
+
 /**
 
 	Anchorpoint in Unreal Engine does 3 things from a technical point of view.
@@ -30,7 +33,22 @@
 
 **/
 
+class FAnchorpointLogger;
+
 class FAnchorpointModule : public IModuleInterface
 {
+public:
+	/** IModuleInterface implementation */
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+
+	static FAnchorpointModule& Get();
+
+	FAnchorpointSourceControlProvider& GetProvider();
+	FAnchorpointSourceControlSettings& GetSettings();
+
+private:
+
+	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
+	FAnchorpointSourceControlSettings AnchorpointSourceControlSettings;
 };
- 
