@@ -32,6 +32,6 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 
 	if(InstallDirectory.IsEmpty())
 	{
-		InstallDirectory = TEXT("/Users/alexandruoprea/Desktop/Clients/Anchorpoint/Anchorpoint.app/Contents/Frameworks"); 
+		InstallDirectory = TEXT("C:/Users/oprea/AppData/Local/Anchorpoint/app-1.22.0"); 
 	}
 }

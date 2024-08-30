@@ -8,6 +8,8 @@ enum class EAnchorpointFileOperation
 	Added,
 	Modified,
 	Deleted,
+	Renamed,
+	Conflicted,
 };
 
 EAnchorpointFileOperation LexFromString(const FString& InString);

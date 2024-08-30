@@ -7,8 +7,6 @@
 enum class EAnchorpointState
 {
 	Unknown,
-	Ignored,
-	OutDated,
 	LockedBySomeone,
 	LockedAdded,
 	LockedDeleted,
@@ -19,8 +17,12 @@ enum class EAnchorpointState
 	UnlockedModified,
 	UnlockedUnchanged,
 
-	// TODO: Ask AP team for these:
-	Conflicted, // This should be an outdated item we have currently modified ?
+	//TODO: Icons
+	OutDated, // if you modify this file, you will cause a conflict
+	Conflicted, // you already caused a conflict
+
+	// TODO: Do later
+	Ignored,
 };
 
 /**

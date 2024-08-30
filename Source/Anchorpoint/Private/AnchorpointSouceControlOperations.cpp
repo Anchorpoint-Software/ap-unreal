@@ -41,6 +41,9 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 	for (const FString& File : InFiles)
 	{
 		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
+		
+		const FString* LockedBy = Status.LockedFiles.Find(File);
+		const bool bLockedByMe = LockedBy && *LockedBy == CurrentUserResult.GetValue();
 
 		//TODO: Discuss what the priorities should be here - can I have a file in Add/Modified while else has it locked?
 		if (auto StagedState = Status.Staged.Find(File))
@@ -48,13 +51,13 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 			switch (*StagedState)
 			{
 			case EAnchorpointFileOperation::Added:
-				NewState.State = EAnchorpointState::Added;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedAdded : EAnchorpointState::UnlockedAdded;
 				break;
 			case EAnchorpointFileOperation::Modified:
-				NewState.State = EAnchorpointState::Modified;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
 				break;
 			case EAnchorpointFileOperation::Deleted:
-				NewState.State = EAnchorpointState::Deleted;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedDeleted : EAnchorpointState::UnlockedDeleted;
 				break;
 			default:
 				NewState.State = EAnchorpointState::Unknown;
@@ -65,13 +68,13 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 			switch (*NotStagedState)
 			{
 			case EAnchorpointFileOperation::Added:
-				NewState.State = EAnchorpointState::Added;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedAdded : EAnchorpointState::UnlockedAdded;
 				break;
 			case EAnchorpointFileOperation::Modified:
-				NewState.State = EAnchorpointState::Modified;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
 				break;
 			case EAnchorpointFileOperation::Deleted:
-				NewState.State = EAnchorpointState::Deleted;
+				NewState.State = bLockedByMe ? EAnchorpointState::LockedDeleted : EAnchorpointState::UnlockedDeleted;
 				break;
 			default:
 				NewState.State = EAnchorpointState::Unknown;
@@ -81,9 +84,9 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 		{
 			NewState.State = EAnchorpointState::OutDated;
 		}
-		else if (const FString* LockedBy = Status.LockedFiles.Find(File))
+		else if (LockedBy)
 		{
-			if (*LockedBy == CurrentUserResult.GetValue())
+			if (bLockedByMe)
 			{
 				NewState.State = EAnchorpointState::LockedUnchanged;
 			}

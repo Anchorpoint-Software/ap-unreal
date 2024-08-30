@@ -21,6 +21,14 @@ EAnchorpointFileOperation LexFromString(const FString& InString)
 	{
 		return EAnchorpointFileOperation::Deleted;
 	}
+	if(InString == TEXT("R"))
+	{
+		return EAnchorpointFileOperation::Renamed;
+	}
+	if (InString == TEXT("C"))
+	{
+		return EAnchorpointFileOperation::Conflicted;
+	}
 
 	return EAnchorpointFileOperation::Invalid;
 }
@@ -76,12 +84,14 @@ TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
 	TSharedRef<FMonitoredProcess> Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 
 	const bool bLaunchSuccess = Process->Launch();
-	if(!bLaunchSuccess)
+	if (!bLaunchSuccess)
 	{
 		return nullptr;
 	}
 
-	while (Process->Update()) {}
+	while (Process->Update())
+	{
+	}
 
 	return Process;
 }
@@ -90,32 +100,45 @@ TSharedPtr<FJsonObject> JsonStringToJsonObject(const FString& InJsonString)
 {
 	TSharedPtr<FJsonObject> JsonObject = nullptr;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InJsonString);
-	FJsonSerializer::Deserialize( Reader, JsonObject );
+	FJsonSerializer::Deserialize(Reader, JsonObject);
 
 	return JsonObject;
+}
+
+FString GetNiceOutput(const FString& InOutput)
+{
+	FString Result = InOutput;
+	int StartIndex = INDEX_NONE;
+	Result.FindChar('{', StartIndex);
+	int EndIndex = INDEX_NONE;
+	Result.FindLastChar('}', EndIndex);
+	Result.MidInline(StartIndex, EndIndex - StartIndex + 1);
+
+	return Result;
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 {
 	// TODO: Right now we are running a `status` command for checking connection,
 	// but in the future we might want to use a dedicated command for it.
-	
+
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));
 	if (!Process || Process->GetReturnCode() != 0)
 	{
 		return MakeError(TEXT("Failed to run CLI"));
 	}
 
-	const FString Output = Process->GetFullOutputWithoutDelegate();
+
+	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
 	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
 
-	if(!Object.IsValid())
+	if (!Object.IsValid())
 	{
 		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
 	}
 
 	FString Error;
-	if(Object->TryGetStringField(TEXT("error"), Error))
+	if (Object->TryGetStringField(TEXT("error"), Error))
 	{
 		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
 	}
@@ -136,16 +159,16 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 		return MakeError(TEXT("Failed to run CLI"));
 	}
 
-	const FString Output = Process->GetFullOutputWithoutDelegate();
+	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
 	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
 
-	if(!Object.IsValid())
+	if (!Object.IsValid())
 	{
 		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
 	}
 
 	FString Error;
-	if(Object->TryGetStringField(TEXT("error"), Error))
+	if (Object->TryGetStringField(TEXT("error"), Error))
 	{
 		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
 	}
@@ -158,39 +181,39 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	TArray<FString> LockParams;
 	LockParams.Add(TEXT("lock create"));
 	LockParams.Add(TEXT("--git"));
-	LockParams.Add(TEXT("--keep"));	
-	LockParams.Add(TEXT("--files"));	
+	LockParams.Add(TEXT("--keep"));
+	LockParams.Add(TEXT("--files"));
 
-	for(const FString& File : InFiles)
+	for (const FString& File : InFiles)
 	{
 		LockParams.Add(FString::Printf(TEXT("\"%s\""), *File));
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(LockCommand);
-	
+
 	if (!Process || Process->GetReturnCode() != 0)
 	{
 		return MakeError(TEXT("Failed to run CLI"));
 	}
 
-	const FString Output = Process->GetFullOutputWithoutDelegate();
+	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
 
 	//TODO: Check with AP team - for some reaosn this returns an empty response, is that intended?
-	if(Output.IsEmpty())
+	if (Output.IsEmpty())
 	{
 		return MakeValue(TEXT("Success"));
 	}
-	
+
 	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
 
-	if(!Object.IsValid())
+	if (!Object.IsValid())
 	{
 		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
 	}
 
 	FString Error;
-	if(Object->TryGetStringField(TEXT("error"), Error))
+	if (Object->TryGetStringField(TEXT("error"), Error))
 	{
 		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
 	}

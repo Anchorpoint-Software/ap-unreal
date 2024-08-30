@@ -61,12 +61,14 @@ FSlateIcon FAnchorpointControlState::GetIcon() const
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.CheckedOut");
 	case EAnchorpointState::LockedDeleted:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.MarkedForDelete");
+	case EAnchorpointState::LockedUnchanged:
+		return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");;
 	case EAnchorpointState::UnlockedAdded:
-		return LOCTEXT("LockedAdded_Tooltip", "Added (not locked)");
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedModified:
-		return LOCTEXT("LockedModified_Tooltip", "Modified (not locked)");
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedDeleted:
-		return LOCTEXT("LockedDeleted_Tooltip", "Deleted (not locked)");
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedUnchanged:
 		return FSlateIcon();
 	case EAnchorpointState::Conflicted:
@@ -99,6 +101,8 @@ FText FAnchorpointControlState::GetDisplayName() const
 		return LOCTEXT("LockedModified", "Modified (locked)");
 	case EAnchorpointState::LockedDeleted:
 		return LOCTEXT("LockedDeleted", "Deleted (locked)");
+	case EAnchorpointState::LockedUnchanged:
+		return LOCTEXT("LockedUnchanged", "Unchanged (locked)");
 	case EAnchorpointState::UnlockedAdded:
 		return LOCTEXT("UnlockedAdded", "Added (not locked)");
 	case EAnchorpointState::UnlockedModified:
@@ -106,7 +110,7 @@ FText FAnchorpointControlState::GetDisplayName() const
 	case EAnchorpointState::UnlockedDeleted:
 		return LOCTEXT("UnlockedDeleted", "Deleted (not locked)");
 	case EAnchorpointState::UnlockedUnchanged:
-		return LOCTEXT("UnlockedUnchanged", "Unchanged");
+		return LOCTEXT("UnlockedUnchanged", "Unchanged (not locked)");
 	case EAnchorpointState::Conflicted:
 		return LOCTEXT("ContentsConflict", "Contents Conflict");
 
@@ -135,6 +139,8 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 		return LOCTEXT("LockedModified_Tooltip", "Modified (locked)");
 	case EAnchorpointState::LockedDeleted:
 		return LOCTEXT("LockedDeleted_Tooltip", "Deleted (locked)");
+	case EAnchorpointState::LockedUnchanged:
+        return LOCTEXT("LockedUnchanged_Tooltip", "Unchanged (locked)");
 	case EAnchorpointState::UnlockedAdded:
 		return LOCTEXT("UnlockedAdded_Tooltip", "Added (not locked)");
 	case EAnchorpointState::UnlockedModified:
@@ -142,7 +148,7 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 	case EAnchorpointState::UnlockedDeleted:
 		return LOCTEXT("UnlockedDeleted_Tooltip", "Deleted (not locked)");
 	case EAnchorpointState::UnlockedUnchanged:
-		return LOCTEXT("UnlockedUnchanged_Tooltip", "Unchanged");
+		return LOCTEXT("UnlockedUnchanged_Tooltip", "Unchanged (not locked)");
 	case EAnchorpointState::Conflicted:
 		return LOCTEXT("ContentsConflict_Tooltip", "Contents Conflict");
 
@@ -172,14 +178,15 @@ bool FAnchorpointControlState::CanCheckIn() const
 
 bool FAnchorpointControlState::CanCheckout() const
 {
-	return State == EAnchorpointState::UnlockedUnchaged;
+	return State == EAnchorpointState::UnlockedUnchanged;
 }
 
 bool FAnchorpointControlState::IsCheckedOut() const
 {
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
-		|| State == EAnchorpointState::LockedDeleted;
+		|| State == EAnchorpointState::LockedDeleted
+		|| State == EAnchorpointState::LockedUnchanged;
 }
 
 bool FAnchorpointControlState::IsCheckedOutOther(FString* Who) const
@@ -274,6 +281,7 @@ bool FAnchorpointControlState::CanRevert() const
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
+		|| State == EAnchorpointState::LockedUnchanged
 		|| State == EAnchorpointState::UnlockedAdded
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted;
