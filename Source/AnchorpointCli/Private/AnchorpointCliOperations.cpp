@@ -123,6 +123,11 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 	return MakeValue(TEXT("Success"));
 }
 
+TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
+{
+	return MakeValue(TEXT("alexandru@outofthebox-plugins.com"));
+}
+
 TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 {
 	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));

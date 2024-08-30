@@ -25,7 +25,13 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlState>& OutState)
 {
 	const auto StatusResult = AnchorpointCliOperations::GetStatus();
-	if(StatusResult.HasError())
+	if (StatusResult.HasError())
+	{
+		return false;
+	}
+
+	const auto CurrentUserResult = AnchorpointCliOperations::GetCurrentUser();
+	if (CurrentUserResult.HasError())
 	{
 		return false;
 	}
@@ -71,18 +77,25 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 				NewState.State = EAnchorpointState::Unknown;
 			}
 		}
-		else if(Status.OutdatedFiles.Contains(File))
+		else if (Status.OutdatedFiles.Contains(File))
 		{
 			NewState.State = EAnchorpointState::OutDated;
 		}
 		else if (const FString* LockedBy = Status.LockedFiles.Find(File))
 		{
-			NewState.State = EAnchorpointState::Locked;
-			NewState.OtherUserCheckedOut = *LockedBy;
+			if (*LockedBy == CurrentUserResult.GetValue())
+			{
+				NewState.State = EAnchorpointState::LockedUnchanged;
+			}
+			else
+			{
+				NewState.State = EAnchorpointState::LockedBySomeone;
+				NewState.OtherUserCheckedOut = *LockedBy;
+			}
 		}
 		else
 		{
-			NewState.State = EAnchorpointState::Unchanged;
+			NewState.State = EAnchorpointState::UnlockedUnchanged;
 		}
 	}
 
@@ -98,7 +111,7 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 {
 	TValueOrError<FString, FString> ConnectResult = AnchorpointCliOperations::Connect();
 
-	if(ConnectResult.HasError())
+	if (ConnectResult.HasError())
 	{
 		InCommand.ErrorMessages.Add(ConnectResult.GetError());
 	}
@@ -121,7 +134,7 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 {
 	TValueOrError<FString, FString> CheckoutResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
-	if(CheckoutResult.HasError())
+	if (CheckoutResult.HasError())
 	{
 		InCommand.ErrorMessages.Add(CheckoutResult.GetError());
 	}
@@ -129,7 +142,7 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 	InCommand.bCommandSuccessful = CheckoutResult.HasValue();
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);
-	
+
 	return InCommand.bCommandSuccessful;
 }
 

@@ -7,20 +7,20 @@
 enum class EAnchorpointState
 {
 	Unknown,
-	Unchanged,
-	Added,
-	Deleted,
-	Modified,
-	Renamed,
-	Copied,
-	Missing,
-	Conflicted,
-	NotControlled,
 	Ignored,
-
-	Staged,
-	Locked,
 	OutDated,
+	LockedBySomeone,
+	LockedAdded,
+	LockedDeleted,
+	LockedModified,
+	LockedUnchanged,
+	UnlockedAdded,
+	UnlockedDeleted,
+	UnlockedModified,
+	UnlockedUnchanged,
+
+	// TODO: Ask AP team for these:
+	Conflicted, // This should be an outdated item we have currently modified ?
 };
 
 /**

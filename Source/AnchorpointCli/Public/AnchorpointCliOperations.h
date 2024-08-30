@@ -26,6 +26,7 @@ struct FAnchorpointStatus
 namespace AnchorpointCliOperations
 {
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API Connect();
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
 	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus();
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API LockFiles(TArray<FString>& InFiles);
 }
