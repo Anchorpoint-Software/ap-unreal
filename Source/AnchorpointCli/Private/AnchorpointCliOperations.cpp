@@ -69,12 +69,12 @@ TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
 
 #if PLATFORM_WINDOWS
 	const FString CommandLineExecutable = CliDirectory / "ap.exe";
-# elif PLATFORM_MAC
+#elif PLATFORM_MAC
 	const FString CommandLineExecutable = CliDirectory / "ap";
 #endif
 
 	TArray<FString> Args;
-	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
+	Args.Add(FString::Printf(TEXT("--cwd=%s"), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 	Args.Add(TEXT("--json"));
 	Args.Add(TEXT("--apiVersion 1"));
 
