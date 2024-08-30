@@ -28,10 +28,16 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 {
 	FScopeLock ScopeLock(&CriticalSection);
 	const FString& IniFile = SourceControlHelpers::GetSettingsIni();
-	GConfig->GetString(*SettingsSection, TEXT("InstallDirectory"), InstallDirectory, IniFile);
-
-	if(InstallDirectory.IsEmpty())
+	
+	const bool bInstallDirectorySet = GConfig->GetString(*SettingsSection, TEXT("InstallDirectory"), InstallDirectory, IniFile);
+	// In case some new variables appears or are unset, let's find some good defaults 
+	if(bInstallDirectorySet)
 	{
-		InstallDirectory = TEXT("C:/Users/oprea/AppData/Local/Anchorpoint/app-1.22.0"); 
+#if PLATFORM_MAC
+		InstallDirectory = TEXT("/Applications/Anchorpoint.app/Contents/Frameworks");
+#elif PLATFORM_WINDOWS
+		//TODO: In the future we might want to use environment variables, but for now we just scan the user's computer to find an installation
+		InstallDirectory = TEXT("C:/Users/oprea/AppData/Local/Anchorpoint/app-1.22.0");
+#endif
 	}
 }
