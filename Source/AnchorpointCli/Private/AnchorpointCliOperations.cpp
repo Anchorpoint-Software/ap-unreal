@@ -57,7 +57,7 @@ FAnchorpointStatus FAnchorpointStatus::FromString(const FString& InString)
 	}
 	for (const TSharedPtr<FJsonValue> OutDatedFile : JsonObject.JsonObject->GetArrayField(TEXT("outdated_files")))
 	{
-		Result.OutdatedFiles.Add(OutDatedFile->AsString());
+		Result.OutdatedFiles.Add(ProjectPath / OutDatedFile->AsString());
 	}
 
 	return Result;

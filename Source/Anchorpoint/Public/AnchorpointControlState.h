@@ -58,6 +58,7 @@ private:
 #endif // SOURCE_CONTROL_WITH_SLATE
 	virtual FText GetDisplayName() const override;
 	virtual FText GetDisplayTooltip() const override;
+	virtual TOptional<FText> GetStatusText() const override;
 	virtual const FString& GetFilename() const override;
 	virtual const FDateTime& GetTimeStamp() const override;
 	virtual bool CanCheckIn() const override;

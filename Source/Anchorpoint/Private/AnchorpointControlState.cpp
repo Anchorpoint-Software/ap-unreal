@@ -92,7 +92,7 @@ FText FAnchorpointControlState::GetDisplayName() const
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored", "Ignored");
 	case EAnchorpointState::OutDated:
-		return LOCTEXT("NotCurrent", "Not current");
+		return LOCTEXT("OutDated", "Out dated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther", "Locked out by: {0}"), FText::FromString(OtherUserCheckedOut));
 	case EAnchorpointState::LockedAdded:
@@ -130,7 +130,7 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored_Tooltip", "Ignored");
 	case EAnchorpointState::OutDated:
-		return LOCTEXT("NotCurrent_Tooltip", "Not current");
+		return LOCTEXT("OutDated_Tooltip", "Out dated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther_Tooltip", "Locked out by: {0}"), FText::FromString(OtherUserCheckedOut));
 	case EAnchorpointState::LockedAdded:
@@ -157,6 +157,17 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 	}
 
 	return FText();
+}
+
+TOptional<FText> FAnchorpointControlState::GetStatusText() const
+{
+	// Same as ISourceControlState::GetStatusText() but we display it even if the asset is not CheckedOut
+	TOptional<FText> StatusText = GetWarningText();
+	if (!StatusText.IsSet())
+	{
+		StatusText.Emplace(GetDisplayTooltip());
+	}
+	return StatusText;
 }
 
 const FString& FAnchorpointControlState::GetFilename() const
