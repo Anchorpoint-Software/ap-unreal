@@ -51,6 +51,7 @@ public:
 	//~ End ISourceControlProvider Interface
 
 	TSharedRef<FAnchorpointControlState> GetStateInternal(const FString& Filename);
+	FDateTime GetLastSyncTime() const;
 
 	TMap<FString, TSharedRef<FAnchorpointControlState>> StateCache;
 

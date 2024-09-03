@@ -46,8 +46,9 @@ const FName& FAnchorpointSourceControlProvider::GetName() const
 
 FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
-	// ToImplement: Here we should display the project's state in a string 
-	return INVTEXT("TODO: GetStatusText");
+	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
+	const int32 TimeSeconds = FMath::FloorToInt(TimeSinceLastSync.GetTotalSeconds());
+	return FText::Format(INVTEXT("Last sync {0} seconds ago"), FText::AsNumber(TimeSeconds));
 }
 
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
@@ -329,6 +330,20 @@ TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetState
 	TSharedRef<FAnchorpointControlState> NewState = MakeShared<FAnchorpointControlState>(Filename);
 	StateCache.Add(Filename, NewState);
 	return NewState;
+}
+
+FDateTime FAnchorpointSourceControlProvider::GetLastSyncTime() const
+{
+	FDateTime LastSyncTime = FDateTime::MinValue();
+	for(const TTuple<FString, TSharedRef<FAnchorpointControlState>>& Cache : StateCache)
+	{
+		if(Cache.Value->TimeStamp > LastSyncTime)
+		{
+			LastSyncTime = Cache.Value->TimeStamp;
+		}
+	}
+
+	return LastSyncTime;
 }
 
 TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::CreateWorker(const FName& OperationName)
