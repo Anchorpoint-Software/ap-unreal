@@ -4,7 +4,7 @@
 
 #include "SourceControlHelpers.h"
 
-const FString SettingsSection = TEXT("SubversionSourceControl.Anchorpoint");
+const FString SettingsSection = TEXT("SourceControl.Anchorpoint");
 
 const FString& FAnchorpointSourceControlSettings::GetInstallDirectory() const
 {
@@ -31,7 +31,7 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 	
 	const bool bInstallDirectorySet = GConfig->GetString(*SettingsSection, TEXT("InstallDirectory"), InstallDirectory, IniFile);
 	// In case some new variables appears or are unset, let's find some good defaults 
-	if(bInstallDirectorySet)
+	if(!bInstallDirectorySet)
 	{
 #if PLATFORM_MAC
 		InstallDirectory = TEXT("/Applications/Anchorpoint.app/Contents/Frameworks");
