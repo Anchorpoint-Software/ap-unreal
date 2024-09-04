@@ -52,7 +52,7 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 	}
 	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : InJsonObject->GetObjectField(TEXT("locked_files"))->Values)
 	{
-		Result.LockedFiles.Add(LockedFile.Key, LockedFile.Value->AsString());
+		Result.LockedFiles.Add(ProjectPath / LockedFile.Key, LockedFile.Value->AsString());
 	}
 	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
 	{
