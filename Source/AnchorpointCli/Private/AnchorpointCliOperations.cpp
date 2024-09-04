@@ -21,7 +21,7 @@ EAnchorpointFileOperation LexFromString(const FString& InString)
 	{
 		return EAnchorpointFileOperation::Deleted;
 	}
-	if(InString == TEXT("R"))
+	if (InString == TEXT("R"))
 	{
 		return EAnchorpointFileOperation::Renamed;
 	}
@@ -33,29 +33,28 @@ EAnchorpointFileOperation LexFromString(const FString& InString)
 	return EAnchorpointFileOperation::Invalid;
 }
 
-FAnchorpointStatus FAnchorpointStatus::FromString(const FString& InString)
+FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& InJsonObject)
 {
-	FJsonObjectWrapper JsonObject;
-	JsonObject.JsonObjectFromString(InString);
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointStatus::FromString);
 
-	FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 
 	// TODO: Talk with AP team - staged & unstaged are relative, but the locked files are full path
 	FAnchorpointStatus Result;
-	Result.CurrentBranch = JsonObject.JsonObject->GetStringField(TEXT("current_branch"));
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : JsonObject.JsonObject->GetObjectField(TEXT("staged"))->Values)
+	Result.CurrentBranch = InJsonObject->GetStringField(TEXT("current_branch"));
+	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : InJsonObject->GetObjectField(TEXT("staged"))->Values)
 	{
 		Result.Staged.Add(ProjectPath / StagedFile.Key, LexFromString(StagedFile.Value->AsString()));
 	}
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : JsonObject.JsonObject->GetObjectField(TEXT("not_staged"))->Values)
+	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : InJsonObject->GetObjectField(TEXT("not_staged"))->Values)
 	{
 		Result.NotStaged.Add(ProjectPath / NotStagedFile.Key, LexFromString(NotStagedFile.Value->AsString()));
 	}
-	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : JsonObject.JsonObject->GetObjectField(TEXT("locked_files"))->Values)
+	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : InJsonObject->GetObjectField(TEXT("locked_files"))->Values)
 	{
 		Result.LockedFiles.Add(LockedFile.Key, LockedFile.Value->AsString());
 	}
-	for (const TSharedPtr<FJsonValue> OutDatedFile : JsonObject.JsonObject->GetArrayField(TEXT("outdated_files")))
+	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
 	{
 		Result.OutdatedFiles.Add(ProjectPath / OutDatedFile->AsString());
 	}
@@ -63,121 +62,97 @@ FAnchorpointStatus FAnchorpointStatus::FromString(const FString& InString)
 	return Result;
 }
 
-TSharedPtr<FMonitoredProcess> RunApCli(const FString& InCommand)
+bool FCliOutput::DidSucceed() const
 {
-	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
-
-#if PLATFORM_WINDOWS
-	const FString CommandLineExecutable = CliDirectory / "ap.exe";
-#elif PLATFORM_MAC
-	const FString CommandLineExecutable = CliDirectory / "ap";
-#endif
-
-	TArray<FString> Args;
-	Args.Add(FString::Printf(TEXT("--cwd=%s"), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-	Args.Add(TEXT("--json"));
-	Args.Add(TEXT("--apiVersion 1"));
-
-	Args.Add(InCommand);
-
-	FString CommandLineArgs = FString::Join(Args, TEXT(" "));
-	TSharedRef<FMonitoredProcess> Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
-
-	const bool bLaunchSuccess = Process->Launch();
-	if (!bLaunchSuccess)
-	{
-		return nullptr;
-	}
-
-	while (Process->Update())
-	{
-	}
-
-	return Process;
+	return !Error.IsSet();
 }
 
-TSharedPtr<FJsonObject> JsonStringToJsonObject(const FString& InJsonString)
+TSharedPtr<FJsonObject> FCliOutput::OutputAsJsonObject() const
 {
 	TSharedPtr<FJsonObject> JsonObject = nullptr;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InJsonString);
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
 	FJsonSerializer::Deserialize(Reader, JsonObject);
 
 	return JsonObject;
 }
 
-FString GetNiceOutput(const FString& InOutput)
+TArray<TSharedPtr<FJsonValue>> FCliOutput::OutputAsJsonArray() const
 {
-	FString Result = InOutput;
-	int StartIndex = INDEX_NONE;
-	Result.FindChar('{', StartIndex);
-	int EndIndex = INDEX_NONE;
-	Result.FindLastChar('}', EndIndex);
-	Result.MidInline(StartIndex, EndIndex - StartIndex + 1);
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
+	FJsonSerializer::Deserialize(Reader, JsonArray);
 
-	return Result;
+	return JsonArray;
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Connect);
+
 	// TODO: Right now we are running a `status` command for checking connection,
-	// but in the future we might want to use a dedicated command for it.
+	// but in the future we might want to use a dedicated command for connecting.
 
-	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));
-	if (!Process || Process->GetReturnCode() != 0)
+	FCliOutput ProcessOutput = RunApCli(TEXT("status"));
+	if (ProcessOutput.DidSucceed())
 	{
-		return MakeError(TEXT("Failed to run CLI"));
+		return MakeValue(TEXT("Success"));
 	}
 
-
-	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
-	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
-
-	if (!Object.IsValid())
-	{
-		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
-	}
-
-	FString Error;
-	if (Object->TryGetStringField(TEXT("error"), Error))
-	{
-		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
-	}
-
-	return MakeValue(TEXT("Success"));
+	return MakeError(ProcessOutput.Error.GetValue());
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
-	return MakeValue(TEXT("alexandru@outofthebox-plugins.com"));
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
+
+	FCliOutput ProcessOutput = RunApCli(TEXT("user list"));
+	if (ProcessOutput.DidSucceed())
+	{
+		TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
+		for (const TSharedPtr<FJsonValue>& User : Users)
+		{
+			TSharedPtr<FJsonObject> UserObject = User->AsObject();
+			if (UserObject->HasField(TEXT("current")) && UserObject->GetBoolField(TEXT("current")))
+			{
+				return MakeValue(UserObject->GetStringField(TEXT("email")));
+			}
+		}
+
+		return MakeError(TEXT("Could not find current user"));
+	}
+
+	return MakeError(ProcessOutput.Error.GetValue());
 }
 
 TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 {
-	TSharedPtr<FMonitoredProcess> Process = RunApCli(TEXT("status"));
-	if (!Process || Process->GetReturnCode() != 0)
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
+
+	FCliOutput ProcessOutput = RunApCli(TEXT("status"));
+	if (ProcessOutput.DidSucceed())
 	{
-		return MakeError(TEXT("Failed to run CLI"));
+		TSharedPtr<FJsonObject> Object = ProcessOutput.OutputAsJsonObject();
+		if (!Object.IsValid())
+		{
+			return MakeError(FString::Printf(TEXT("Failed to parse output to JSON.")));
+		}
+
+		FString Error;
+		if (Object->TryGetStringField(TEXT("error"), Error))
+		{
+			return MakeError(FString::Printf(TEXT("CLI error: %s"), *Error));
+		}
+
+		return MakeValue(FAnchorpointStatus::FromJson(Object.ToSharedRef()));
 	}
 
-	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
-	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
-
-	if (!Object.IsValid())
-	{
-		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
-	}
-
-	FString Error;
-	if (Object->TryGetStringField(TEXT("error"), Error))
-	{
-		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
-	}
-
-	return MakeValue(FAnchorpointStatus::FromString(Output));
+	return MakeError(ProcessOutput.Error.GetValue());
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FString>& InFiles)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::LockFiles);
+
 	TArray<FString> LockParams;
 	LockParams.Add(TEXT("lock create"));
 	LockParams.Add(TEXT("--git"));
@@ -190,33 +165,66 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
-	TSharedPtr<FMonitoredProcess> Process = RunApCli(LockCommand);
+	FCliOutput ProcessOutput = RunApCli(LockCommand);
 
-	if (!Process || Process->GetReturnCode() != 0)
-	{
-		return MakeError(TEXT("Failed to run CLI"));
-	}
-
-	const FString Output = GetNiceOutput(Process->GetFullOutputWithoutDelegate());
-
-	//TODO: Check with AP team - for some reaosn this returns an empty response, is that intended?
-	if (Output.IsEmpty())
+	if(ProcessOutput.DidSucceed())
 	{
 		return MakeValue(TEXT("Success"));
 	}
 
-	TSharedPtr<FJsonObject> Object = JsonStringToJsonObject(Output);
+	return MakeError(ProcessOutput.Error.GetValue());
+}
 
-	if (!Object.IsValid())
+#define WAIT_FOR_CONDITION(x) while(x) continue;
+
+FCliOutput AnchorpointCliOperations::RunApCli(const FString& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
+
+	TSharedPtr<FMonitoredProcess> Process = nullptr;
+
 	{
-		return MakeError(FString::Printf(TEXT("Failed to parse output: %s"), *Output));
+		const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
+
+#if PLATFORM_WINDOWS
+		const FString CommandLineExecutable = CliDirectory / "ap.exe";
+#elif PLATFORM_MAC
+		const FString CommandLineExecutable = CliDirectory / "ap";
+#endif
+
+		TArray<FString> Args;
+		Args.Add(FString::Printf(TEXT("--cwd=%s"), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
+		Args.Add(TEXT("--json"));
+		Args.Add(TEXT("--apiVersion 1"));
+
+		Args.Add(InCommand);
+
+		FString CommandLineArgs = FString::Join(Args, TEXT(" "));
+		Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 	}
 
-	FString Error;
-	if (Object->TryGetStringField(TEXT("error"), Error))
+	FCliOutput Output;
+	if (!Process)
 	{
-		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Output));
+		Output.Error = TEXT("Failed to create process");
+		return Output;
 	}
 
-	return MakeValue(TEXT("Success"));
+	const bool bLaunchSuccess = Process->Launch();
+	if (!bLaunchSuccess)
+	{
+		Output.Error = TEXT("Failed to launch process");
+		return Output;
+	}
+
+	WAIT_FOR_CONDITION(Process->Update());
+
+	if (Process->GetReturnCode() != 0)
+	{
+		Output.Error = FString::Printf(TEXT("Process failed with code %d"), Process->GetReturnCode());
+		return Output;
+	}
+
+	Output.Output = Process->GetFullOutputWithoutDelegate();
+	return Output;
 }
