@@ -32,6 +32,8 @@ void FAnchorpointModule::StartupModule()
 
 void FAnchorpointModule::ShutdownModule()
 {
+	AnchorpointSourceControlSettings.SaveSettings();
+	
 	AnchorpointSourceControlProvider.Close();
 	IModularFeatures::Get().UnregisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 }
