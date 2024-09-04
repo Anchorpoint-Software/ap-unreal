@@ -191,7 +191,10 @@ bool FAnchorpointControlState::CanCheckIn() const
 
 bool FAnchorpointControlState::CanCheckout() const
 {
-	return State == EAnchorpointState::UnlockedUnchanged;
+	return State == EAnchorpointState::UnlockedUnchanged
+		|| State == EAnchorpointState::UnlockedAdded
+		|| State == EAnchorpointState::UnlockedModified
+		|| State == EAnchorpointState::UnlockedDeleted;
 }
 
 bool FAnchorpointControlState::IsCheckedOut() const
