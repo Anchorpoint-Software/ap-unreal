@@ -41,7 +41,10 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
 	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus();
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API LockFiles(TArray<FString>& InFiles);
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API UnlockFiles(TArray<FString>& InFiles);
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API DiscardChanges(TArray<FString>& InFiles);
 
-	FCliOutput RunApCli(const FString& InCommand);
+	FCliOutput RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
+	FCliOutput RunGitCommand(const FString& InCommand);
 
 }

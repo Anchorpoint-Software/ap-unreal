@@ -3,7 +3,6 @@
 #include "AnchorpointCliOperations.h"
 
 #include <Misc/MonitoredProcess.h>
-#include <JsonObjectWrapper.h>
 
 #include "AnchorpointCli.h"
 
@@ -92,7 +91,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 	// TODO: Right now we are running a `status` command for checking connection,
 	// but in the future we might want to use a dedicated command for connecting.
 
-	FCliOutput ProcessOutput = RunApCli(TEXT("status"));
+	FCliOutput ProcessOutput = RunApCommand(TEXT("status"));
 	if (ProcessOutput.DidSucceed())
 	{
 		return MakeValue(TEXT("Success"));
@@ -105,7 +104,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
 
-	FCliOutput ProcessOutput = RunApCli(TEXT("user list"));
+	FCliOutput ProcessOutput = RunApCommand(TEXT("user list"));
 	if (ProcessOutput.DidSucceed())
 	{
 		TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
@@ -128,7 +127,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
-	FCliOutput ProcessOutput = RunApCli(TEXT("status"));
+	FCliOutput ProcessOutput = RunApCommand(TEXT("status"));
 	if (ProcessOutput.DidSucceed())
 	{
 		TSharedPtr<FJsonObject> Object = ProcessOutput.OutputAsJsonObject();
@@ -165,9 +164,55 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
-	FCliOutput ProcessOutput = RunApCli(LockCommand);
+	FCliOutput ProcessOutput = RunApCommand(LockCommand);
 
-	if(ProcessOutput.DidSucceed())
+	if (ProcessOutput.DidSucceed())
+	{
+		return MakeValue(TEXT("Success"));
+	}
+
+	return MakeError(ProcessOutput.Error.GetValue());
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FString>& InFiles)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::UnlockFiles);
+
+	TArray<FString> UnlockParams;
+	UnlockParams.Add(TEXT("lock remove"));
+	UnlockParams.Add(TEXT("--files"));
+
+	for (const FString& File : InFiles)
+	{
+		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *File));
+	}
+
+	FString LockCommand = FString::Join(UnlockParams, TEXT(" "));
+	FCliOutput ProcessOutput = RunApCommand(LockCommand);
+
+	if (ProcessOutput.DidSucceed())
+	{
+		return MakeValue(TEXT("Success"));
+	}
+
+	return MakeError(ProcessOutput.Error.GetValue());
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<FString>& InFiles)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DiscardChanges);
+
+	FString CheckoutCommand = TEXT("checkout");
+
+	for (const FString& File : InFiles)
+	{
+		//TODO: Talk with AP team how we can add quotes around file name in case they have spaces
+		CheckoutCommand.Appendf(TEXT(" %s"), *File);
+	}
+
+	FCliOutput ProcessOutput = RunGitCommand(CheckoutCommand);
+
+	if (ProcessOutput.DidSucceed())
 	{
 		return MakeValue(TEXT("Success"));
 	}
@@ -177,7 +222,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 
 #define WAIT_FOR_CONDITION(x) while(x) continue;
 
-FCliOutput AnchorpointCliOperations::RunApCli(const FString& InCommand)
+FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
@@ -194,7 +239,12 @@ FCliOutput AnchorpointCliOperations::RunApCli(const FString& InCommand)
 
 		TArray<FString> Args;
 		Args.Add(FString::Printf(TEXT("--cwd=%s"), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-		Args.Add(TEXT("--json"));
+
+		if (bRequestJsonOutput)
+		{
+			Args.Add(TEXT("--json"));
+		}
+
 		Args.Add(TEXT("--apiVersion 1"));
 
 		Args.Add(InCommand);
@@ -226,5 +276,12 @@ FCliOutput AnchorpointCliOperations::RunApCli(const FString& InCommand)
 	}
 
 	Output.Output = Process->GetFullOutputWithoutDelegate();
+
 	return Output;
+}
+
+FCliOutput AnchorpointCliOperations::RunGitCommand(const FString& InCommand)
+{
+	const FString GitViaAp = FString::Printf(TEXT("git --command \"%s\""), *InCommand);
+	return RunApCommand(GitViaAp, false);
 }
