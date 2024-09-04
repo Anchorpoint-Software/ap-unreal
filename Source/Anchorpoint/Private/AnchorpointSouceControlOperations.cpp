@@ -2,6 +2,8 @@
 
 #include "AnchorpointSouceControlOperations.h"
 
+#include <SourceControlOperations.h>
+
 #include "Anchorpoint.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointControlCommand.h"
@@ -41,7 +43,7 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 	for (const FString& File : InFiles)
 	{
 		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
-		
+
 		const FString* LockedBy = Status.LockedFiles.Find(File);
 		const bool bLockedByMe = LockedBy && *LockedBy == CurrentUserResult.GetValue();
 
@@ -150,6 +152,48 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 }
 
 bool FAnchorpointCheckOutWorker::UpdateStates() const
+{
+	return UpdateCachedStates(States);
+}
+
+FName FAnchorpointRevertWorker::GetName() const
+{
+	return TEXT("Revert");
+}
+
+bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
+
+	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(InCommand.Files);
+	
+	if (UnlockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(UnlockResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = UnlockResult.HasValue();
+
+	if (!RevertOperation->IsSoftRevert())
+	{
+		TValueOrError<FString, FString> DiscardChangesResult = AnchorpointCliOperations::DiscardChanges(InCommand.Files);
+
+		if (DiscardChangesResult.HasError())
+		{
+			InCommand.ErrorMessages.Add(DiscardChangesResult.GetError());
+		}
+
+		InCommand.bCommandSuccessful &= DiscardChangesResult.HasValue();
+	}
+	
+	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
+
+	UpdateCachedStates(States);
+
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointRevertWorker::UpdateStates() const
 {
 	return UpdateCachedStates(States);
 }
