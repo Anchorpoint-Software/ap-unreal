@@ -162,8 +162,10 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 TOptional<FText> FAnchorpointControlState::GetStatusText() const
 {
 	// Same as ISourceControlState::GetStatusText() but we display it even if the asset is not CheckedOut
+	const bool bWorthDisplaying = State != EAnchorpointState::UnlockedUnchanged;
+	
 	TOptional<FText> StatusText = GetWarningText();
-	if (!StatusText.IsSet())
+	if (!StatusText.IsSet() && bWorthDisplaying)
 	{
 		StatusText.Emplace(GetDisplayTooltip());
 	}
