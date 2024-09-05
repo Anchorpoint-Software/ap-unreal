@@ -238,7 +238,7 @@ FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 #endif
 
 		TArray<FString> Args;
-		Args.Add(FString::Printf(TEXT("--cwd=%s"), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
+		Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 
 		if (bRequestJsonOutput)
 		{
