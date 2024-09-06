@@ -8,6 +8,16 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogAnchorpointCli, Log, All);
 
+FString ToRelativePath(const FString& InFullPath)
+{
+	FString RelativePath = InFullPath;
+	const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
+
+	UE_CLOG(!bSuccess, LogAnchorpointCli, Error, TEXT("Failed to make path relative: %s in directory: %s"), *InFullPath, *FPaths::ProjectDir());
+
+	return RelativePath;
+}
+
 EAnchorpointFileOperation LexFromString(const FString& InString)
 {
 	if (InString == TEXT("A"))
@@ -40,7 +50,6 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 
 	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 
-	// TODO: Talk with AP team - staged & unstaged are relative, but the locked files are full path
 	FAnchorpointStatus Result;
 	Result.CurrentBranch = InJsonObject->GetStringField(TEXT("current_branch"));
 	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : InJsonObject->GetObjectField(TEXT("staged"))->Values)
@@ -172,12 +181,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 
 	for (const FString& File : InFiles)
 	{
-		FString RelativePath = File;
-		const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
-		if (ensure(bSuccess))
-		{
-			LockParams.Add(FString::Printf(TEXT("\"%s\""), *RelativePath));
-		}
+		LockParams.Add(FString::Printf(TEXT("\"%s\""), *ToRelativePath(File)));
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
@@ -201,12 +205,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 
 	for (const FString& File : InFiles)
 	{
-		FString RelativePath = File;
-		const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
-		if (ensure(bSuccess))
-		{
-			UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *RelativePath));
-		}
+		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *ToRelativePath(File)));
 	}
 
 	FString LockCommand = FString::Join(UnlockParams, TEXT(" "));
@@ -228,7 +227,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 
 	for (const FString& File : InFiles)
 	{
-		CheckoutCommand.Appendf(TEXT(" \"%s\""), *File);
+		CheckoutCommand.Appendf(TEXT(" \"%s\""), *ToRelativePath(File));
 	}
 
 	FCliResult ProcessOutput = RunGitCommand(CheckoutCommand);
@@ -305,8 +304,9 @@ FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 		return Result;
 	}
 
+	// TODO: We should bind to this delegate all discard all the waiting for daemon message
 	Result.Output = Process->GetFullOutputWithoutDelegate();
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result);
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result.Output);
 
 	return Result;
 }
