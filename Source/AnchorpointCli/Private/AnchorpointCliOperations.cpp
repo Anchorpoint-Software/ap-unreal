@@ -54,19 +54,27 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 	Result.CurrentBranch = InJsonObject->GetStringField(TEXT("current_branch"));
 	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : InJsonObject->GetObjectField(TEXT("staged"))->Values)
 	{
-		Result.Staged.Add(ProjectPath / StagedFile.Key, LexFromString(StagedFile.Value->AsString()));
+		FString FullFilePath = ProjectPath / StagedFile.Key;
+		FPaths::NormalizeDirectoryName(FullFilePath);
+		Result.Staged.Add(FullFilePath, LexFromString(StagedFile.Value->AsString()));
 	}
 	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : InJsonObject->GetObjectField(TEXT("not_staged"))->Values)
 	{
-		Result.NotStaged.Add(ProjectPath / NotStagedFile.Key, LexFromString(NotStagedFile.Value->AsString()));
+		FString FullFilePath = ProjectPath / NotStagedFile.Key;
+		FPaths::NormalizeDirectoryName(FullFilePath);
+		Result.NotStaged.Add(FullFilePath, LexFromString(NotStagedFile.Value->AsString()));
 	}
 	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : InJsonObject->GetObjectField(TEXT("locked_files"))->Values)
 	{
-		Result.LockedFiles.Add(ProjectPath / LockedFile.Key, LockedFile.Value->AsString());
+		FString FullFilePath = ProjectPath / LockedFile.Key;
+		FPaths::NormalizeDirectoryName(FullFilePath);
+		Result.LockedFiles.Add(FullFilePath, LockedFile.Value->AsString());
 	}
 	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
 	{
-		Result.OutdatedFiles.Add(ProjectPath / OutDatedFile->AsString());
+		FString FullFilePath = ProjectPath / OutDatedFile->AsString();
+		FPaths::NormalizeDirectoryName(FullFilePath);
+		Result.OutdatedFiles.Add(FullFilePath);
 	}
 
 	return Result;
@@ -116,6 +124,11 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 	if (bSuccessful)
 	{
 		return MakeValue(TEXT("Success"));
+	}
+
+	if(!ProcessOutput.OutputAsJsonObject().IsValid())
+	{
+		return MakeError(TEXT("Failed to parse output to JSON."));
 	}
 
 	return MakeError(ProcessOutput.Error.GetValue());
@@ -247,7 +260,7 @@ FString AnchorpointCliOperations::GetCliPath()
 	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
 
 #if PLATFORM_WINDOWS
-	return = CliDirectory / "ap.exe";
+	return CliDirectory / "ap.exe";
 #elif PLATFORM_MAC
 	return CliDirectory / "ap";
 #endif
@@ -282,7 +295,7 @@ FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 	Args.Add(InCommand);
 
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running exe: %s with arguments: %s"), *CommandLineExecutable, *CommandLineArgs);
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
 	Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 
 	if (!Process)

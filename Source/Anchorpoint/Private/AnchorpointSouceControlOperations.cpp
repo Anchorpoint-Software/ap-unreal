@@ -205,7 +205,7 @@ FName FAnchorpointUpdateStatusWorker::GetName() const
 
 bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
-	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);;
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
 	return InCommand.bCommandSuccessful;
 }
 

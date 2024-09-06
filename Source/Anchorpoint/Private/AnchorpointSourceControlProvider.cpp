@@ -21,7 +21,6 @@ void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, cons
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
-	bIsAvailable = AnchorpointCliOperations::IsInstalled();
 }
 
 void FAnchorpointSourceControlProvider::Close()
@@ -81,7 +80,7 @@ bool FAnchorpointSourceControlProvider::IsEnabled() const
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
-	return bIsAvailable;
+	return AnchorpointCliOperations::IsInstalled();
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)
