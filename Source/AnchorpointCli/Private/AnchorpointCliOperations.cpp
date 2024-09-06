@@ -84,15 +84,25 @@ TArray<TSharedPtr<FJsonValue>> FCliOutput::OutputAsJsonArray() const
 	return JsonArray;
 }
 
+bool AnchorpointCliOperations::IsInstalled()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::IsInstalled);
+
+	const FString CliPath = GetCliPath();
+	return !CliPath.IsEmpty() && FPaths::FileExists(CliPath);
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Connect);
 
 	// TODO: Right now we are running a `status` command for checking connection,
 	// but in the future we might want to use a dedicated command for connecting.
+	// because of this, we want to make sure the command is both successful and the resulting output is valid (json object format).
 
 	FCliOutput ProcessOutput = RunApCommand(TEXT("status"));
-	if (ProcessOutput.DidSucceed())
+	const bool bSuccessful = ProcessOutput.DidSucceed() && ProcessOutput.OutputAsJsonObject().IsValid();
+	if (bSuccessful)
 	{
 		return MakeValue(TEXT("Success"));
 	}
@@ -220,40 +230,48 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 	return MakeError(ProcessOutput.Error.GetValue());
 }
 
+FString AnchorpointCliOperations::GetCliPath()
+{
+	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
+
+#if PLATFORM_WINDOWS
+	return = CliDirectory / "ap.exe";
+#elif PLATFORM_MAC
+	return CliDirectory / "ap";
+#endif
+}
+
 #define WAIT_FOR_CONDITION(x) while(x) continue;
 
 FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
-	TSharedPtr<FMonitoredProcess> Process = nullptr;
-
+	FCliOutput Output;
+	if (!IsInstalled())
 	{
-		const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
-
-#if PLATFORM_WINDOWS
-		const FString CommandLineExecutable = CliDirectory / "ap.exe";
-#elif PLATFORM_MAC
-		const FString CommandLineExecutable = CliDirectory / "ap";
-#endif
-
-		TArray<FString> Args;
-		Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-
-		if (bRequestJsonOutput)
-		{
-			Args.Add(TEXT("--json"));
-		}
-
-		Args.Add(TEXT("--apiVersion 1"));
-
-		Args.Add(InCommand);
-
-		FString CommandLineArgs = FString::Join(Args, TEXT(" "));
-		Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
+		Output.Error = TEXT("Anchorpoint not installed at the current path");
+		return Output;
 	}
 
-	FCliOutput Output;
+	TSharedPtr<FMonitoredProcess> Process = nullptr;
+
+	FString CommandLineExecutable = GetCliPath();
+
+	TArray<FString> Args;
+	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
+	
+	if (bRequestJsonOutput)
+	{
+		Args.Add(TEXT("--json"));
+	}
+
+	Args.Add(TEXT("--apiVersion 1"));
+	Args.Add(InCommand);
+
+	FString CommandLineArgs = FString::Join(Args, TEXT(" "));
+	Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
+
 	if (!Process)
 	{
 		Output.Error = TEXT("Failed to create process");

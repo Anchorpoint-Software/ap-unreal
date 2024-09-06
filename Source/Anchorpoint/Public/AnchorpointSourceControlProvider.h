@@ -53,6 +53,8 @@ public:
 	TSharedRef<FAnchorpointControlState> GetStateInternal(const FString& Filename);
 	FDateTime GetLastSyncTime() const;
 
+	bool bIsAvailable = false;
+
 	TMap<FString, TSharedRef<FAnchorpointControlState>> StateCache;
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;

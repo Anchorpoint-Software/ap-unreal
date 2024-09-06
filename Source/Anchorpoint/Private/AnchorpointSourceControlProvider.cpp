@@ -4,6 +4,7 @@
 
 #include <SourceControlHelpers.h>
 
+#include "AnchorpointCliOperations.h"
 #include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
@@ -21,16 +22,7 @@ void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, cons
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
-	// ToImplement: Here we should do any initialization we might need.
-
-	if (bForceConnection)
-	{
-		UAnchorpointCommunicationSubsystem* Subsystem = GEditor->GetEditorSubsystem<UAnchorpointCommunicationSubsystem>();
-		const bool bSuccess = Subsystem ? Subsystem->OpenDesktopApp() : false;
-
-		// TODO: Error Handling
-		checkf(bSuccess, TEXT("What should we do if Anchorpoint fails to load on startup?"));
-	}
+	bIsAvailable = AnchorpointCliOperations::IsInstalled();
 }
 
 void FAnchorpointSourceControlProvider::Close()
@@ -84,8 +76,7 @@ bool FAnchorpointSourceControlProvider::IsEnabled() const
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
-	// ToImplement: Here we should check if the current project is an Anchorpoint project (or can become one)
-	return true;
+	return bIsAvailable;
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)
