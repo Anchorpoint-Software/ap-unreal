@@ -75,7 +75,7 @@ TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider
 
 bool FAnchorpointSourceControlProvider::IsEnabled() const
 {
-	// As long as the plugin is installed and available, we want to display Anchorpoint in the provider list no matter what
+	// As long as the plugin is installed, we want to display Anchorpoint in the provider list no matter what
 	// even if the Anchorpoint Desktop App is not installed, the user should be prompted to do so during setup
 	return true;
 }
