@@ -6,7 +6,7 @@
 
 #include "AnchorpointCli.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogAnchorpointCli, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogAnchorpointCli, VeryVerbose, All);
 
 FString ToRelativePath(const FString& InFullPath)
 {
@@ -223,7 +223,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DiscardChanges);
 
-	FString CheckoutCommand = TEXT("checkout");
+	//TODO: Check how revert only unchanged check affects this
+
+	FString CheckoutCommand = TEXT("checkout --");
 
 	for (const FString& File : InFiles)
 	{
