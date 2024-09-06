@@ -40,8 +40,14 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
 	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
 	const int32 TimeSeconds = FMath::FloorToInt(TimeSinceLastSync.GetTotalSeconds());
+	if (TimeSeconds < 0)
+	{
+		return INVTEXT("Not synced yet");
+	}
+
 	return FText::Format(INVTEXT("Last sync {0} seconds ago"), FText::AsNumber(TimeSeconds));
 }
+
 
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
 {
@@ -70,7 +76,7 @@ TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider
 bool FAnchorpointSourceControlProvider::IsEnabled() const
 {
 	// As long as the plugin is installed and available, we want to display Anchorpoint in the provider list no matter what
-	// even if the Anchorpoint Desktop App is not installed, the user will be prompted to do so during setup
+	// even if the Anchorpoint Desktop App is not installed, the user should be prompted to do so during setup
 	return true;
 }
 
@@ -326,9 +332,9 @@ TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetState
 FDateTime FAnchorpointSourceControlProvider::GetLastSyncTime() const
 {
 	FDateTime LastSyncTime = FDateTime::MinValue();
-	for(const TTuple<FString, TSharedRef<FAnchorpointControlState>>& Cache : StateCache)
+	for (const TTuple<FString, TSharedRef<FAnchorpointControlState>>& Cache : StateCache)
 	{
-		if(Cache.Value->TimeStamp > LastSyncTime)
+		if (Cache.Value->TimeStamp > LastSyncTime)
 		{
 			LastSyncTime = Cache.Value->TimeStamp;
 		}
