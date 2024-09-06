@@ -6,6 +6,8 @@
 
 #include "AnchorpointCli.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogAnchorpointCli, Log, All);
+
 EAnchorpointFileOperation LexFromString(const FString& InString)
 {
 	if (InString == TEXT("A"))
@@ -61,12 +63,12 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 	return Result;
 }
 
-bool FCliOutput::DidSucceed() const
+bool FCliResult::DidSucceed() const
 {
 	return !Error.IsSet();
 }
 
-TSharedPtr<FJsonObject> FCliOutput::OutputAsJsonObject() const
+TSharedPtr<FJsonObject> FCliResult::OutputAsJsonObject() const
 {
 	TSharedPtr<FJsonObject> JsonObject = nullptr;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
@@ -75,7 +77,7 @@ TSharedPtr<FJsonObject> FCliOutput::OutputAsJsonObject() const
 	return JsonObject;
 }
 
-TArray<TSharedPtr<FJsonValue>> FCliOutput::OutputAsJsonArray() const
+TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 {
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
@@ -100,7 +102,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 	// but in the future we might want to use a dedicated command for connecting.
 	// because of this, we want to make sure the command is both successful and the resulting output is valid (json object format).
 
-	FCliOutput ProcessOutput = RunApCommand(TEXT("status"));
+	FCliResult ProcessOutput = RunApCommand(TEXT("status"));
 	const bool bSuccessful = ProcessOutput.DidSucceed() && ProcessOutput.OutputAsJsonObject().IsValid();
 	if (bSuccessful)
 	{
@@ -114,7 +116,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
 
-	FCliOutput ProcessOutput = RunApCommand(TEXT("user list"));
+	FCliResult ProcessOutput = RunApCommand(TEXT("user list"));
 	if (ProcessOutput.DidSucceed())
 	{
 		TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
@@ -137,7 +139,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
-	FCliOutput ProcessOutput = RunApCommand(TEXT("status"));
+	FCliResult ProcessOutput = RunApCommand(TEXT("status"));
 	if (ProcessOutput.DidSucceed())
 	{
 		TSharedPtr<FJsonObject> Object = ProcessOutput.OutputAsJsonObject();
@@ -170,11 +172,16 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 
 	for (const FString& File : InFiles)
 	{
-		LockParams.Add(FString::Printf(TEXT("\"%s\""), *File));
+		FString RelativePath = File;
+		const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
+		if (ensure(bSuccess))
+		{
+			LockParams.Add(FString::Printf(TEXT("\"%s\""), *RelativePath));
+		}
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
-	FCliOutput ProcessOutput = RunApCommand(LockCommand);
+	FCliResult ProcessOutput = RunApCommand(LockCommand);
 
 	if (ProcessOutput.DidSucceed())
 	{
@@ -203,7 +210,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 	}
 
 	FString LockCommand = FString::Join(UnlockParams, TEXT(" "));
-	FCliOutput ProcessOutput = RunApCommand(LockCommand);
+	FCliResult ProcessOutput = RunApCommand(LockCommand);
 
 	if (ProcessOutput.DidSucceed())
 	{
@@ -224,7 +231,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 		CheckoutCommand.Appendf(TEXT(" \"%s\""), *File);
 	}
 
-	FCliOutput ProcessOutput = RunGitCommand(CheckoutCommand);
+	FCliResult ProcessOutput = RunGitCommand(CheckoutCommand);
 
 	if (ProcessOutput.DidSucceed())
 	{
@@ -247,15 +254,15 @@ FString AnchorpointCliOperations::GetCliPath()
 
 #define WAIT_FOR_CONDITION(x) while(x) continue;
 
-FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
+FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
-	FCliOutput Output;
+	FCliResult Result;
 	if (!IsInstalled())
 	{
-		Output.Error = TEXT("Anchorpoint not installed at the current path");
-		return Output;
+		Result.Error = TEXT("Anchorpoint not installed at the current path");
+		return Result;
 	}
 
 	TSharedPtr<FMonitoredProcess> Process = nullptr;
@@ -273,36 +280,38 @@ FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 	Args.Add(TEXT("--apiVersion 1"));
 	Args.Add(InCommand);
 
-	FString CommandLineArgs = FString::Join(Args, TEXT(" "));
+	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running exe: %s with arguments: %s"), *CommandLineExecutable, *CommandLineArgs);
 	Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 
 	if (!Process)
 	{
-		Output.Error = TEXT("Failed to create process");
-		return Output;
+		Result.Error = TEXT("Failed to create process");
+		return Result;
 	}
 
 	const bool bLaunchSuccess = Process->Launch();
 	if (!bLaunchSuccess)
 	{
-		Output.Error = TEXT("Failed to launch process");
-		return Output;
+		Result.Error = TEXT("Failed to launch process");
+		return Result;
 	}
 
 	WAIT_FOR_CONDITION(Process->Update());
 
 	if (Process->GetReturnCode() != 0)
 	{
-		Output.Error = FString::Printf(TEXT("Process failed with code %d"), Process->GetReturnCode());
-		return Output;
+		Result.Error = FString::Printf(TEXT("Process failed with code %d"), Process->GetReturnCode());
+		return Result;
 	}
 
-	Output.Output = Process->GetFullOutputWithoutDelegate();
+	Result.Output = Process->GetFullOutputWithoutDelegate();
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result);
 
-	return Output;
+	return Result;
 }
 
-FCliOutput AnchorpointCliOperations::RunGitCommand(const FString& InCommand)
+FCliResult AnchorpointCliOperations::RunGitCommand(const FString& InCommand)
 {
 	const FString GitViaAp = FString::Printf(TEXT("git --command '%s'"), *InCommand);
 	return RunApCommand(GitViaAp, false);

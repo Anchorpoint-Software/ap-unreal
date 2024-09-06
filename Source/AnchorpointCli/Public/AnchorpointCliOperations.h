@@ -25,7 +25,7 @@ struct FAnchorpointStatus
 	TArray<FString> OutdatedFiles;
 };
 
-struct FCliOutput
+struct FCliResult
 {
 	FString Output;
 	TOptional<FString> Error;
@@ -46,7 +46,7 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DiscardChanges(TArray<FString>& InFiles);
 
 	FString GetCliPath();
-	FCliOutput RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
-	FCliOutput RunGitCommand(const FString& InCommand);
+	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
+	FCliResult RunGitCommand(const FString& InCommand);
 
 }
