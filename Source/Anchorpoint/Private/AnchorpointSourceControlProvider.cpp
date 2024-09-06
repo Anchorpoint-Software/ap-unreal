@@ -5,7 +5,6 @@
 #include <SourceControlHelpers.h>
 
 #include "AnchorpointCliOperations.h"
-#include "AnchorpointCommunicationSubsystem.h"
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointControlState.h"

@@ -194,7 +194,12 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 
 	for (const FString& File : InFiles)
 	{
-		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *File));
+		FString RelativePath = File;
+		const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
+		if (ensure(bSuccess))
+		{
+			UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *RelativePath));
+		}
 	}
 
 	FString LockCommand = FString::Join(UnlockParams, TEXT(" "));
@@ -216,8 +221,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 
 	for (const FString& File : InFiles)
 	{
-		//TODO: Talk with AP team how we can add quotes around file name in case they have spaces
-		CheckoutCommand.Appendf(TEXT(" %s"), *File);
+		CheckoutCommand.Appendf(TEXT(" \"%s\""), *File);
 	}
 
 	FCliOutput ProcessOutput = RunGitCommand(CheckoutCommand);
@@ -260,7 +264,7 @@ FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-	
+
 	if (bRequestJsonOutput)
 	{
 		Args.Add(TEXT("--json"));
@@ -300,6 +304,6 @@ FCliOutput AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 
 FCliOutput AnchorpointCliOperations::RunGitCommand(const FString& InCommand)
 {
-	const FString GitViaAp = FString::Printf(TEXT("git --command \"%s\""), *InCommand);
+	const FString GitViaAp = FString::Printf(TEXT("git --command '%s'"), *InCommand);
 	return RunApCommand(GitViaAp, false);
 }
