@@ -242,7 +242,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 
 	for (const FString& File : InFiles)
 	{
-		CheckoutCommand.Appendf(TEXT(" \"%s\""), *ToRelativePath(File));
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *ToRelativePath(File));
 	}
 
 	FCliResult ProcessOutput = RunGitCommand(CheckoutCommand);
@@ -328,6 +328,6 @@ FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 
 FCliResult AnchorpointCliOperations::RunGitCommand(const FString& InCommand)
 {
-	const FString GitViaAp = FString::Printf(TEXT("git --command '%s'"), *InCommand);
+	const FString GitViaAp = FString::Printf(TEXT("git --command \"%s\""), *InCommand);
 	return RunApCommand(GitViaAp, false);
 }
