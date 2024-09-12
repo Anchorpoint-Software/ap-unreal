@@ -138,6 +138,13 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
 
+	static FString CurrentUser;
+
+	if(!CurrentUser.IsEmpty())
+	{
+		return MakeValue(CurrentUser);
+	}
+
 	FCliResult ProcessOutput = RunApCommand(TEXT("user list"));
 	if (ProcessOutput.DidSucceed())
 	{
@@ -147,7 +154,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 			TSharedPtr<FJsonObject> UserObject = User->AsObject();
 			if (UserObject->HasField(TEXT("current")) && UserObject->GetBoolField(TEXT("current")))
 			{
-				return MakeValue(UserObject->GetStringField(TEXT("email")));
+				CurrentUser = UserObject->GetStringField(TEXT("email"));
+				return MakeValue(CurrentUser);
 			}
 		}
 
