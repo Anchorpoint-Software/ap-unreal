@@ -28,6 +28,7 @@ public class Anchorpoint : ModuleRules
 				"SlateCore",
 				"Json", 
 				"EditorScriptingUtilities",
+				"ContentBrowserData",
 				
 				// Anchorpoint
 				"AnchorpointCli", 

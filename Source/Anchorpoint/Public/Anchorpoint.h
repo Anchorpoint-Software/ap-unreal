@@ -51,6 +51,8 @@ private:
 	
 	FString GetCliPath();
 
+	void ExtendFileContextMenu(UToolMenu* InMenu);
+
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
 	FAnchorpointSourceControlSettings AnchorpointSourceControlSettings;
 };
