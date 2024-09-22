@@ -8,6 +8,7 @@
 #include "AnchorpointControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointControlState.h"
+#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
 #include "ScopedSourceControlProgress.h"
 #include "SourceControlOperations.h"
@@ -21,6 +22,19 @@ void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, cons
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
+	UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider initialization started"));
+	
+	if(UEditorLoadingSavingSettings* Settings = GetMutableDefault<UEditorLoadingSavingSettings>())
+	{
+		UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting AutomaticallyCheckoutOnAssetModification to true"));
+		Settings->SetAutomaticallyCheckoutOnAssetModificationOverride(true);
+	}
+
+	if (IConsoleVariable* EnableRevertViaOutlinerVar = IConsoleManager::Get().FindConsoleVariable(TEXT("SourceControl.Revert.EnableFromSceneOutliner")))
+	{
+		UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting SourceControl.Revert.EnableFromSceneOutliner to true"));;
+		EnableRevertViaOutlinerVar->Set(true);
+	}
 }
 
 void FAnchorpointSourceControlProvider::Close()
