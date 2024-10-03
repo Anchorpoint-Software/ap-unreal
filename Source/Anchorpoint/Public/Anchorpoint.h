@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Some copyright should be here...
 
 #pragma once
 
@@ -38,9 +38,10 @@ class FAnchorpointLogger;
 class FAnchorpointModule : public IModuleInterface
 {
 public:
-	/** IModuleInterface implementation */
+	// ~Begin IModuleInterface interface
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
+	// ~End IModuleInterface interface
 
 	static FAnchorpointModule& Get();
 

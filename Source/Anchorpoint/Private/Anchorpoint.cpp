@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Some copyright should be here...
 
 #include "Anchorpoint.h"
 
@@ -7,8 +7,6 @@
 
 #include "AnchorpointCli.h"
 #include "AnchorpointSouceControlOperations.h"
-
-#define LOCTEXT_NAMESPACE "FAnchorpointModule"
 
 template <typename Type>
 static TSharedRef<IAnchorpointSourceControlWorker> CreateWorker()
@@ -81,8 +79,8 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 	FToolMenuSection& Section = InMenu->FindOrAddSection("AssetContextExploreMenuOptions");
 	Section.AddMenuEntry(
 		"ShowInAnchorpoint",
-		LOCTEXT("ShowInAnchorpoint", "Show in Anchorpoint"),
-		LOCTEXT("ShowInAnchorpointTip", "Show in Anchorpoint"),
+		NSLOCTEXT("Anchorpoint", "ShowInAnchorpoint", "Show in Anchorpoint"),
+		NSLOCTEXT("Anchorpoint", "ShowInAnchorpointTip", "Show in Anchorpoint"),
 		FSlateIcon(FAppStyle::GetAppStyleSetName(), "ContentBrowser.ShowInExplorer"),
 		FUIAction(
 			FExecuteAction::CreateLambda([]()
@@ -91,7 +89,5 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 		)
 	);
 }
-
-#undef LOCTEXT_NAMESPACE
 
 IMPLEMENT_MODULE(FAnchorpointModule, Anchorpoint)
