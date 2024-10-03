@@ -13,7 +13,7 @@
 bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UpdateCachedStates);
-	
+
 	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
 
 	for (const FAnchorpointControlState& InState : InStates)
@@ -29,7 +29,7 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlState>& OutState)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunUpdateStatus);
-	
+
 	const auto StatusResult = AnchorpointCliOperations::GetStatus();
 	if (StatusResult.HasError())
 	{
@@ -119,7 +119,7 @@ FName FAnchorpointConnectWorker::GetName() const
 bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointConnectWorker::Execute);
-	
+
 	TValueOrError<FString, FString> ConnectResult = AnchorpointCliOperations::Connect();
 
 	if (ConnectResult.HasError())
@@ -134,7 +134,7 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 bool FAnchorpointConnectWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointConnectWorker::UpdateStates);
-	
+
 	return true;
 }
 
@@ -146,7 +146,7 @@ FName FAnchorpointCheckOutWorker::GetName() const
 bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::Execute);
-	
+
 	TValueOrError<FString, FString> CheckoutResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	if (CheckoutResult.HasError())
@@ -164,7 +164,7 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 bool FAnchorpointCheckOutWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::UpdateStates);
-	
+
 	return UpdateCachedStates(States);
 }
 
@@ -176,11 +176,11 @@ FName FAnchorpointRevertWorker::GetName() const
 bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointRevertWorker::Execute);
-	
+
 	TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
 
 	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(InCommand.Files);
-	
+
 	if (UnlockResult.HasError())
 	{
 		InCommand.ErrorMessages.Add(UnlockResult.GetError());
@@ -199,7 +199,7 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 
 		InCommand.bCommandSuccessful &= DiscardChangesResult.HasValue();
 	}
-	
+
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 
 	UpdateCachedStates(States);
@@ -210,7 +210,7 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 bool FAnchorpointRevertWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointRevertWorker::UpdateStates);
-	
+
 	return UpdateCachedStates(States);
 }
 
@@ -222,7 +222,7 @@ FName FAnchorpointUpdateStatusWorker::GetName() const
 bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointUpdateStatusWorker::Execute);
-	
+
 	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
 	return InCommand.bCommandSuccessful;
 }
