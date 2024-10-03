@@ -5,39 +5,37 @@
 #include "Anchorpoint.h"
 #include "AnchorpointSourceControlSettings.h"
 
-#define LOCTEXT_NAMESPACE "Anchorpoint"
-
 void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs)
 {
 	ChildSlot
 	[
 		SNew(SHorizontalBox)
-		+SHorizontalBox::Slot()
+		+ SHorizontalBox::Slot()
 		.FillWidth(1.0f)
 		[
 			SNew(SVerticalBox)
-			+SVerticalBox::Slot()
+			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
 			.Padding(2.0f)
 			.HAlign(HAlign_Right)
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(LOCTEXT("Install DirectoryLabel", "InstallDirectory"))
-				.ToolTipText(LOCTEXT("InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
+				.Text(NSLOCTEXT("Anchorpoint", "Install DirectoryLabel", "InstallDirectory"))
+				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
 			]
 		]
-		+SHorizontalBox::Slot()
+		+ SHorizontalBox::Slot()
 		.FillWidth(2.0f)
 		[
 			SNew(SVerticalBox)
-			+SVerticalBox::Slot()
+			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
 			.Padding(2.0f)
 			[
 				SNew(SEditableTextBox)
 				.Text(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
-				.ToolTipText(LOCTEXT("InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
+				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
 				.OnTextCommitted(this, &SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited)
 				.OnTextChanged(this, &SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited, ETextCommit::Default)
 			]
@@ -57,5 +55,3 @@ void SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited(con
 	Settings.SetInstallDirectory(Text.ToString());
 	Settings.SaveSettings();
 }
-
-#undef LOCTEXT_NAMESPACE

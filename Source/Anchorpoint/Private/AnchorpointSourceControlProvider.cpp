@@ -3,6 +3,8 @@
 #include "AnchorpointSourceControlProvider.h"
 
 #include <SourceControlHelpers.h>
+#include <ScopedSourceControlProgress.h>
+#include <SourceControlOperations.h>
 
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointControlCommand.h"
@@ -10,10 +12,6 @@
 #include "AnchorpointControlState.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
-#include "ScopedSourceControlProgress.h"
-#include "SourceControlOperations.h"
-
-#define LOCTEXT_NAMESPACE "Anchorpoint"
 
 void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate)
 {
@@ -446,5 +444,3 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 		return InCommand.ReturnResults();
 	}
 }
-
-#undef LOCTEXT_NAMESPACE

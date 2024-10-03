@@ -2,7 +2,7 @@
 
 #include "AnchorpointSourceControlSettings.h"
 
-#include "SourceControlHelpers.h"
+#include <SourceControlHelpers.h>
 
 const FString SettingsSection = TEXT("SourceControl.Anchorpoint");
 
@@ -30,7 +30,8 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 	const FString& IniFile = SourceControlHelpers::GetSettingsIni();
 	
 	const bool bInstallDirectorySet = GConfig->GetString(*SettingsSection, TEXT("InstallDirectory"), InstallDirectory, IniFile);
-	// In case some new variables appears or are unset, let's find some good defaults 
+	
+	// In case some values are unset, let's find some good defaults 
 	if(!bInstallDirectorySet)
 	{
 #if PLATFORM_MAC

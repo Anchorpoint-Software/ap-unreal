@@ -2,6 +2,9 @@
 
 #pragma once
 
+/**
+ * Base class for all the SourceControl workers performing operations.
+ */
 class IAnchorpointSourceControlWorker
 {
 public:
