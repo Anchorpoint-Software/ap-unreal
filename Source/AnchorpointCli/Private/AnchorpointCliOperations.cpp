@@ -126,7 +126,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
 		return MakeValue(TEXT("Success"));
 	}
 
-	if(!ProcessOutput.OutputAsJsonObject().IsValid())
+	if (!ProcessOutput.OutputAsJsonObject().IsValid())
 	{
 		return MakeError(TEXT("Failed to parse output to JSON."));
 	}
@@ -140,7 +140,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 
 	static FString CurrentUser;
 
-	if(!CurrentUser.IsEmpty())
+	if (!CurrentUser.IsEmpty())
 	{
 		return MakeValue(CurrentUser);
 	}
@@ -247,6 +247,27 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<
 	//TODO: Check how revert only unchanged check affects this
 
 	FString CheckoutCommand = TEXT("checkout --");
+
+	for (const FString& File : InFiles)
+	{
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *ToRelativePath(File));
+	}
+
+	FCliResult ProcessOutput = RunGitCommand(CheckoutCommand);
+
+	if (ProcessOutput.DidSucceed())
+	{
+		return MakeValue(TEXT("Success"));
+	}
+
+	return MakeError(ProcessOutput.Error.GetValue());
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(TArray<FString>& InFiles)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DeleteFiles);
+
+	FString CheckoutCommand = TEXT("rm --");
 
 	for (const FString& File : InFiles)
 	{
