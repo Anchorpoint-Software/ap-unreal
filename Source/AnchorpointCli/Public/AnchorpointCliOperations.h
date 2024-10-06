@@ -21,8 +21,10 @@ struct FAnchorpointStatus
 	FString CurrentBranch;
 	TMap<FString, EAnchorpointFileOperation> Staged;
 	TMap<FString, EAnchorpointFileOperation> NotStaged;
-	TMap<FString, FString> LockedFiles;
-	TArray<FString> OutdatedFiles;
+	TMap<FString, FString> Locked;
+	TArray<FString> Outdated;
+
+	ANCHORPOINTCLI_API TArray<FString> GetAllAffectedFiles() const;
 };
 
 struct FCliResult

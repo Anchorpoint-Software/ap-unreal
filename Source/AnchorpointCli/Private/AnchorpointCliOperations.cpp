@@ -68,14 +68,32 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 	{
 		FString FullFilePath = ProjectPath / LockedFile.Key;
 		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.LockedFiles.Add(FullFilePath, LockedFile.Value->AsString());
+		Result.Locked.Add(FullFilePath, LockedFile.Value->AsString());
 	}
 	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
 	{
 		FString FullFilePath = ProjectPath / OutDatedFile->AsString();
 		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.OutdatedFiles.Add(FullFilePath);
+		Result.Outdated.Add(FullFilePath);
 	}
+
+	return Result;
+}
+
+TArray<FString> FAnchorpointStatus::GetAllAffectedFiles() const
+{
+	TArray<FString> Result;
+
+	TArray<FString> StagedFiles; Staged.GetKeys(StagedFiles);
+	Result.Append(StagedFiles);
+
+	TArray<FString> NotStagedFiles; NotStaged.GetKeys(NotStagedFiles);
+	Result.Append(NotStagedFiles);
+
+	TArray<FString> LockedFiles; Locked.GetKeys(LockedFiles);
+	Result.Append(LockedFiles);
+
+	Result.Append(Outdated);
 
 	return Result;
 }
