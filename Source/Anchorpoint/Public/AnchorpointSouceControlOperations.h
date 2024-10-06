@@ -50,3 +50,36 @@ public:
 
 	TArray<FAnchorpointControlState> States;
 };
+
+class FAnchorpointAddWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray<FAnchorpointControlState> States;
+};
+
+class FAnchorpointCopyWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray<FAnchorpointControlState> States;
+};
+
+class FAnchorpointDeleteWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray<FAnchorpointControlState> States;
+};

@@ -253,6 +253,79 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointUpdateStatusWorker::UpdateStates);
-	
+
+	return UpdateCachedStates(States);
+}
+
+FName FAnchorpointAddWorker::GetName() const
+{
+	return "Add";
+}
+
+bool FAnchorpointAddWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::Execute);
+
+	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
+	UpdateCachedStates(States);
+
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointAddWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::UpdateStates);
+
+	return UpdateCachedStates(States);
+}
+
+FName FAnchorpointCopyWorker::GetName() const
+{
+	return "Copy";
+}
+
+bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
+
+	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
+	UpdateCachedStates(States);
+
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointCopyWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::UpdateStates);
+
+	return UpdateCachedStates(States);
+}
+
+FName FAnchorpointDeleteWorker::GetName() const
+{
+	return "Delete";
+}
+
+bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::Execute);
+
+	TValueOrError<FString, FString> DeleteResult = AnchorpointCliOperations::DeleteFiles(InCommand.Files);
+
+	if (DeleteResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(DeleteResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful &= DeleteResult.HasValue();
+
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointDeleteWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::UpdateStates);
+
 	return UpdateCachedStates(States);
 }
