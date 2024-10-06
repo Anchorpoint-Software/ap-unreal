@@ -242,7 +242,7 @@ bool FAnchorpointSourceControlProvider::UsesLocalReadOnlyState() const
 
 bool FAnchorpointSourceControlProvider::UsesChangelists() const
 {
-	return true;
+	return false;
 }
 
 bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
