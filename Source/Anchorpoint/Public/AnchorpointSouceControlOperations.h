@@ -83,3 +83,14 @@ class FAnchorpointDeleteWorker final : public IAnchorpointSourceControlWorker
 
 	TArray<FAnchorpointControlState> States;
 };
+
+class FAnchorpointCheckInWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray<FAnchorpointControlState> States;
+};

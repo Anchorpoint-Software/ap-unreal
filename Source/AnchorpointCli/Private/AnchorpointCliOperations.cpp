@@ -302,6 +302,32 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(TArray<FSt
 	return MakeError(ProcessOutput.Error.GetValue());
 }
 
+TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FString> InFiles, const FString& InMessage)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::SubmitFiles);
+
+	TArray<FString> SubmitParams;
+	SubmitParams.Add(TEXT("sync"));
+	SubmitParams.Add(TEXT("--files"));
+
+	for (const FString& File : InFiles)
+	{
+		SubmitParams.Add(FString::Printf(TEXT("\"%s\""), *ToRelativePath(File)));
+	}
+
+	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *InMessage));
+
+	FString SubmitCommand = FString::Join(SubmitParams, TEXT(" "));
+	FCliResult ProcessOutput = RunApCommand(SubmitCommand);
+
+	if (ProcessOutput.DidSucceed())
+	{
+		return MakeValue(TEXT("Success"));
+	}
+
+	return MakeError(ProcessOutput.Error.GetValue());
+}
+
 FString AnchorpointCliOperations::GetCliPath()
 {
 	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();

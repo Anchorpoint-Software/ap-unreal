@@ -30,6 +30,7 @@ void FAnchorpointModule::StartupModule()
 	AnchorpointSourceControlProvider.RegisterWorker("MarkForAdd", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointAddWorker>));
 	AnchorpointSourceControlProvider.RegisterWorker("Delete", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointDeleteWorker>));
 	AnchorpointSourceControlProvider.RegisterWorker("Copy", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCopyWorker>));
+	AnchorpointSourceControlProvider.RegisterWorker("CheckIn", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCheckInWorker>));
 
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 

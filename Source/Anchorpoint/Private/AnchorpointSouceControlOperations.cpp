@@ -329,3 +329,37 @@ bool FAnchorpointDeleteWorker::UpdateStates() const
 
 	return UpdateCachedStates(States);
 }
+
+FName FAnchorpointCheckInWorker::GetName() const
+{
+	return "CheckIn";
+}
+
+bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::Execute);
+
+	TSharedRef<FCheckIn> Operation = StaticCastSharedRef<FCheckIn>(InCommand.Operation);
+	const FString Message = Operation->GetDescription().ToString();
+	
+	TValueOrError<FString, FString> SubmitResult = AnchorpointCliOperations::SubmitFiles(InCommand.Files, Message);
+
+	if (SubmitResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(SubmitResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful &= SubmitResult.HasValue();
+
+	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
+	UpdateCachedStates(States);
+
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointCheckInWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::UpdateStates);
+
+	return UpdateCachedStates(States);
+}
