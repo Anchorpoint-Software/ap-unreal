@@ -42,13 +42,36 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 		return false;
 	}
 
+	auto IsRelevant = [&InFiles](const FString& InFile)
+	{
+		for (const FString& File : InFiles)
+		{
+			if (InFile.Compare(File, ESearchCase::IgnoreCase) == 0)
+			{
+				return true;
+			}
+
+			if (FPaths::IsUnderDirectory(InFile, File))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	};
+
 	const FAnchorpointStatus Status = StatusResult.GetValue();
 
-	for (const FString& File : InFiles)
+	for (const FString& File : Status.GetAllAffectedFiles())
 	{
+		if (!IsRelevant(File))
+		{
+			continue;
+		}
+
 		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
 
-		const FString* LockedBy = Status.LockedFiles.Find(File);
+		const FString* LockedBy = Status.Locked.Find(File);
 		const bool bLockedByMe = LockedBy && *LockedBy == CurrentUserResult.GetValue();
 
 		//TODO: Discuss what the priorities should be here - can I have a file in Add/Modified while else has it locked?
@@ -86,7 +109,7 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 				NewState.State = EAnchorpointState::Unknown;
 			}
 		}
-		else if (Status.OutdatedFiles.Contains(File))
+		else if (Status.Outdated.Contains(File))
 		{
 			NewState.State = EAnchorpointState::OutDated;
 		}
