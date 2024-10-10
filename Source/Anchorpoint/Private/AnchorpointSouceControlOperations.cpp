@@ -170,14 +170,14 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::Execute);
 
-	TValueOrError<FString, FString> CheckoutResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
-	if (CheckoutResult.HasError())
+	if (LockResult.HasError())
 	{
-		InCommand.ErrorMessages.Add(CheckoutResult.GetError());
+		InCommand.ErrorMessages.Add(LockResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful = CheckoutResult.HasValue();
+	InCommand.bCommandSuccessful = LockResult.HasValue();
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);
 
@@ -266,6 +266,14 @@ bool FAnchorpointAddWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::Execute);
 
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+
+	if (LockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(LockResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = LockResult.HasValue();
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);
 
@@ -287,7 +295,15 @@ FName FAnchorpointCopyWorker::GetName() const
 bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
+	
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
+	if (LockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(LockResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = LockResult.HasValue();
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);
 
@@ -309,6 +325,15 @@ FName FAnchorpointDeleteWorker::GetName() const
 bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::Execute);
+	
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+
+	if (LockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(LockResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = LockResult.HasValue();
 
 	TValueOrError<FString, FString> DeleteResult = AnchorpointCliOperations::DeleteFiles(InCommand.Files);
 
