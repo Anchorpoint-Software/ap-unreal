@@ -26,7 +26,7 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 	return !InStates.IsEmpty();
 }
 
-bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlState>& OutState)
+bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointControlState>& OutState)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunUpdateStatus);
 
@@ -42,16 +42,16 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 		return false;
 	}
 
-	auto IsRelevant = [&InFiles](const FString& InFile)
+	auto IsRelevant = [&InputPaths](const FString& FileToCheck)
 	{
-		for (const FString& File : InFiles)
+		for (const FString& Path : InputPaths)
 		{
-			if (InFile.Compare(File, ESearchCase::IgnoreCase) == 0)
+			if (FileToCheck.Compare(Path, ESearchCase::IgnoreCase) == 0)
 			{
 				return true;
 			}
 
-			if (FPaths::IsUnderDirectory(InFile, File))
+			if (FPaths::IsUnderDirectory(FileToCheck, Path))
 			{
 				return true;
 			}
@@ -128,6 +128,20 @@ bool RunUpdateStatus(const TArray<FString>& InFiles, TArray<FAnchorpointControlS
 		else
 		{
 			NewState.State = EAnchorpointState::UnlockedUnchanged;
+		}
+	}
+
+	// In case we have files that are not in the status, we add them as UnlockedUnchanged
+	for (const FString& Path : InputPaths)
+	{
+		if (FPaths::FileExists(Path))
+		{
+			bool bEntryExists = OutState.ContainsByPredicate([&Path](const FAnchorpointControlState& State) { return State.LocalFilename == Path; });
+			if (!bEntryExists)
+			{
+				FAnchorpointControlState& NewState = OutState.Emplace_GetRef(Path);
+				NewState.State = EAnchorpointState::UnlockedUnchanged;
+			}
 		}
 	}
 
@@ -295,7 +309,7 @@ FName FAnchorpointCopyWorker::GetName() const
 bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
-	
+
 	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	if (LockResult.HasError())
@@ -325,7 +339,7 @@ FName FAnchorpointDeleteWorker::GetName() const
 bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::Execute);
-	
+
 	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	if (LockResult.HasError())
@@ -366,7 +380,7 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 
 	TSharedRef<FCheckIn> Operation = StaticCastSharedRef<FCheckIn>(InCommand.Operation);
 	const FString Message = Operation->GetDescription().ToString();
-	
+
 	TValueOrError<FString, FString> SubmitResult = AnchorpointCliOperations::SubmitFiles(InCommand.Files, Message);
 
 	if (SubmitResult.HasError())
