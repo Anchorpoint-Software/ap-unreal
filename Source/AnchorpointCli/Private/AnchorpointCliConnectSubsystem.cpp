@@ -2,11 +2,14 @@
 
 #include "AnchorpointCliConnectSubsystem.h"
 
-#include <Misc/MonitoredProcess.h>
+#include <ISourceControlModule.h>
+#include <ISourceControlProvider.h>
+#include <JsonObjectConverter.h>
+#include <SourceControlOperations.h>
+#include <Editor/EditorPerformanceSettings.h>
+#include <Misc/InteractiveProcess.h>
 
 #include "AnchorpointCli.h"
-#include "JsonObjectConverter.h"
-#include "Misc/InteractiveProcess.h"
 
 FString GetCliPath()
 {
@@ -31,7 +34,8 @@ void UAnchorpointCliConnectSubsystem::RespondToMessage(const FString& Id, TOptio
 	Response.Error = ErrorString;
 
 	FString JsonMessage;
-	FJsonObjectConverter::UStructToJsonObjectString(Response, JsonMessage);
+	FJsonObjectConverter::UStructToJsonObjectString<FAnchorpointCliConnectResponse>(Response, JsonMessage, 0, 0, 0, nullptr, false);
+
 	Process->SendWhenReady(JsonMessage);
 }
 
@@ -39,15 +43,22 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
 	Super::Initialize(Collection);
 
+	UEditorPerformanceSettings* EditorPerformanceSettings = GetMutableDefault<UEditorPerformanceSettings>();
+	if (EditorPerformanceSettings)
+	{
+		EditorPerformanceSettings->bThrottleCPUWhenNotForeground = false;
+		EditorPerformanceSettings->PostEditChange();
+	}
+
 	const FString CommandLineExecutable = GetCliPath();
-	
+
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 	Args.Add(TEXT("connect --name \"unreal\""));
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
-	
+
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
-	Process = MakeShared<FInteractiveProcess>(CommandLineExecutable, CommandLineArgs, true);
+	Process = MakeShared<FInteractiveProcess>(CommandLineExecutable, CommandLineArgs, true, true);
 
 	if (!Process)
 	{
@@ -69,6 +80,37 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	UE_LOG(LogAnchorpointCliConnect, Display, TEXT("Anchopoint listener connected"));
 }
 
+void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMessage& Message)
+{
+	const FString& MessageType = Message.Type;
+	UE_LOG(LogAnchorpointCliConnect, Display, TEXT("Anchorpoint Source Control Provider received message: %s"), *MessageType);
+
+	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated"))
+	{
+		AsyncTask(ENamedThreads::GameThread,
+		          [this, Message]()
+		          {
+			          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), Message.Files);
+			          RespondToMessage(Message.Id);
+		          });
+	}
+	else if (MessageType == TEXT("project saved"))
+	{
+		// RespondToMessage(MessageId);
+
+	}
+	else if (MessageType == TEXT("files about to change"))
+	{
+		// RespondToMessage(MessageId);
+
+	}
+	else if (MessageType == TEXT("files changed"))
+	{
+		// RespondToMessage(MessageId);
+
+	}
+}
+
 void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 {
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Listener output: %s"), *Output);
@@ -80,16 +122,22 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 	FAnchorpointConnectMessage Message;
 	bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(JsonBuffer, &Message);
 
-	if(bParseSuccess)
+	if (bParseSuccess)
 	{
-		OnMessageReceived.Broadcast(Message);
+		const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		for (FString& File : Message.Files)
+		{
+			File = ProjectPath / File;
+		}
+
+		HandleMessage(Message);
 		JsonBuffer.Empty();
 	}
 	else
 	{
 		// UE_LOG(LogAnchorpointCliConnect, Error, TEXT("Failed to parse message: %s"), *Output);
 	}
-	
+
 }
 
 void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCanceling)

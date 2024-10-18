@@ -44,15 +44,12 @@ class ANCHORPOINTCLI_API UAnchorpointCliConnectSubsystem : public UEditorSubsyst
 {
 	GENERATED_BODY()
 
-public:
-	TMulticastDelegate<void(const FAnchorpointConnectMessage&)> OnMessageReceived;
-	void RespondToMessage(const FString& Id, TOptional<FString> Error);
-	
-
-private:
 	//~ Begin UEditorSubsystem Interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	//~ End UEditorSubsystem Interface
+
+	void HandleMessage(const FAnchorpointConnectMessage& Message);
+	void RespondToMessage(const FString& Id, TOptional<FString> Error = TOptional<FString>());
 
 	void OnOutput(const FString& Output);
 	void OnCompleted(int ReturnCode, bool bCanceling);
