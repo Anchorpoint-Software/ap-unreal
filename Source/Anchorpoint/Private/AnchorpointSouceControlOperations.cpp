@@ -310,14 +310,6 @@ bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
 
-	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
-
-	if (LockResult.HasError())
-	{
-		InCommand.ErrorMessages.Add(LockResult.GetError());
-	}
-
-	InCommand.bCommandSuccessful = LockResult.HasValue();
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);
 
@@ -389,6 +381,15 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	}
 
 	InCommand.bCommandSuccessful &= SubmitResult.HasValue();
+
+	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(InCommand.Files);
+
+	if (UnlockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(UnlockResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = UnlockResult.HasValue();
 
 	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
 	UpdateCachedStates(States);

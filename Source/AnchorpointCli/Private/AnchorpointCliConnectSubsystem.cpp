@@ -180,13 +180,22 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
-		// RespondToMessage(MessageId);
+		const int32 NumUnsaved = FUnsavedAssetsTrackerModule::Get().GetUnsavedAssetNum();
+		if (NumUnsaved == 0)
+		{
+			RespondToMessage(Message.Id);
+		}
+		else
+		{
+			// TODO: Ask if we should prompt the user to save those files instead of just erroring out.
+			RespondToMessage(Message.Id, FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved));
+		}
 
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
-		// RespondToMessage(MessageId);
-
+		UnlinkObjects(Message.Files);
+		RespondToMessage(Message.Id);
 	}
 	else if (MessageType == TEXT("files changed"))
 	{
