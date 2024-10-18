@@ -11,6 +11,7 @@ public class AnchorpointCli : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"EditorSubsystem",
 			"Json",
 			"JsonUtilities",
 		});
