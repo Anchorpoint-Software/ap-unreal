@@ -8,6 +8,10 @@
 #include <SourceControlOperations.h>
 #include <Editor/EditorPerformanceSettings.h>
 #include <Misc/InteractiveProcess.h>
+#include <PackageTools.h>
+#include <SourceControlHelpers.h>
+#include <UnsavedAssetsTrackerModule.h>
+#include <UObject/Package.h>
 
 #include "AnchorpointCli.h"
 
@@ -37,6 +41,86 @@ void UAnchorpointCliConnectSubsystem::RespondToMessage(const FString& Id, TOptio
 	FJsonObjectConverter::UStructToJsonObjectString<FAnchorpointCliConnectResponse>(Response, JsonMessage, 0, 0, 0, nullptr, false);
 
 	Process->SendWhenReady(JsonMessage);
+}
+
+bool UAnchorpointCliConnectSubsystem::UnlinkObjects(const TArray<FString>& InFiles)
+{
+	if (!UnlinkedObjects.IsEmpty())
+	{
+		// We already unlinked something, so we are in the middle of a sync
+		return false;
+	}
+
+	FlushAsyncLoading();
+
+	const TArray<FString> PackageFilenames = SourceControlHelpers::PackageFilenames(InFiles);
+	for (const FString& PackageName : PackageFilenames)
+	{
+		if (UPackage* Package = FindPackage(nullptr, *PackageName))
+		{
+			UnlinkedObjects.Emplace(Package);
+
+			if (!Package->IsFullyLoaded())
+			{
+				Package->FullyLoad();
+			}
+		}
+	}
+
+	TArray<UObject*> Loaders;
+	Loaders.Append(UnlinkedObjects);
+	ResetLoaders(Loaders);
+
+	return true;
+}
+
+bool UAnchorpointCliConnectSubsystem::RelinkObjects(const TArray<FString>& InFiles)
+{
+	if (UnlinkedObjects.IsEmpty())
+	{
+		// We have not unlinked anything yet
+		return false;
+	}
+
+	const TArray<FString> PackageFilenames = SourceControlHelpers::PackageFilenames(InFiles);
+
+	// Syncing may have deleted some packages, so we need to unload those rather than re-load them...
+	// Note: we will store the package using weak pointers here otherwise we might have garbage collection issues after the ReloadPackages call
+	TArray<TWeakObjectPtr<UPackage>> PackagesToUnload;
+	UnlinkedObjects.RemoveAll([&](UPackage* InPackage) -> bool
+	{
+		const FString PackageExtension = InPackage->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
+		const FString PackageFilename = FPackageName::LongPackageNameToFilename(InPackage->GetName(), PackageExtension);
+		if (!FPaths::FileExists(PackageFilename))
+		{
+			PackagesToUnload.Emplace(MakeWeakObjectPtr(InPackage));
+			return true; // remove package
+		}
+		return false; // keep package
+	});
+
+	// Hot-reload the new packages...
+	UPackageTools::ReloadPackages(UnlinkedObjects);
+
+	// Unload any deleted packages...
+	TArray<UPackage*> PackageRawPtrsToUnload;
+	for (TWeakObjectPtr<UPackage>& PackageToUnload : PackagesToUnload)
+	{
+		if (PackageToUnload.IsValid())
+		{
+			PackageRawPtrsToUnload.Emplace(PackageToUnload.Get());
+		}
+	}
+
+	UPackageTools::UnloadPackages(PackageRawPtrsToUnload);
+
+	// Re-cache the SCC state...
+	ISourceControlProvider& SCCProvider = ISourceControlModule::Get().GetProvider();
+	SCCProvider.Execute(ISourceControlOperation::Create<FUpdateStatus>(), PackageFilenames);
+
+	UnlinkedObjects.Empty();
+	
+	return true;
 }
 
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)

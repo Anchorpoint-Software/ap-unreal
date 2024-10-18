@@ -14,7 +14,9 @@ public class AnchorpointCli : ModuleRules
 			"EditorSubsystem",
 			"UnrealEd",
 			"Json",
-			"JsonUtilities",
+			"JsonUtilities", 
+			"UnsavedAssetsTracker",
+			"SourceControl",
 		});
 	}
 }
