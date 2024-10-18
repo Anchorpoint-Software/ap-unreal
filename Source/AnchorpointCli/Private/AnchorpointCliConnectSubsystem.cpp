@@ -174,8 +174,8 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 		AsyncTask(ENamedThreads::GameThread,
 		          [this, Message]()
 		          {
-			          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), Message.Files);
-			          RespondToMessage(Message.Id);
+			          UE_LOG(LogAnchorpointCliConnect, Display, TEXT("Update Status requested by Cli Connect"));
+			          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), Message.Files, EConcurrency::Asynchronous);
 		          });
 	}
 	else if (MessageType == TEXT("project saved"))
