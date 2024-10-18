@@ -119,7 +119,7 @@ bool UAnchorpointCliConnectSubsystem::RelinkObjects(const TArray<FString>& InFil
 	SCCProvider.Execute(ISourceControlOperation::Create<FUpdateStatus>(), PackageFilenames);
 
 	UnlinkedObjects.Empty();
-	
+
 	return true;
 }
 
@@ -127,8 +127,7 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
 	Super::Initialize(Collection);
 
-	UEditorPerformanceSettings* EditorPerformanceSettings = GetMutableDefault<UEditorPerformanceSettings>();
-	if (EditorPerformanceSettings)
+	if (UEditorPerformanceSettings* EditorPerformanceSettings = GetMutableDefault<UEditorPerformanceSettings>())
 	{
 		EditorPerformanceSettings->bThrottleCPUWhenNotForeground = false;
 		EditorPerformanceSettings->PostEditChange();
@@ -138,7 +137,10 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-	Args.Add(TEXT("connect --name \"unreal\""));
+	Args.Add(TEXT("connect"));
+	Args.Add(TEXT("--name \"unreal\""));
+	Args.Add(TEXT("—-projectSaved"));
+	Args.Add(TEXT("—-changedFiles"));
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
 
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
@@ -180,17 +182,14 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
-		const int32 NumUnsaved = FUnsavedAssetsTrackerModule::Get().GetUnsavedAssetNum();
-		if (NumUnsaved == 0)
+		TOptional<FString> Error;
+		const int32 NumUnsaved = FUnsavedAssetsTrackerModule::Get().GetUnsavedAssets().Num();
+		if (NumUnsaved > 0)
 		{
-			RespondToMessage(Message.Id);
-		}
-		else
-		{
-			// TODO: Ask if we should prompt the user to save those files instead of just erroring out.
-			RespondToMessage(Message.Id, FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved));
+			Error = FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved);
 		}
 
+		RespondToMessage(Message.Id, Error);
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
@@ -200,7 +199,6 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files changed"))
 	{
 		// RespondToMessage(MessageId);
-
 	}
 }
 
@@ -208,15 +206,11 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 {
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Listener output: %s"), *Output);
 
-	// TODO: Until we get onliner output, we will append the output until a valid json
-	static FString JsonBuffer;
-	JsonBuffer += Output;
-
 	FAnchorpointConnectMessage Message;
-	bool bParseSuccess = FJsonObjectConverter::JsonObjectStringToUStruct(JsonBuffer, &Message);
 
-	if (bParseSuccess)
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(Output, &Message))
 	{
+		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
 		const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 		for (FString& File : Message.Files)
 		{
@@ -224,13 +218,11 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 		}
 
 		HandleMessage(Message);
-		JsonBuffer.Empty();
 	}
 	else
 	{
-		// UE_LOG(LogAnchorpointCliConnect, Error, TEXT("Failed to parse message: %s"), *Output);
+		UE_LOG(LogAnchorpointCliConnect, Error, TEXT("Failed to parse message: %s"), *Output);
 	}
-
 }
 
 void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCanceling)
