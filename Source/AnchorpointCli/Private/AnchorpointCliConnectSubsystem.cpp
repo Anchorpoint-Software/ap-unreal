@@ -138,9 +138,9 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 	Args.Add(TEXT("connect"));
-	Args.Add(TEXT("--name \"unreal\""));
-	Args.Add(TEXT("—-projectSaved"));
-	Args.Add(TEXT("—-changedFiles"));
+	Args.Add(TEXT("--name \"Unreal\""));
+	Args.Add(TEXT("--projectSaved"));
+	Args.Add(TEXT("--changedFiles"));
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
 
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
