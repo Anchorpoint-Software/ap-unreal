@@ -8,10 +8,9 @@
 #include <SourceControlOperations.h>
 #include <Editor/EditorPerformanceSettings.h>
 #include <Misc/InteractiveProcess.h>
-#include <PackageTools.h>
 #include <SourceControlHelpers.h>
 #include <UnsavedAssetsTrackerModule.h>
-#include <UObject/Package.h>
+#include <AssetRegistry/AssetRegistryModule.h>
 
 #include "AnchorpointCli.h"
 
@@ -193,12 +192,50 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
-		UnlinkObjects(Message.Files);
-		RespondToMessage(Message.Id);
+		TArray<FString> PackageToReload;
+		for (const FString& File : Message.Files)
+		{
+			FString PackageName;
+			if (FPackageName::TryConvertFilenameToLongPackageName(File, PackageName, nullptr))
+			{
+				PackageToReload.Add(PackageName);
+			}
+		}
+
+		USourceControlHelpers::ApplyOperationAndReloadPackages(
+			PackageToReload,
+			[](const TArray<FString>& PackageFilenames) -> bool
+			{
+				FPlatformProcess::Sleep(10.0f);
+				return true;
+			},
+			true,
+			false
+		);
+
+		/*
+		const bool bCanUnlink = UnlinkObjects(Message.Files);
+		TOptional<FString> Error;
+		if (!bCanUnlink)
+		{
+			Error = TEXT("Cannot unlink objects");
+		}
+
+		RespondToMessage(Message.Id, Error);
+		*/
 	}
 	else if (MessageType == TEXT("files changed"))
 	{
-		// RespondToMessage(MessageId);
+		/*
+		const bool bCanRelink = RelinkObjects(Message.Files);
+		TOptional<FString> Error;
+		if (!bCanRelink)
+		{
+			Error = TEXT("Cannot relink objects");
+		}
+
+		RespondToMessage(Message.Id, Error);
+		*/
 	}
 }
 

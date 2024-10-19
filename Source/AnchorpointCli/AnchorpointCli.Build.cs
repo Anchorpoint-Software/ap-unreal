@@ -16,7 +16,8 @@ public class AnchorpointCli : ModuleRules
 			"Json",
 			"JsonUtilities", 
 			"UnsavedAssetsTracker",
-			"SourceControl",
+			"SourceControl", 
+			"EditorScriptingUtilities",
 		});
 	}
 }
