@@ -42,86 +42,6 @@ void UAnchorpointCliConnectSubsystem::RespondToMessage(const FString& Id, TOptio
 	Process->SendWhenReady(JsonMessage);
 }
 
-bool UAnchorpointCliConnectSubsystem::UnlinkObjects(const TArray<FString>& InFiles)
-{
-	if (!UnlinkedObjects.IsEmpty())
-	{
-		// We already unlinked something, so we are in the middle of a sync
-		return false;
-	}
-
-	FlushAsyncLoading();
-
-	const TArray<FString> PackageFilenames = SourceControlHelpers::PackageFilenames(InFiles);
-	for (const FString& PackageName : PackageFilenames)
-	{
-		if (UPackage* Package = FindPackage(nullptr, *PackageName))
-		{
-			UnlinkedObjects.Emplace(Package);
-
-			if (!Package->IsFullyLoaded())
-			{
-				Package->FullyLoad();
-			}
-		}
-	}
-
-	TArray<UObject*> Loaders;
-	Loaders.Append(UnlinkedObjects);
-	ResetLoaders(Loaders);
-
-	return true;
-}
-
-bool UAnchorpointCliConnectSubsystem::RelinkObjects(const TArray<FString>& InFiles)
-{
-	if (UnlinkedObjects.IsEmpty())
-	{
-		// We have not unlinked anything yet
-		return false;
-	}
-
-	const TArray<FString> PackageFilenames = SourceControlHelpers::PackageFilenames(InFiles);
-
-	// Syncing may have deleted some packages, so we need to unload those rather than re-load them...
-	// Note: we will store the package using weak pointers here otherwise we might have garbage collection issues after the ReloadPackages call
-	TArray<TWeakObjectPtr<UPackage>> PackagesToUnload;
-	UnlinkedObjects.RemoveAll([&](UPackage* InPackage) -> bool
-	{
-		const FString PackageExtension = InPackage->ContainsMap() ? FPackageName::GetMapPackageExtension() : FPackageName::GetAssetPackageExtension();
-		const FString PackageFilename = FPackageName::LongPackageNameToFilename(InPackage->GetName(), PackageExtension);
-		if (!FPaths::FileExists(PackageFilename))
-		{
-			PackagesToUnload.Emplace(MakeWeakObjectPtr(InPackage));
-			return true; // remove package
-		}
-		return false; // keep package
-	});
-
-	// Hot-reload the new packages...
-	UPackageTools::ReloadPackages(UnlinkedObjects);
-
-	// Unload any deleted packages...
-	TArray<UPackage*> PackageRawPtrsToUnload;
-	for (TWeakObjectPtr<UPackage>& PackageToUnload : PackagesToUnload)
-	{
-		if (PackageToUnload.IsValid())
-		{
-			PackageRawPtrsToUnload.Emplace(PackageToUnload.Get());
-		}
-	}
-
-	UPackageTools::UnloadPackages(PackageRawPtrsToUnload);
-
-	// Re-cache the SCC state...
-	ISourceControlProvider& SCCProvider = ISourceControlModule::Get().GetProvider();
-	SCCProvider.Execute(ISourceControlOperation::Create<FUpdateStatus>(), PackageFilenames);
-
-	UnlinkedObjects.Empty();
-
-	return true;
-}
-
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -192,6 +112,12 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
+		if(bSyncInProgress)
+		{
+			RespondToMessage(Message.Id, FString(TEXT("Sync already in progress")));
+			return;
+		}
+
 		TArray<FString> PackageToReload;
 		for (const FString& File : Message.Files)
 		{
@@ -202,40 +128,26 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 			}
 		}
 
-		USourceControlHelpers::ApplyOperationAndReloadPackages(
-			PackageToReload,
-			[](const TArray<FString>& PackageFilenames) -> bool
-			{
-				FPlatformProcess::Sleep(10.0f);
-				return true;
-			},
-			true,
-			false
-		);
+		bSyncInProgress = true;
 
-		/*
-		const bool bCanUnlink = UnlinkObjects(Message.Files);
-		TOptional<FString> Error;
-		if (!bCanUnlink)
-		{
-			Error = TEXT("Cannot unlink objects");
-		}
-
-		RespondToMessage(Message.Id, Error);
-		*/
+		AsyncTask(ENamedThreads::GameThread,
+		          [this, PackageToReload, Message]()
+		          {
+			          RespondToMessage(Message.Id);
+			          auto WaitForSync = [this](const TArray<FString>& PackageFilenames) { return UpdateSync(PackageFilenames); };
+			          USourceControlHelpers::ApplyOperationAndReloadPackages(PackageToReload, WaitForSync, true, false);
+		          });
 	}
 	else if (MessageType == TEXT("files changed"))
 	{
-		/*
-		const bool bCanRelink = RelinkObjects(Message.Files);
-		TOptional<FString> Error;
-		if (!bCanRelink)
+		if(!bSyncInProgress)
 		{
-			Error = TEXT("Cannot relink objects");
+			RespondToMessage(Message.Id, FString(TEXT("Sync was not started")));
+			return;
 		}
 
-		RespondToMessage(Message.Id, Error);
-		*/
+		bSyncInProgress = false;
+		RespondToMessage(Message.Id);
 	}
 }
 
@@ -270,4 +182,27 @@ void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCancelin
 void UAnchorpointCliConnectSubsystem::OnCanceled()
 {
 	UE_LOG(LogAnchorpointCliConnect, Verbose, TEXT("Listener canceled"));
+}
+
+bool UAnchorpointCliConnectSubsystem::UpdateSync(const TArray<FString>& PackageFilenames)
+{
+	float TimeElapsed = 0.0f;
+
+	constexpr float TimeOut = 600.0f;
+	constexpr float TimeStep = 1.0f;
+
+	while(bSyncInProgress)
+	{
+		FPlatformProcess::Sleep(TimeStep);
+		TimeElapsed += TimeStep;
+		UE_LOG(LogAnchorpointCliConnect, Display, TEXT("Sync in progress for %f seconds"), TimeElapsed);
+
+		if(TimeElapsed > TimeOut)
+		{
+			UE_LOG(LogAnchorpointCliConnect, Error, TEXT("Sync timed out"));
+			bSyncInProgress = false;
+		}
+	}
+
+	return true;
 }

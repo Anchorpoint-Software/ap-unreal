@@ -50,16 +50,15 @@ class ANCHORPOINTCLI_API UAnchorpointCliConnectSubsystem : public UEditorSubsyst
 
 	void HandleMessage(const FAnchorpointConnectMessage& Message);
 	void RespondToMessage(const FString& Id, TOptional<FString> Error = TOptional<FString>());
-	
-	bool UnlinkObjects(const TArray<FString>& InFiles);
-	bool RelinkObjects(const TArray<FString>& InFiles);
 
 	void OnOutput(const FString& Output);
 	void OnCompleted(int ReturnCode, bool bCanceling);
 	void OnCanceled();
 
-	UPROPERTY()
-	TArray<UPackage*> UnlinkedObjects;
+	bool UpdateSync(const TArray<FString>& PackageFilenames);
 
 	TSharedPtr<FInteractiveProcess> Process = nullptr;
+
+	bool bSyncInProgress = false;
 };
+
