@@ -4,7 +4,7 @@
 
 #include <ISourceControlProvider.h>
 
-class FAnchorpointControlState;
+class FAnchorpointSourceControlState;
 class FAnchorpointSourceControlCommand;
 class IAnchorpointSourceControlWorker;
 
@@ -50,10 +50,10 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
-	TSharedRef<FAnchorpointControlState> GetStateInternal(const FString& Filename);
+	TSharedRef<FAnchorpointSourceControlState> GetStateInternal(const FString& Filename);
 	FDateTime GetLastSyncTime() const;
 
-	TMap<FString, TSharedRef<FAnchorpointControlState>> StateCache;
+	TMap<FString, TSharedRef<FAnchorpointSourceControlState>> StateCache;
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);

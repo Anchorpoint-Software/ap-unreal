@@ -34,7 +34,7 @@ void FAnchorpointModule::StartupModule()
 	AnchorpointSourceControlSettings.LoadSettings();
 
 	// Connect the CLI to our settings to ensure we used the configured path 
-	FAnchorpointCliModule::Get().GetCliPathDelegate.BindRaw(this, &FAnchorpointModule::GetCliPath);
+	FAnchorpointCliModule::Get().GetInstallFolderDelegate.BindRaw(this, &FAnchorpointModule::GetCliPath);
 
 	// Register our operations
 	AnchorpointSourceControlProvider.RegisterWorker("Connect", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));

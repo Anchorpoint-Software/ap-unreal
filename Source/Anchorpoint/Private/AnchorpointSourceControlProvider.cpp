@@ -7,9 +7,9 @@
 #include <SourceControlOperations.h>
 
 #include "AnchorpointCliOperations.h"
-#include "AnchorpointControlCommand.h"
+#include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
-#include "AnchorpointControlState.h"
+#include "AnchorpointSourceControlState.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
 
@@ -144,7 +144,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FS
 TArray<FSourceControlStateRef> FAnchorpointSourceControlProvider::GetCachedStateByPredicate(TFunctionRef<bool(const FSourceControlStateRef&)> Predicate) const
 {
 	TArray<FSourceControlStateRef> Result;
-	for (const TTuple<FString, TSharedRef<FAnchorpointControlState>>& CacheItem : StateCache)
+	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& CacheItem : StateCache)
 	{
 		FSourceControlStateRef State = CacheItem.Value;
 		if (Predicate(State))
@@ -327,14 +327,14 @@ TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() cons
 	return SNew(SAnchorpointSourceControlSettingsWidget);
 }
 
-TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)
+TSharedRef<FAnchorpointSourceControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)
 {
-	if (TSharedRef<FAnchorpointControlState>* State = StateCache.Find(Filename))
+	if (TSharedRef<FAnchorpointSourceControlState>* State = StateCache.Find(Filename))
 	{
 		return *State;
 	}
 
-	TSharedRef<FAnchorpointControlState> NewState = MakeShared<FAnchorpointControlState>(Filename);
+	TSharedRef<FAnchorpointSourceControlState> NewState = MakeShared<FAnchorpointSourceControlState>(Filename);
 	StateCache.Add(Filename, NewState);
 	return NewState;
 }
@@ -342,7 +342,7 @@ TSharedRef<FAnchorpointControlState> FAnchorpointSourceControlProvider::GetState
 FDateTime FAnchorpointSourceControlProvider::GetLastSyncTime() const
 {
 	FDateTime LastSyncTime = FDateTime::MinValue();
-	for (const TTuple<FString, TSharedRef<FAnchorpointControlState>>& Cache : StateCache)
+	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& Cache : StateCache)
 	{
 		if (Cache.Value->TimeStamp > LastSyncTime)
 		{

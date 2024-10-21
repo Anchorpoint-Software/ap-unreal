@@ -28,16 +28,16 @@ enum class EAnchorpointState
 /**
  * 
  */
-class FAnchorpointControlState : public ISourceControlState
+class FAnchorpointSourceControlState : public ISourceControlState
 {
 public:
-	explicit FAnchorpointControlState(const FString& InLocalFilename);
+	explicit FAnchorpointSourceControlState(const FString& InLocalFilename);
 
-	FAnchorpointControlState() = delete;
-	FAnchorpointControlState(const FAnchorpointControlState& Other) = default;
-	FAnchorpointControlState(FAnchorpointControlState&& Other) noexcept = default;
-	FAnchorpointControlState& operator=(const FAnchorpointControlState& Other) = default;
-	FAnchorpointControlState& operator=(FAnchorpointControlState&& Other) noexcept = default;
+	FAnchorpointSourceControlState() = delete;
+	FAnchorpointSourceControlState(const FAnchorpointSourceControlState& Other) = default;
+	FAnchorpointSourceControlState(FAnchorpointSourceControlState&& Other) noexcept = default;
+	FAnchorpointSourceControlState& operator=(const FAnchorpointSourceControlState& Other) = default;
+	FAnchorpointSourceControlState& operator=(FAnchorpointSourceControlState&& Other) noexcept = default;
 
 	FString LocalFilename;
 	FDateTime TimeStamp = 0;

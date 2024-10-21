@@ -6,19 +6,19 @@
 
 #include "Anchorpoint.h"
 #include "AnchorpointCliOperations.h"
-#include "AnchorpointControlCommand.h"
-#include "AnchorpointControlState.h"
+#include "AnchorpointSourceControlCommand.h"
+#include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlProvider.h"
 
-bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
+bool UpdateCachedStates(const TArray<FAnchorpointSourceControlState>& InStates)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UpdateCachedStates);
 
 	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
 
-	for (const FAnchorpointControlState& InState : InStates)
+	for (const FAnchorpointSourceControlState& InState : InStates)
 	{
-		TSharedRef<FAnchorpointControlState> State = Provider.GetStateInternal(InState.LocalFilename);
+		TSharedRef<FAnchorpointSourceControlState> State = Provider.GetStateInternal(InState.LocalFilename);
 		*State = InState;
 		State->TimeStamp = FDateTime::Now();
 	}
@@ -26,7 +26,7 @@ bool UpdateCachedStates(const TArray<FAnchorpointControlState>& InStates)
 	return !InStates.IsEmpty();
 }
 
-bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointControlState>& OutState)
+bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourceControlState>& OutState)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunUpdateStatus);
 
@@ -69,7 +69,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointContr
 			continue;
 		}
 
-		FAnchorpointControlState& NewState = OutState.Emplace_GetRef(File);
+		FAnchorpointSourceControlState& NewState = OutState.Emplace_GetRef(File);
 
 		const FString* LockedBy = Status.Locked.Find(File);
 		const bool bLockedByMe = LockedBy && *LockedBy == CurrentUserResult.GetValue();
@@ -136,10 +136,10 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointContr
 	{
 		if (FPaths::FileExists(Path))
 		{
-			bool bEntryExists = OutState.ContainsByPredicate([&Path](const FAnchorpointControlState& State) { return State.LocalFilename == Path; });
+			bool bEntryExists = OutState.ContainsByPredicate([&Path](const FAnchorpointSourceControlState& State) { return State.LocalFilename == Path; });
 			if (!bEntryExists)
 			{
-				FAnchorpointControlState& NewState = OutState.Emplace_GetRef(Path);
+				FAnchorpointSourceControlState& NewState = OutState.Emplace_GetRef(Path);
 				NewState.State = EAnchorpointState::UnlockedUnchanged;
 			}
 		}

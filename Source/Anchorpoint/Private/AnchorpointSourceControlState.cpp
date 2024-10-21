@@ -1,49 +1,49 @@
 ﻿// Some copyright should be here...
 
-#include "AnchorpointControlState.h"
+#include "AnchorpointSourceControlState.h"
 
 #include <RevisionControlStyle/RevisionControlStyle.h>
 
 #define LOCTEXT_NAMESPACE "Anchorpoint"
 
-FAnchorpointControlState::FAnchorpointControlState(const FString& InLocalFilename)
+FAnchorpointSourceControlState::FAnchorpointSourceControlState(const FString& InLocalFilename)
 {
 	LocalFilename = InLocalFilename;
 }
 
-int32 FAnchorpointControlState::GetHistorySize() const
+int32 FAnchorpointSourceControlState::GetHistorySize() const
 {
 	return 0;
 }
 
-TSharedPtr<ISourceControlRevision> FAnchorpointControlState::GetHistoryItem(int32 HistoryIndex) const
+TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetHistoryItem(int32 HistoryIndex) const
 {
 	return nullptr;
 }
 
-TSharedPtr<ISourceControlRevision> FAnchorpointControlState::FindHistoryRevision(int32 RevisionNumber) const
+TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::FindHistoryRevision(int32 RevisionNumber) const
 {
 	return nullptr;
 }
 
-TSharedPtr<ISourceControlRevision> FAnchorpointControlState::FindHistoryRevision(const FString& InRevision) const
+TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::FindHistoryRevision(const FString& InRevision) const
 {
 	return nullptr;
 }
 
-TSharedPtr<ISourceControlRevision> FAnchorpointControlState::GetCurrentRevision() const
+TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetCurrentRevision() const
 {
 	return nullptr;
 }
 
-ISourceControlState::FResolveInfo FAnchorpointControlState::GetResolveInfo() const
+ISourceControlState::FResolveInfo FAnchorpointSourceControlState::GetResolveInfo() const
 {
 	return PendingResolveInfo;
 }
 
 #if SOURCE_CONTROL_WITH_SLATE
 
-FSlateIcon FAnchorpointControlState::GetIcon() const
+FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 {
 	switch (State)
 	{
@@ -83,7 +83,7 @@ FSlateIcon FAnchorpointControlState::GetIcon() const
 
 #endif // SOURCE_CONTROL_WITH_SLATE
 
-FText FAnchorpointControlState::GetDisplayName() const
+FText FAnchorpointSourceControlState::GetDisplayName() const
 {
 	switch (State)
 	{
@@ -121,7 +121,7 @@ FText FAnchorpointControlState::GetDisplayName() const
 	return FText();
 }
 
-FText FAnchorpointControlState::GetDisplayTooltip() const
+FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 {
 	switch (State)
 	{
@@ -159,7 +159,7 @@ FText FAnchorpointControlState::GetDisplayTooltip() const
 	return FText();
 }
 
-TOptional<FText> FAnchorpointControlState::GetStatusText() const
+TOptional<FText> FAnchorpointSourceControlState::GetStatusText() const
 {
 	// Same as ISourceControlState::GetStatusText() but we display it even if the asset is not CheckedOut
 	const bool bWorthDisplaying = State != EAnchorpointState::UnlockedUnchanged;
@@ -172,24 +172,24 @@ TOptional<FText> FAnchorpointControlState::GetStatusText() const
 	return StatusText;
 }
 
-const FString& FAnchorpointControlState::GetFilename() const
+const FString& FAnchorpointSourceControlState::GetFilename() const
 {
 	return LocalFilename;
 }
 
-const FDateTime& FAnchorpointControlState::GetTimeStamp() const
+const FDateTime& FAnchorpointSourceControlState::GetTimeStamp() const
 {
 	return TimeStamp;
 }
 
-bool FAnchorpointControlState::CanCheckIn() const
+bool FAnchorpointSourceControlState::CanCheckIn() const
 {
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted;
 }
 
-bool FAnchorpointControlState::CanCheckout() const
+bool FAnchorpointSourceControlState::CanCheckout() const
 {
 	return State == EAnchorpointState::UnlockedUnchanged
 		|| State == EAnchorpointState::UnlockedAdded
@@ -197,7 +197,7 @@ bool FAnchorpointControlState::CanCheckout() const
 		|| State == EAnchorpointState::UnlockedDeleted;
 }
 
-bool FAnchorpointControlState::IsCheckedOut() const
+bool FAnchorpointSourceControlState::IsCheckedOut() const
 {
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
@@ -205,7 +205,7 @@ bool FAnchorpointControlState::IsCheckedOut() const
 		|| State == EAnchorpointState::LockedUnchanged;
 }
 
-bool FAnchorpointControlState::IsCheckedOutOther(FString* Who) const
+bool FAnchorpointSourceControlState::IsCheckedOutOther(FString* Who) const
 {
 	if (Who != nullptr)
 	{
@@ -215,63 +215,63 @@ bool FAnchorpointControlState::IsCheckedOutOther(FString* Who) const
 	return State == EAnchorpointState::LockedBySomeone;
 }
 
-bool FAnchorpointControlState::IsCheckedOutInOtherBranch(const FString& CurrentBranch /* = FString() */) const
+bool FAnchorpointSourceControlState::IsCheckedOutInOtherBranch(const FString& CurrentBranch /* = FString() */) const
 {
 	return false;
 }
 
-bool FAnchorpointControlState::IsModifiedInOtherBranch(const FString& CurrentBranch /* = FString() */) const
+bool FAnchorpointSourceControlState::IsModifiedInOtherBranch(const FString& CurrentBranch /* = FString() */) const
 {
 	return false;
 }
 
-bool FAnchorpointControlState::GetOtherBranchHeadModification(FString& HeadBranchOut, FString& ActionOut, int32& HeadChangeListOut) const
+bool FAnchorpointSourceControlState::GetOtherBranchHeadModification(FString& HeadBranchOut, FString& ActionOut, int32& HeadChangeListOut) const
 {
 	return false;
 }
 
-bool FAnchorpointControlState::IsCurrent() const
+bool FAnchorpointSourceControlState::IsCurrent() const
 {
 	return State != EAnchorpointState::OutDated;
 }
 
-bool FAnchorpointControlState::IsSourceControlled() const
+bool FAnchorpointSourceControlState::IsSourceControlled() const
 {
 	return State != EAnchorpointState::Unknown;
 }
 
-bool FAnchorpointControlState::IsAdded() const
+bool FAnchorpointSourceControlState::IsAdded() const
 {
 	return State == EAnchorpointState::LockedAdded;
 }
 
-bool FAnchorpointControlState::IsDeleted() const
+bool FAnchorpointSourceControlState::IsDeleted() const
 {
 	return State == EAnchorpointState::LockedDeleted;
 }
 
-bool FAnchorpointControlState::IsIgnored() const
+bool FAnchorpointSourceControlState::IsIgnored() const
 {
 	return State == EAnchorpointState::Ignored;
 }
 
-bool FAnchorpointControlState::CanEdit() const
+bool FAnchorpointSourceControlState::CanEdit() const
 {
 	//TODO: Confirm with AP team if we want to prevent locked files from being modified
 	return true; // With Git all files in the working copy are always editable (as opposed to Perforce)
 }
 
-bool FAnchorpointControlState::CanDelete() const
+bool FAnchorpointSourceControlState::CanDelete() const
 {
 	return IsSourceControlled() && IsCurrent();
 }
 
-bool FAnchorpointControlState::IsUnknown() const
+bool FAnchorpointSourceControlState::IsUnknown() const
 {
 	return State == EAnchorpointState::Unknown;
 }
 
-bool FAnchorpointControlState::IsModified() const
+bool FAnchorpointSourceControlState::IsModified() const
 {
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
@@ -281,18 +281,18 @@ bool FAnchorpointControlState::IsModified() const
 		|| State == EAnchorpointState::UnlockedDeleted;
 }
 
-bool FAnchorpointControlState::CanAdd() const
+bool FAnchorpointSourceControlState::CanAdd() const
 {
 	//TODO: Confirm with AP team if a files is created on disk it is automatically added and the user doesn't have to do it manually ever
 	return false; // Files are automatically added by AP 
 }
 
-bool FAnchorpointControlState::IsConflicted() const
+bool FAnchorpointSourceControlState::IsConflicted() const
 {
 	return State == EAnchorpointState::Conflicted;
 }
 
-bool FAnchorpointControlState::CanRevert() const
+bool FAnchorpointSourceControlState::CanRevert() const
 {
 	return State == EAnchorpointState::LockedAdded
 		|| State == EAnchorpointState::LockedModified
