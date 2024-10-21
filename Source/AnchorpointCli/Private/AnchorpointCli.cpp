@@ -1,20 +1,40 @@
-﻿// Some copyright should be here...
-
-#include "AnchorpointCli.h"
+﻿#include "AnchorpointCli.h"
 
 FAnchorpointCliModule& FAnchorpointCliModule::Get()
 {
 	return FModuleManager::LoadModuleChecked<FAnchorpointCliModule>("AnchorpointCli");
 }
 
-FString FAnchorpointCliModule::GetCliPath() const
+FString FAnchorpointCliModule::GetInstallFolder() const
 {
-	if(GetCliPathDelegate.IsBound())
+	if (GetInstallFolderDelegate.IsBound())
 	{
-		return GetCliPathDelegate.Execute();
+		return GetInstallFolderDelegate.Execute();
 	}
 
 	return {};
+}
+
+FString FAnchorpointCliModule::GetCliPath() const
+{
+	const FString InstallFolder = GetInstallFolder();
+
+#if PLATFORM_WINDOWS
+	return InstallFolder / "ap.exe";
+#elif PLATFORM_MAC
+	return InstallFolder / "ap";
+#endif
+}
+
+FString FAnchorpointCliModule::GetApplicationPath() const
+{
+	const FString InstallFolder = GetInstallFolder();
+
+#if PLATFORM_WINDOWS
+	return InstallFolder / "Anchorpoint.exe";
+#elif PLATFORM_MAC
+	return InstallFolder / "Anchorpoint";
+#endif
 }
 
 IMPLEMENT_MODULE(FAnchorpointCliModule, AnchorpointCli)

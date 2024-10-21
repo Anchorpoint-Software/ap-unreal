@@ -6,8 +6,6 @@
 
 #include "AnchorpointCli.h"
 
-DEFINE_LOG_CATEGORY_STATIC(LogAnchorpointCli, VeryVerbose, All);
-
 FString ToRelativePath(const FString& InFullPath)
 {
 	FString RelativePath = InFullPath;
@@ -128,13 +126,13 @@ bool AnchorpointCliOperations::IsInstalled()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::IsInstalled);
 
-	const FString CliPath = GetCliPath();
+	const FString CliPath = FAnchorpointCliModule::Get().GetCliPath();
 	return !CliPath.IsEmpty() && FPaths::FileExists(CliPath);
 }
 
 void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
 {
-	FPlatformProcess::CreateProc(*GetDesktopPath(), *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
+	FPlatformProcess::CreateProc(*FAnchorpointCliModule::Get().GetApplicationPath(), *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
@@ -336,28 +334,6 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 	return MakeError(ProcessOutput.Error.GetValue());
 }
 
-FString AnchorpointCliOperations::GetCliPath()
-{
-	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
-
-#if PLATFORM_WINDOWS
-	return CliDirectory / "ap.exe";
-#elif PLATFORM_MAC
-	return CliDirectory / "ap";
-#endif
-}
-
-FString AnchorpointCliOperations::GetDesktopPath()
-{
-	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
-
-#if PLATFORM_WINDOWS
-	return CliDirectory / "Anchorpoint.exe";
-#elif PLATFORM_MAC
-	return CliDirectory / "Anchorpoint";
-#endif
-}
-
 #define WAIT_FOR_CONDITION(x) while(x) continue;
 
 FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
@@ -373,7 +349,7 @@ FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 
 	TSharedPtr<FMonitoredProcess> Process = nullptr;
 
-	FString CommandLineExecutable = GetCliPath();
+	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
 
 	TArray<FString> Args;
 	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));

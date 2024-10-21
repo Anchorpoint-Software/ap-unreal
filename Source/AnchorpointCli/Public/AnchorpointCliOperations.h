@@ -49,11 +49,7 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DiscardChanges(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(TArray<FString> InFiles, const FString& InMessage);
-	
 
-	FString GetCliPath();
-	FString GetDesktopPath();
 	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
 	FCliResult RunGitCommand(const FString& InCommand);
-
 }

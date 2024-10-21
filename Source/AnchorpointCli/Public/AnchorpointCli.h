@@ -1,14 +1,17 @@
-﻿// Some copyright should be here...
-
-#pragma once
+﻿#pragma once
 
 #include <Modules/ModuleInterface.h>
+
+using FGetInstallFolderDelegate = TDelegate<FString()>;
 
 class ANCHORPOINTCLI_API FAnchorpointCliModule final : public IModuleInterface
 {
 public:
 	static FAnchorpointCliModule& Get();
 
-	TDelegate<FString()> GetCliPathDelegate;
+	FGetInstallFolderDelegate GetInstallFolderDelegate;
+
+	FString GetInstallFolder() const;
 	FString GetCliPath() const;
+	FString GetApplicationPath() const;
 };
