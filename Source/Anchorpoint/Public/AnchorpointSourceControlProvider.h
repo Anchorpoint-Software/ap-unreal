@@ -11,8 +11,10 @@ class IAnchorpointSourceControlWorker;
 class FAnchorpointSourceControlProvider : public ISourceControlProvider
 {
 public:
+	FAnchorpointSourceControlProvider();
+	virtual ~FAnchorpointSourceControlProvider();
+	
 	using FGetAnchorpointSourceControlWorker = TDelegate<TSharedRef<IAnchorpointSourceControlWorker>()>;
-
 	void RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate);
 
 	//~ Begin ISourceControlProvider Interface
@@ -50,6 +52,9 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
+	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
+	void RefreshStatus();
+
 	TSharedRef<FAnchorpointSourceControlState> GetStateInternal(const FString& Filename);
 	FDateTime GetLastSyncTime() const;
 
@@ -64,4 +69,7 @@ public:
 
 	FSourceControlStateChanged OnSourceControlStateChanged;
 	TArray<FAnchorpointSourceControlCommand*> CommandQueue;
+
+	FTimerHandle RefreshTimerHandle;
+	float RefreshDelay = 1.0f;
 };

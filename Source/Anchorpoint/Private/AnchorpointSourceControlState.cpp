@@ -283,8 +283,7 @@ bool FAnchorpointSourceControlState::IsModified() const
 
 bool FAnchorpointSourceControlState::CanAdd() const
 {
-	//TODO: Confirm with AP team if a files is created on disk it is automatically added and the user doesn't have to do it manually ever
-	return false; // Files are automatically added by AP 
+	return State == EAnchorpointState::UnlockedAdded;
 }
 
 bool FAnchorpointSourceControlState::IsConflicted() const

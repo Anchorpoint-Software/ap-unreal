@@ -1,6 +1,4 @@
-﻿// Some copyright should be here...
-
-#pragma once
+﻿#pragma once
 
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlWorker.h"
@@ -23,8 +21,6 @@ public:
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-	
-	TArray<FAnchorpointSourceControlState> States;
 };
 
 class FAnchorpointRevertWorker final : public IAnchorpointSourceControlWorker
@@ -35,8 +31,6 @@ public:
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-	
-	TArray<FAnchorpointSourceControlState> States;
 };
 
 class FAnchorpointUpdateStatusWorker final : public IAnchorpointSourceControlWorker
@@ -58,8 +52,6 @@ class FAnchorpointAddWorker final : public IAnchorpointSourceControlWorker
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-
-	TArray<FAnchorpointSourceControlState> States;
 };
 
 class FAnchorpointCopyWorker final : public IAnchorpointSourceControlWorker
@@ -69,8 +61,6 @@ class FAnchorpointCopyWorker final : public IAnchorpointSourceControlWorker
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-
-	TArray<FAnchorpointSourceControlState> States;
 };
 
 class FAnchorpointDeleteWorker final : public IAnchorpointSourceControlWorker
@@ -80,8 +70,6 @@ class FAnchorpointDeleteWorker final : public IAnchorpointSourceControlWorker
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-
-	TArray<FAnchorpointSourceControlState> States;
 };
 
 class FAnchorpointCheckInWorker final : public IAnchorpointSourceControlWorker
@@ -91,6 +79,4 @@ class FAnchorpointCheckInWorker final : public IAnchorpointSourceControlWorker
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
-
-	TArray<FAnchorpointSourceControlState> States;
 };

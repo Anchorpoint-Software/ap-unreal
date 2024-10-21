@@ -12,6 +12,18 @@
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
+#include "ISourceControlModule.h"
+#include "UObject/ObjectSaveContext.h"
+
+FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
+{
+	UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAnchorpointSourceControlProvider::HandlePackageSaved);
+}
+
+FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
+{
+	UPackage::PackageSavedWithContextEvent.RemoveAll(this);
+}
 
 void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate)
 {
@@ -325,6 +337,18 @@ void FAnchorpointSourceControlProvider::Tick()
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
 	return SNew(SAnchorpointSourceControlSettingsWidget);
+}
+
+void FAnchorpointSourceControlProvider::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
+{
+	// This will automatically clear and re-add if it's already on-going
+	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateRaw(this, &FAnchorpointSourceControlProvider::RefreshStatus);
+	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
+}
+
+void FAnchorpointSourceControlProvider::RefreshStatus()
+{
+	ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>());
 }
 
 TSharedRef<FAnchorpointSourceControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)

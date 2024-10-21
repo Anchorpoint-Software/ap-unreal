@@ -44,6 +44,11 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 
 	auto IsRelevant = [&InputPaths](const FString& FileToCheck)
 	{
+		if(InputPaths.IsEmpty())
+		{
+			return true;
+		}
+
 		for (const FString& Path : InputPaths)
 		{
 			if (FileToCheck.Compare(Path, ESearchCase::IgnoreCase) == 0)
@@ -157,14 +162,14 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointConnectWorker::Execute);
 
-	TValueOrError<FString, FString> ConnectResult = AnchorpointCliOperations::Connect();
+	TValueOrError<FString, FString> CurrentUserResult = AnchorpointCliOperations::GetCurrentUser();
 
-	if (ConnectResult.HasError())
+	if (CurrentUserResult.HasError())
 	{
-		InCommand.ErrorMessages.Add(ConnectResult.GetError());
+		InCommand.ErrorMessages.Add(CurrentUserResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful = ConnectResult.HasValue();
+	InCommand.bCommandSuccessful = CurrentUserResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
@@ -192,9 +197,6 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 	}
 
 	InCommand.bCommandSuccessful = LockResult.HasValue();
-	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
-	UpdateCachedStates(States);
-
 	return InCommand.bCommandSuccessful;
 }
 
@@ -202,7 +204,7 @@ bool FAnchorpointCheckOutWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }
 
 FName FAnchorpointRevertWorker::GetName() const
@@ -214,33 +216,18 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointRevertWorker::Execute);
 
-	TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
+	// TODO: What is soft revert and how should we use it?
+	// TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
+	// RevertOperation->IsSoftRevert()
 
-	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(InCommand.Files);
+	TValueOrError<FString, FString> RevertResult = AnchorpointCliOperations::Revert(InCommand.Files);
 
-	if (UnlockResult.HasError())
+	if (RevertResult.HasError())
 	{
-		InCommand.ErrorMessages.Add(UnlockResult.GetError());
+		InCommand.ErrorMessages.Add(RevertResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful = UnlockResult.HasValue();
-
-	if (!RevertOperation->IsSoftRevert())
-	{
-		TValueOrError<FString, FString> DiscardChangesResult = AnchorpointCliOperations::DiscardChanges(InCommand.Files);
-
-		if (DiscardChangesResult.HasError())
-		{
-			InCommand.ErrorMessages.Add(DiscardChangesResult.GetError());
-		}
-
-		InCommand.bCommandSuccessful &= DiscardChangesResult.HasValue();
-	}
-
-	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
-
-	UpdateCachedStates(States);
-
+	InCommand.bCommandSuccessful = RevertResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
@@ -248,7 +235,7 @@ bool FAnchorpointRevertWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointRevertWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }
 
 FName FAnchorpointUpdateStatusWorker::GetName() const
@@ -280,17 +267,9 @@ bool FAnchorpointAddWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::Execute);
 
-	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+	//TODO: do we need to do anything here? we are going to get an update status call at save callback
 
-	if (LockResult.HasError())
-	{
-		InCommand.ErrorMessages.Add(LockResult.GetError());
-	}
-
-	InCommand.bCommandSuccessful = LockResult.HasValue();
-	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
-	UpdateCachedStates(States);
-
+	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
 }
 
@@ -298,7 +277,7 @@ bool FAnchorpointAddWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }
 
 FName FAnchorpointCopyWorker::GetName() const
@@ -310,9 +289,9 @@ bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
 
-	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
-	UpdateCachedStates(States);
+	//TODO: do we need to do anything here? we are going to get an update status call at save callback
 
+	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
 }
 
@@ -320,7 +299,7 @@ bool FAnchorpointCopyWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }
 
 FName FAnchorpointDeleteWorker::GetName() const
@@ -332,15 +311,6 @@ bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InComma
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::Execute);
 
-	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
-
-	if (LockResult.HasError())
-	{
-		InCommand.ErrorMessages.Add(LockResult.GetError());
-	}
-
-	InCommand.bCommandSuccessful = LockResult.HasValue();
-
 	TValueOrError<FString, FString> DeleteResult = AnchorpointCliOperations::DeleteFiles(InCommand.Files);
 
 	if (DeleteResult.HasError())
@@ -348,9 +318,7 @@ bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InComma
 		InCommand.ErrorMessages.Add(DeleteResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful &= DeleteResult.HasValue();
-
-	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
+	InCommand.bCommandSuccessful = DeleteResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
@@ -358,7 +326,7 @@ bool FAnchorpointDeleteWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }
 
 FName FAnchorpointCheckInWorker::GetName() const
@@ -370,6 +338,8 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::Execute);
 
+	//TODO: Since we are running the lock with --git & --keep should we unlock the files automatically?
+
 	TSharedRef<FCheckIn> Operation = StaticCastSharedRef<FCheckIn>(InCommand.Operation);
 	const FString Message = Operation->GetDescription().ToString();
 
@@ -380,20 +350,7 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 		InCommand.ErrorMessages.Add(SubmitResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful &= SubmitResult.HasValue();
-
-	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(InCommand.Files);
-
-	if (UnlockResult.HasError())
-	{
-		InCommand.ErrorMessages.Add(UnlockResult.GetError());
-	}
-
-	InCommand.bCommandSuccessful = UnlockResult.HasValue();
-
-	InCommand.bCommandSuccessful &= RunUpdateStatus(InCommand.Files, States);
-	UpdateCachedStates(States);
-
+	InCommand.bCommandSuccessful = SubmitResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
@@ -401,5 +358,5 @@ bool FAnchorpointCheckInWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	return true;
 }

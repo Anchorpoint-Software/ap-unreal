@@ -1,31 +1,6 @@
-// Some copyright should be here...
-
 #pragma once
 
-enum class EAnchorpointFileOperation
-{
-	Invalid,
-	Added,
-	Modified,
-	Deleted,
-	Renamed,
-	Conflicted,
-};
-
-EAnchorpointFileOperation LexFromString(const FString& InString);
-
-struct FAnchorpointStatus
-{
-	static FAnchorpointStatus FromJson(const TSharedRef<FJsonObject>& InJsonObject);
-
-	FString CurrentBranch;
-	TMap<FString, EAnchorpointFileOperation> Staged;
-	TMap<FString, EAnchorpointFileOperation> NotStaged;
-	TMap<FString, FString> Locked;
-	TArray<FString> Outdated;
-
-	ANCHORPOINTCLI_API TArray<FString> GetAllAffectedFiles() const;
-};
+#include "AnchorpointCliStatus.h"
 
 struct FCliResult
 {
@@ -41,12 +16,13 @@ namespace AnchorpointCliOperations
 {
 	bool ANCHORPOINTCLI_API IsInstalled();
 	void ANCHORPOINTCLI_API ShowInAnchorpoint(const FString& InPath);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API Connect();
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
+
 	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus();
+
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API LockFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API UnlockFiles(TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API DiscardChanges(TArray<FString>& InFiles);
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API Revert(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(TArray<FString> InFiles, const FString& InMessage);
 

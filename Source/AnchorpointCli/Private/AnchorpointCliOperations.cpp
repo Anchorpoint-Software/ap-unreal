@@ -1,10 +1,9 @@
-// Some copyright should be here...
-
 #include "AnchorpointCliOperations.h"
 
 #include <Misc/MonitoredProcess.h>
 
 #include "AnchorpointCli.h"
+#include "AnchorpointCliLog.h"
 
 FString ToRelativePath(const FString& InFullPath)
 {
@@ -14,89 +13,6 @@ FString ToRelativePath(const FString& InFullPath)
 	UE_CLOG(!bSuccess, LogAnchorpointCli, Error, TEXT("Failed to make path relative: %s in directory: %s"), *InFullPath, *FPaths::ProjectDir());
 
 	return RelativePath;
-}
-
-EAnchorpointFileOperation LexFromString(const FString& InString)
-{
-	if (InString == TEXT("A"))
-	{
-		return EAnchorpointFileOperation::Added;
-	}
-	if (InString == TEXT("M"))
-	{
-		return EAnchorpointFileOperation::Modified;
-	}
-	if (InString == TEXT("D"))
-	{
-		return EAnchorpointFileOperation::Deleted;
-	}
-	if (InString == TEXT("R"))
-	{
-		return EAnchorpointFileOperation::Renamed;
-	}
-	if (InString == TEXT("C"))
-	{
-		return EAnchorpointFileOperation::Conflicted;
-	}
-
-	return EAnchorpointFileOperation::Invalid;
-}
-
-FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& InJsonObject)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointStatus::FromString);
-
-	const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-
-	FAnchorpointStatus Result;
-	Result.CurrentBranch = InJsonObject->GetStringField(TEXT("current_branch"));
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : InJsonObject->GetObjectField(TEXT("staged"))->Values)
-	{
-		FString FullFilePath = ProjectPath / StagedFile.Key;
-		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.Staged.Add(FullFilePath, LexFromString(StagedFile.Value->AsString()));
-	}
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : InJsonObject->GetObjectField(TEXT("not_staged"))->Values)
-	{
-		FString FullFilePath = ProjectPath / NotStagedFile.Key;
-		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.NotStaged.Add(FullFilePath, LexFromString(NotStagedFile.Value->AsString()));
-	}
-	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : InJsonObject->GetObjectField(TEXT("locked_files"))->Values)
-	{
-		FString FullFilePath = ProjectPath / LockedFile.Key;
-		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.Locked.Add(FullFilePath, LockedFile.Value->AsString());
-	}
-	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
-	{
-		FString FullFilePath = ProjectPath / OutDatedFile->AsString();
-		FPaths::NormalizeDirectoryName(FullFilePath);
-		Result.Outdated.Add(FullFilePath);
-	}
-
-	return Result;
-}
-
-TArray<FString> FAnchorpointStatus::GetAllAffectedFiles() const
-{
-	TArray<FString> Result;
-
-	TArray<FString> StagedFiles;
-	Staged.GetKeys(StagedFiles);
-	Result.Append(StagedFiles);
-
-	TArray<FString> NotStagedFiles;
-	NotStaged.GetKeys(NotStagedFiles);
-	Result.Append(NotStagedFiles);
-
-	TArray<FString> LockedFiles;
-	Locked.GetKeys(LockedFiles);
-	Result.Append(LockedFiles);
-
-	Result.Append(Outdated);
-
-	return Result;
 }
 
 bool FCliResult::DidSucceed() const
@@ -133,29 +49,6 @@ bool AnchorpointCliOperations::IsInstalled()
 void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
 {
 	FPlatformProcess::CreateProc(*FAnchorpointCliModule::Get().GetApplicationPath(), *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
-}
-
-TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Connect);
-
-	// TODO: Right now we are running a `status` command for checking connection,
-	// but in the future we might want to use a dedicated command for connecting.
-	// because of this, we want to make sure the command is both successful and the resulting output is valid (json object format).
-
-	FCliResult ProcessOutput = RunApCommand(TEXT("status"));
-	const bool bSuccessful = ProcessOutput.DidSucceed() && ProcessOutput.OutputAsJsonObject().IsValid();
-	if (bSuccessful)
-	{
-		return MakeValue(TEXT("Success"));
-	}
-
-	if (!ProcessOutput.OutputAsJsonObject().IsValid())
-	{
-		return MakeError(TEXT("Failed to parse output to JSON."));
-	}
-
-	return MakeError(ProcessOutput.Error.GetValue());
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
@@ -264,20 +157,21 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 	return MakeError(ProcessOutput.Error.GetValue());
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::DiscardChanges(TArray<FString>& InFiles)
+TValueOrError<FString, FString> AnchorpointCliOperations::Revert(TArray<FString>& InFiles)
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DiscardChanges);
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Revert);
 
-	//TODO: Check how revert only unchanged check affects this
-
-	FString CheckoutCommand = TEXT("checkout --");
+	TArray<FString> RevertParams;
+	RevertParams.Add(TEXT("revert"));
+	RevertParams.Add(TEXT("--files"));
 
 	for (const FString& File : InFiles)
 	{
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *ToRelativePath(File));
+		RevertParams.Add(FString::Printf(TEXT("\"%s\""), *ToRelativePath(File)));
 	}
 
-	FCliResult ProcessOutput = RunGitCommand(CheckoutCommand);
+	FString RevertCommand = FString::Join(RevertParams, TEXT(" "));
+	FCliResult ProcessOutput = RunApCommand(RevertCommand);
 
 	if (ProcessOutput.DidSucceed())
 	{
