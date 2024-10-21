@@ -40,6 +40,7 @@ struct FCliResult
 namespace AnchorpointCliOperations
 {
 	bool ANCHORPOINTCLI_API IsInstalled();
+	void ANCHORPOINTCLI_API ShowInAnchorpoint(const FString& InPath);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API Connect();
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
 	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus();
@@ -48,8 +49,10 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DiscardChanges(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(TArray<FString> InFiles, const FString& InMessage);
+	
 
 	FString GetCliPath();
+	FString GetDesktopPath();
 	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
 	FCliResult RunGitCommand(const FString& InCommand);
 

@@ -1,12 +1,26 @@
-// Some copyright should be here...
-
 #include "Anchorpoint.h"
 
 #include <ContentBrowserDataMenuContexts.h>
 #include <ISourceControlModule.h>
 
 #include "AnchorpointCli.h"
+#include "AnchorpointCliOperations.h"
 #include "AnchorpointSouceControlOperations.h"
+
+FAnchorpointModule& FAnchorpointModule::Get()
+{
+	return FModuleManager::GetModuleChecked<FAnchorpointModule>("Anchorpoint");
+}
+
+FAnchorpointSourceControlProvider& FAnchorpointModule::GetProvider()
+{
+	return AnchorpointSourceControlProvider;
+}
+
+FAnchorpointSourceControlSettings& FAnchorpointModule::GetSettings()
+{
+	return AnchorpointSourceControlSettings;
+}
 
 template <typename Type>
 static TSharedRef<IAnchorpointSourceControlWorker> CreateWorker()
@@ -44,26 +58,11 @@ void FAnchorpointModule::StartupModule()
 void FAnchorpointModule::ShutdownModule()
 {
 	UToolMenus::UnregisterOwner(this);
-	
+
 	AnchorpointSourceControlSettings.SaveSettings();
 
 	AnchorpointSourceControlProvider.Close();
 	IModularFeatures::Get().UnregisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
-}
-
-FAnchorpointModule& FAnchorpointModule::Get()
-{
-	return FModuleManager::GetModuleChecked<FAnchorpointModule>("Anchorpoint");
-}
-
-FAnchorpointSourceControlProvider& FAnchorpointModule::GetProvider()
-{
-	return AnchorpointSourceControlProvider;
-}
-
-FAnchorpointSourceControlSettings& FAnchorpointModule::GetSettings()
-{
-	return AnchorpointSourceControlSettings;
 }
 
 FString FAnchorpointModule::GetCliPath()
@@ -80,6 +79,16 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 	}
 
 	UContentBrowserDataMenuContext_FileMenu* Context = InMenu->FindContext<UContentBrowserDataMenuContext_FileMenu>();
+	TArray<FContentBrowserItem> Items = Context->SelectedItems;
+
+	FString Path;
+	if(Items.Num() != 1 || !Items[0].GetItemPhysicalPath(Path))
+	{
+		return;
+	}
+
+	Path = FPaths::ConvertRelativePathToFull(Path);
+
 	FToolMenuSection& Section = InMenu->FindOrAddSection("AssetContextExploreMenuOptions");
 	Section.AddMenuEntry(
 		"ShowInAnchorpoint",
@@ -87,8 +96,9 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 		NSLOCTEXT("Anchorpoint", "ShowInAnchorpointTip", "Show in Anchorpoint"),
 		FSlateIcon(FAppStyle::GetAppStyleSetName(), "ContentBrowser.ShowInExplorer"),
 		FUIAction(
-			FExecuteAction::CreateLambda([]()
+			FExecuteAction::CreateLambda([Path]()
 			{
+				AnchorpointCliOperations::ShowInAnchorpoint(Path);
 			})
 		)
 	);

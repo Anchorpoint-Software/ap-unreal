@@ -1,6 +1,4 @@
-﻿// Some copyright should be here...
-
-#pragma once
+﻿#pragma once
 
 #include <ISourceControlProvider.h>
 #include <Misc/IQueuedWork.h>
@@ -35,36 +33,58 @@ public:
 	 */
 	virtual void DoThreadedWork() override;
 
-	/** Save any results and call any registered callbacks. */
+	/**
+	 * Save any results and call any registered callbacks.
+	 */
 	ECommandResult::Type ReturnResults();
 
-	/** Operation we want to perform - contains outward-facing parameters & results */
+	/**
+	 * Operation we want to perform - contains outward-facing parameters & results
+	 */
 	TSharedRef<ISourceControlOperation> Operation;
 
-	/** The object that will actually do the work */
+	/**
+	 * The object that will actually do the work
+	 */
 	TSharedRef<IAnchorpointSourceControlWorker> Worker;
 
-	/** Delegate to notify when this operation completes */
+	/**
+	 * Delegate to notify when this operation completes
+	 */
 	FSourceControlOperationComplete OperationCompleteDelegate;
 
-	/**If true, this command has been processed by the source control thread*/
+	/**
+	 * If true, this command has been processed by the source control thread
+	 */
 	volatile int32 bExecuteProcessed;
 
-	/**If true, the source control command succeeded*/
+	/**
+	 * If true, the source control command succeeded
+	 */
 	bool bCommandSuccessful;
 
-	/** If true, this command will be automatically cleaned up in Tick() */
+	/**
+	 * If true, this command will be automatically cleaned up in Tick()
+	 */
 	bool bAutoDelete;
 
-	/** Whether we are running multi-treaded or not*/
+	/**
+	 * Whether we are running multi-treaded or not
+	 */
 	EConcurrency::Type Concurrency;
 
-	/** Files to perform this operation on */
+	/**
+	 * Files to perform this operation on
+	 */
 	TArray<FString> Files;
 
-	/**Info and/or warning message message storage*/
+	/**
+	 * Info and/or warning message storage
+	 */
 	TArray<FString> InfoMessages;
 
-	/**Potential error message storage*/
+	/**
+	 * Potential error message storage
+	 */
 	TArray<FString> ErrorMessages;
 };

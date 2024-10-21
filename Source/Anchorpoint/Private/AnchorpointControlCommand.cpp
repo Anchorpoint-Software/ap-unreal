@@ -1,17 +1,15 @@
-﻿// Some copyright should be here...
-
-#include "AnchorpointControlCommand.h"
+﻿#include "AnchorpointControlCommand.h"
 
 #include "AnchorpointSourceControlWorker.h"
 
 FAnchorpointSourceControlCommand::FAnchorpointSourceControlCommand(const TSharedRef<ISourceControlOperation>& InOperation, const TSharedRef<IAnchorpointSourceControlWorker>& InWorker, const FSourceControlOperationComplete& InOperationCompleteDelegate)
 	: Operation(InOperation)
-	  , Worker(InWorker)
-	  , OperationCompleteDelegate(InOperationCompleteDelegate)
-	  , bExecuteProcessed(0)
-	  , bCommandSuccessful(false)
-	  , bAutoDelete(true)
-	  , Concurrency(EConcurrency::Synchronous)
+	 , Worker(InWorker)
+	 , OperationCompleteDelegate(InOperationCompleteDelegate)
+	 , bExecuteProcessed(0)
+	 , bCommandSuccessful(false)
+	 , bAutoDelete(true)
+	 , Concurrency(EConcurrency::Synchronous)
 {
 	check(IsInGameThread());
 }

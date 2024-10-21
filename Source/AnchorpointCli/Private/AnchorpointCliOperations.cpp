@@ -84,13 +84,16 @@ TArray<FString> FAnchorpointStatus::GetAllAffectedFiles() const
 {
 	TArray<FString> Result;
 
-	TArray<FString> StagedFiles; Staged.GetKeys(StagedFiles);
+	TArray<FString> StagedFiles;
+	Staged.GetKeys(StagedFiles);
 	Result.Append(StagedFiles);
 
-	TArray<FString> NotStagedFiles; NotStaged.GetKeys(NotStagedFiles);
+	TArray<FString> NotStagedFiles;
+	NotStaged.GetKeys(NotStagedFiles);
 	Result.Append(NotStagedFiles);
 
-	TArray<FString> LockedFiles; Locked.GetKeys(LockedFiles);
+	TArray<FString> LockedFiles;
+	Locked.GetKeys(LockedFiles);
 	Result.Append(LockedFiles);
 
 	Result.Append(Outdated);
@@ -127,6 +130,11 @@ bool AnchorpointCliOperations::IsInstalled()
 
 	const FString CliPath = GetCliPath();
 	return !CliPath.IsEmpty() && FPaths::FileExists(CliPath);
+}
+
+void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
+{
+	FPlatformProcess::CreateProc(*GetDesktopPath(), *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::Connect()
@@ -336,6 +344,17 @@ FString AnchorpointCliOperations::GetCliPath()
 	return CliDirectory / "ap.exe";
 #elif PLATFORM_MAC
 	return CliDirectory / "ap";
+#endif
+}
+
+FString AnchorpointCliOperations::GetDesktopPath()
+{
+	const FString CliDirectory = FAnchorpointCliModule::Get().GetCliPath();
+
+#if PLATFORM_WINDOWS
+	return CliDirectory / "Anchorpoint.exe";
+#elif PLATFORM_MAC
+	return CliDirectory / "Anchorpoint";
 #endif
 }
 
