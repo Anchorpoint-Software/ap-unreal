@@ -44,7 +44,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 
 	auto IsRelevant = [&InputPaths](const FString& FileToCheck)
 	{
-		if(InputPaths.IsEmpty())
+		if (InputPaths.IsEmpty())
 		{
 			return true;
 		}
@@ -196,6 +196,36 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 		InCommand.ErrorMessages.Add(LockResult.GetError());
 	}
 
+	if (LockResult.HasValue())
+	{
+		FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
+
+		for (const FString& File : InCommand.Files)
+		{
+			TSharedRef<FAnchorpointSourceControlState> CurrentState = Provider.GetStateInternal(File);
+			if (CurrentState->State == EAnchorpointState::UnlockedAdded)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::LockedAdded;
+			}
+			else if (CurrentState->State == EAnchorpointState::UnlockedDeleted)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::LockedDeleted;
+			}
+			else if (CurrentState->State == EAnchorpointState::UnlockedModified)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::LockedModified;
+			}
+			else if (CurrentState->State == EAnchorpointState::UnlockedUnchanged)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::LockedUnchanged;
+			}
+		}
+	}
+
 	InCommand.bCommandSuccessful = LockResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
@@ -204,7 +234,7 @@ bool FAnchorpointCheckOutWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::UpdateStates);
 
-	return true;
+	return UpdateCachedStates(States);
 }
 
 FName FAnchorpointRevertWorker::GetName() const
