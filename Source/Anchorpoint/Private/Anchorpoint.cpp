@@ -22,11 +22,6 @@ FAnchorpointSourceControlSettings& FAnchorpointModule::GetSettings()
 	return AnchorpointSourceControlSettings;
 }
 
-template <typename Type>
-static TSharedRef<IAnchorpointSourceControlWorker> CreateWorker()
-{
-	return MakeShared<Type>();
-}
 
 void FAnchorpointModule::StartupModule()
 {
@@ -37,14 +32,14 @@ void FAnchorpointModule::StartupModule()
 	FAnchorpointCliModule::Get().GetInstallFolderDelegate.BindRaw(this, &FAnchorpointModule::GetCliPath);
 
 	// Register our operations
-	AnchorpointSourceControlProvider.RegisterWorker("Connect", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointConnectWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("CheckOut", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCheckOutWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("Revert", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointRevertWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("UpdateStatus", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointUpdateStatusWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("MarkForAdd", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointAddWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("Delete", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointDeleteWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("Copy", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCopyWorker>));
-	AnchorpointSourceControlProvider.RegisterWorker("CheckIn", FAnchorpointSourceControlProvider::FGetAnchorpointSourceControlWorker::CreateStatic(&CreateWorker<FAnchorpointCheckInWorker>));
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointConnectWorker>("Connect");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCheckOutWorker>("CheckOut");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointRevertWorker>("Revert");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointUpdateStatusWorker>("UpdateStatus");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointAddWorker>("MarkForAdd");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointDeleteWorker>("Delete");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCopyWorker>("Copy");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCheckInWorker>("CheckIn");
 
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 

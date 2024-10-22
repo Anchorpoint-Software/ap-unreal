@@ -25,31 +25,12 @@ FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 	UPackage::PackageSavedWithContextEvent.RemoveAll(this);
 }
 
-void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate)
-{
-	WorkersMap.Add(InName, InDelegate);
-}
-
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
-	UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider initialization started"));
-	
-	if(UEditorLoadingSavingSettings* Settings = GetMutableDefault<UEditorLoadingSavingSettings>())
-	{
-		UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting AutomaticallyCheckoutOnAssetModification to true"));
-		Settings->SetAutomaticallyCheckoutOnAssetModificationOverride(true);
-	}
-
-	if (IConsoleVariable* EnableRevertViaOutlinerVar = IConsoleManager::Get().FindConsoleVariable(TEXT("SourceControl.Revert.EnableFromSceneOutliner")))
-	{
-		UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting SourceControl.Revert.EnableFromSceneOutliner to true"));;
-		EnableRevertViaOutlinerVar->Set(true);
-	}
 }
 
 void FAnchorpointSourceControlProvider::Close()
 {
-	// ToImplement: Here we should do any deinitialization we might need.
 }
 
 const FName& FAnchorpointSourceControlProvider::GetName() const

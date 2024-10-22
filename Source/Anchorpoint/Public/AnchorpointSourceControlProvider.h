@@ -13,9 +13,12 @@ class FAnchorpointSourceControlProvider : public ISourceControlProvider
 public:
 	FAnchorpointSourceControlProvider();
 	virtual ~FAnchorpointSourceControlProvider();
-	
+
 	using FGetAnchorpointSourceControlWorker = TDelegate<TSharedRef<IAnchorpointSourceControlWorker>()>;
-	void RegisterWorker(const FName& InName, const FGetAnchorpointSourceControlWorker& InDelegate);
+
+	template <typename Type>
+	void RegisterWorker(const FName& InName);
+
 
 	//~ Begin ISourceControlProvider Interface
 	virtual void Init(bool bForceConnection) override;
@@ -73,3 +76,14 @@ public:
 	FTimerHandle RefreshTimerHandle;
 	float RefreshDelay = 1.0f;
 };
+
+template <typename Type>
+void FAnchorpointSourceControlProvider::RegisterWorker(const FName& InName)
+{
+	FGetAnchorpointSourceControlWorker Delegate = FGetAnchorpointSourceControlWorker::CreateLambda([]()
+	{
+		return MakeShared<Type>();
+	});
+
+	WorkersMap.Add(InName, Delegate);
+}

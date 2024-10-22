@@ -6,6 +6,7 @@
 
 #include "Anchorpoint.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlProvider.h"
@@ -168,6 +169,22 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	{
 		InCommand.ErrorMessages.Add(CurrentUserResult.GetError());
 	}
+
+	AsyncTask(ENamedThreads::GameThread,
+	          [this]()
+	          {
+		          if (UEditorLoadingSavingSettings* Settings = GetMutableDefault<UEditorLoadingSavingSettings>())
+		          {
+			          UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting AutomaticallyCheckoutOnAssetModification to true"));
+			          Settings->SetAutomaticallyCheckoutOnAssetModificationOverride(true);
+		          }
+
+		          if (IConsoleVariable* EnableRevertViaOutlinerVar = IConsoleManager::Get().FindConsoleVariable(TEXT("SourceControl.Revert.EnableFromSceneOutliner")))
+		          {
+			          UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting SourceControl.Revert.EnableFromSceneOutliner to true"));;
+			          EnableRevertViaOutlinerVar->Set(true);
+		          }
+	          });
 
 	InCommand.bCommandSuccessful = CurrentUserResult.HasValue();
 	return InCommand.bCommandSuccessful;

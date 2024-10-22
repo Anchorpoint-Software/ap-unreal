@@ -52,6 +52,14 @@ class ANCHORPOINTCLI_API UAnchorpointCliConnectSubsystem : public UEditorSubsyst
 	//~ End UEditorSubsystem Interface
 
 	/**
+	 * Called at fixed intervals to check the status of the connection
+	 */
+	bool Tick(const float InDeltaTime);
+	/**
+	 * Checks if the connection to the Anchorpoint CLI is established and if not, starts the connection
+	 */
+	void EstablishConnection();
+	/**
 	 * Refreshes the Source Control status of the files in the message 
 	 */
 	void RefreshStatus(const FAnchorpointConnectMessage& Message);

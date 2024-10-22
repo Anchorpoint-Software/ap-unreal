@@ -18,6 +18,7 @@ public class AnchorpointCli : ModuleRules
 			"UnsavedAssetsTracker",
 			"SourceControl", 
 			"EditorScriptingUtilities",
+			"Slate",
 		});
 	}
 }

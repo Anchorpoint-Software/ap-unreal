@@ -44,7 +44,6 @@ bool CompareVersions(const FString& Version1, const FString& Version2)
 		{
 			return Part1 < Part2;
 		}
-
 	}
 
 	return 0;
@@ -63,7 +62,7 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 #if PLATFORM_MAC
 		InstallDirectory = TEXT("/Applications/Anchorpoint.app/Contents/Frameworks");
 #elif PLATFORM_WINDOWS
-		//TODO: In the future we might want to use environment variables, but for now we just scan the user's computer to find an installation
+		//TODO: In the future we might want to use a specific use environment, but for now we just scan the user's default installation directory
 		FString AppDataLocalPath = FPlatformMisc::GetEnvironmentVariable(TEXT("LOCALAPPDATA"));
 		FString AnchorpointVersionsPath = AppDataLocalPath / TEXT("Anchorpoint");
 
@@ -72,7 +71,10 @@ void FAnchorpointSourceControlSettings::LoadSettings()
 
 		Algo::Sort(AnchorpointVersions, CompareVersions);
 
-		InstallDirectory = AnchorpointVersionsPath / AnchorpointVersions.Last();
+		FString ChosenVersion = AnchorpointVersionsPath / AnchorpointVersions.Last();
+		FPaths::NormalizeDirectoryName(ChosenVersion);
+
+		InstallDirectory = ChosenVersion;
 #endif
 	}
 }

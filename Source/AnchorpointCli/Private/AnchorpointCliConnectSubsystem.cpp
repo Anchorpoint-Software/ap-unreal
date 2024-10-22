@@ -15,6 +15,24 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 {
 	Super::Initialize(Collection);
 
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 5.0f);
+}
+
+void UAnchorpointCliConnectSubsystem::EstablishConnection()
+{
+	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
+	if(Provider.GetName().ToString() != TEXT("Anchorpoint") || !Provider.IsEnabled())
+	{
+		// We should not connect if the current provider is not Anchorpoint
+		return;
+	}
+
+	if(Process)
+	{
+		// Process already running and connection is established 
+		return;
+	}
+
 	const FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
 
 	TArray<FString> Args;
@@ -46,6 +64,13 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	Process->OnCanceled().BindUObject(this, &UAnchorpointCliConnectSubsystem::OnCanceled);
 
 	UE_LOG(LogAnchorpointCli, Display, TEXT("Anchorpoint listener connected"));
+}
+
+bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
+{
+	EstablishConnection();
+
+	return true;
 }
 
 void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
@@ -175,6 +200,11 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCanceling)
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener completed with exit code %d Cannceling: %s"), ReturnCode, *LexToString(bCanceling));
+
+	if(Process)
+	{
+		Process.Reset();
+	}
 }
 
 void UAnchorpointCliConnectSubsystem::OnCanceled()
