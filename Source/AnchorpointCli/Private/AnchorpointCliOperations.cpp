@@ -271,7 +271,11 @@ FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, 
 	{
 		FString Line = FString::Printf(TEXT("%s="), *ValuePair.Key);
 
-		if (ValuePair.Value.Num() == 1)
+		if(ValuePair.Value.IsEmpty())
+		{
+			Line.Appendf(TEXT("true"));
+		}
+		else if (ValuePair.Value.Num() == 1)
 		{
 			Line.Appendf(TEXT("%s"), *ValuePair.Value[0]);
 		}
