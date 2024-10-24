@@ -243,45 +243,45 @@ FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, 
 	Result.Add(TEXT("json=true"));
 	Result.Add(TEXT("apiVersion=1"));
 
-	TArray<FString> NextValues;
+	FString CurrentKey;
+	TArray<FString> CurrentCommands;
+	TMap<FString, TArray<FString>> ValuesMap;
 	const TCHAR* CommandLine = *InCommand;
 
-	auto AppendCurrentValues = [&NextValues, &Result]()
-	{
-		if (NextValues.Num() == 1)
-		{
-			Result.Last().Appendf(TEXT("%s"), *NextValues[0]);
-		}
-		else if (NextValues.Num() > 1)
-		{
-			Result.Last().Appendf(TEXT("[%s]"), *FString::Join(NextValues, TEXT(", ")));
-		}
-		NextValues.Empty();
-	};
-
 	FString Token;
-	int Index = 0;
 	while (FParse::Token(CommandLine, Token, true))
 	{
-		if (Index == 0)
+		if (Token.RemoveFromStart(TEXT("--")))
 		{
-			Result.Add(FString::Printf(TEXT("[%s]"), *Token));
+			CurrentKey = Token;
+			ValuesMap.Add(CurrentKey, {});
 		}
-		else if (Token.RemoveFromStart(TEXT("--")))
+		else if (CurrentKey.IsEmpty())
 		{
-			AppendCurrentValues();
-
-			Result.Add(FString::Printf(TEXT("%s="), *Token));
+			CurrentCommands.Add(Token);
+			Result.Add(FString::Printf(TEXT("[%s]"), *FString::Join(CurrentCommands, TEXT("."))));
 		}
 		else
 		{
-			NextValues.Add(FString::Printf(TEXT("\"%s\""), *Token));
+			ValuesMap[CurrentKey].Add(FString::Printf(TEXT("\"%s\""), *Token));;
+		}
+	}
+
+	for (const TTuple<FString, TArray<FString>>& ValuePair : ValuesMap)
+	{
+		FString Line = FString::Printf(TEXT("%s="), *ValuePair.Key);
+
+		if (ValuePair.Value.Num() == 1)
+		{
+			Line.Appendf(TEXT("%s"), *ValuePair.Value[0]);
+		}
+		else if (ValuePair.Value.Num() > 1)
+		{
+			Line.Appendf(TEXT("[%s]"), *FString::Join(ValuePair.Value, TEXT(", ")));
 		}
 
-		Index++;
+		Result.Add(Line);
 	}
-	
-	AppendCurrentValues();
 
 	Result.Add(LINE_TERMINATOR);
 	return FString::Join(Result, LINE_TERMINATOR);
