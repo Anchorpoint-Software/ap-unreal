@@ -173,12 +173,6 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	AsyncTask(ENamedThreads::GameThread,
 	          [this]()
 	          {
-		          if (UEditorLoadingSavingSettings* Settings = GetMutableDefault<UEditorLoadingSavingSettings>())
-		          {
-			          UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting AutomaticallyCheckoutOnAssetModification to true"));
-			          Settings->SetAutomaticallyCheckoutOnAssetModificationOverride(true);
-		          }
-
 		          if (IConsoleVariable* EnableRevertViaOutlinerVar = IConsoleManager::Get().FindConsoleVariable(TEXT("SourceControl.Revert.EnableFromSceneOutliner")))
 		          {
 			          UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint Source Control Provider is setting SourceControl.Revert.EnableFromSceneOutliner to true"));;
