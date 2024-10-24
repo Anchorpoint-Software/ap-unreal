@@ -233,36 +233,55 @@ FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, 
 	TArray<FString> Result;
 
 	// config printing is only used by automated tests
-	if(bPrintConfig)
+	if (bPrintConfig)
 	{
 		Result.Add(TEXT("print-config=true"));
 	}
-	
+
 	// Add the default parameters
 	Result.Add(FString::Printf(TEXT("cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 	Result.Add(TEXT("json=true"));
 	Result.Add(TEXT("apiVersion=1"));
 
+	TArray<FString> NextValues;
 	const TCHAR* CommandLine = *InCommand;
+
+	auto AppendCurrentValues = [&NextValues, &Result]()
+	{
+		if (NextValues.Num() == 1)
+		{
+			Result.Last().Appendf(TEXT("%s"), *NextValues[0]);
+		}
+		else if (NextValues.Num() > 1)
+		{
+			Result.Last().Appendf(TEXT("[%s]"), *FString::Join(NextValues, TEXT(", ")));
+		}
+		NextValues.Empty();
+	};
+
 	FString Token;
 	int Index = 0;
 	while (FParse::Token(CommandLine, Token, true))
 	{
-		if(Index == 0)
+		if (Index == 0)
 		{
 			Result.Add(FString::Printf(TEXT("[%s]"), *Token));
 		}
-		else if(Token.RemoveFromStart(TEXT("--")))
+		else if (Token.RemoveFromStart(TEXT("--")))
 		{
+			AppendCurrentValues();
+
 			Result.Add(FString::Printf(TEXT("%s="), *Token));
 		}
 		else
 		{
-			Result.Last().Appendf(TEXT("\"%s\""), *Token);
+			NextValues.Add(FString::Printf(TEXT("\"%s\""), *Token));
 		}
 
 		Index++;
 	}
+	
+	AppendCurrentValues();
 
 	Result.Add(LINE_TERMINATOR);
 	return FString::Join(Result, LINE_TERMINATOR);

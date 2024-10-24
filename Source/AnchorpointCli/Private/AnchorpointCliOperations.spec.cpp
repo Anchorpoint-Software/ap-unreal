@@ -18,7 +18,8 @@ bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
 
 	CompareCommands(TEXT("status"));
 	CompareCommands(TEXT("git --command status"));
-	CompareCommands(TEXT("git --command \"rm -- 'test' 'test' 'test'\""));
+	CompareCommands(TEXT("git --command \"rm -- 'test1' 'test2' 'test3'\""));
+	CompareCommands(TEXT("sync --message \"Test message\" --files \"test1\" \"test2\" \"test3\""));
 
 	return true;
 }
