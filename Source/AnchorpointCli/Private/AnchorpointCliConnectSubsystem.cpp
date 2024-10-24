@@ -21,13 +21,13 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 void UAnchorpointCliConnectSubsystem::EstablishConnection()
 {
 	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	if(Provider.GetName().ToString() != TEXT("Anchorpoint") || !Provider.IsEnabled())
+	if (Provider.GetName().ToString() != TEXT("Anchorpoint") || !Provider.IsEnabled())
 	{
 		// We should not connect if the current provider is not Anchorpoint
 		return;
 	}
 
-	if(Process)
+	if (Process)
 	{
 		// Process already running and connection is established 
 		return;
@@ -85,11 +85,33 @@ void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMes
 
 void UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const FAnchorpointConnectMessage& Message)
 {
+	FUnsavedAssetsTrackerModule& UnsavedTracker = FUnsavedAssetsTrackerModule::Get();
 	TOptional<FString> Error;
-	const int32 NumUnsaved = FUnsavedAssetsTrackerModule::Get().GetUnsavedAssets().Num();
-	if (NumUnsaved > 0)
+
+	if (Message.Files.IsEmpty())
 	{
-		Error = FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved);
+		// No specific files specified, checking everything
+		const int32 NumUnsaved = UnsavedTracker.GetUnsavedAssets().Num();
+		if (NumUnsaved > 0)
+		{
+			Error = FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved);
+		}
+	}
+	else
+	{
+		FString ErrorMessage;
+		for (const FString& File : Message.Files)
+		{
+			if (UnsavedTracker.IsAssetUnsaved(File))
+			{
+				ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *File);
+			}
+		}
+		
+		if(!ErrorMessage.IsEmpty())
+		{
+			Error = ErrorMessage;
+		}
 	}
 
 	RespondToMessage(Message.Id, Error);
@@ -201,7 +223,7 @@ void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCancelin
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener completed with exit code %d Cannceling: %s"), ReturnCode, *LexToString(bCanceling));
 
-	if(Process)
+	if (Process)
 	{
 		Process.Reset();
 	}
