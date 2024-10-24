@@ -260,7 +260,7 @@ bool FAnchorpointSourceControlProvider::UsesSnapshots() const
 
 bool FAnchorpointSourceControlProvider::AllowsDiffAgainstDepot() const
 {
-	return true;
+	return false;
 }
 
 TOptional<bool> FAnchorpointSourceControlProvider::IsAtLatestRevision() const
