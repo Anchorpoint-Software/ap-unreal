@@ -146,8 +146,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *ToRelativePath(File)));
 	}
 
-	FString LockCommand = FString::Join(UnlockParams, TEXT(" "));
-	FCliResult ProcessOutput = RunApCommand(LockCommand);
+	FString UnlockCommand = FString::Join(UnlockParams, TEXT(" "));
+	FCliResult ProcessOutput = RunApCommand(UnlockCommand);
 
 	if (ProcessOutput.DidSucceed())
 	{
