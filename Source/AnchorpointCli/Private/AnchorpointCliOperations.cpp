@@ -307,20 +307,22 @@ FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool
 		return Result;
 	}
 
+	FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
+	FString IniConfigContent = ConvertCommandToIni(InCommand);
+	FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
+
 	TSharedPtr<FMonitoredProcess> Process = nullptr;
 
 	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
 
 	TArray<FString> Args;
-	Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 
 	if (bRequestJsonOutput)
 	{
 		Args.Add(TEXT("--json"));
 	}
-
-	Args.Add(TEXT("--apiVersion 1"));
-	Args.Add(InCommand);
+	
+	Args.Add(FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile));
 
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
