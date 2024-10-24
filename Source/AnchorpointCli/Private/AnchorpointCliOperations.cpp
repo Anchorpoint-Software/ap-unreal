@@ -267,6 +267,9 @@ FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, 
 		}
 	}
 
+	// Order doesn't matter but to match the output of --print-config, we sort them alphabeticaly 
+	ValuesMap.KeySort(TLess<FString>());
+
 	for (const TTuple<FString, TArray<FString>>& ValuePair : ValuesMap)
 	{
 		FString Line = FString::Printf(TEXT("%s="), *ValuePair.Key);
