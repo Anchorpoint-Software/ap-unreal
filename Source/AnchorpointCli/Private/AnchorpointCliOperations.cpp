@@ -230,7 +230,6 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /*= false*/)
 {
-
 	TArray<FString> Result;
 
 	// config printing is only used by automated tests
@@ -244,30 +243,25 @@ FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, 
 	Result.Add(TEXT("json=true"));
 	Result.Add(TEXT("apiVersion=1"));
 
-	// Parse the input Command
-	TArray<FString> Args;
-	InCommand.ParseIntoArray(Args, TEXT(" "), true);
-
-	if(!Args.IsEmpty())
+	const TCHAR* CommandLine = *InCommand;
+	FString Token;
+	int Index = 0;
+	while (FParse::Token(CommandLine, Token, true))
 	{
-		FString Command = Args.HeapTop();
-		Result.Add(FString::Printf(TEXT("[%s]"), *Command));
-		Args.RemoveAt(0);
-	}
-
-	while(!Args.IsEmpty())
-	{
-		FString NextArg = Args.HeapTop();
-		if(NextArg.RemoveFromStart(TEXT("--")))
+		if(Index == 0)
 		{
-			Result.Add(FString::Printf(TEXT("%s="), *NextArg));
+			Result.Add(FString::Printf(TEXT("[%s]"), *Token));
+		}
+		else if(Token.RemoveFromStart(TEXT("--")))
+		{
+			Result.Add(FString::Printf(TEXT("%s="), *Token));
 		}
 		else
 		{
-			Result.Last().Appendf(TEXT("%s"), *NextArg);
+			Result.Last().Appendf(TEXT("\"%s\""), *Token);
 		}
 
-		Args.RemoveAt(0);
+		Index++;
 	}
 
 	Result.Add(LINE_TERMINATOR);
