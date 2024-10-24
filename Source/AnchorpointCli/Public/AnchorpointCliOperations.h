@@ -26,6 +26,7 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(TArray<FString> InFiles, const FString& InMessage);
 
+	FString ConvertCommandToIni(const FString& InCommand, bool bPrintConfig = false);
 	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
 	FCliResult RunGitCommand(const FString& InCommand);
 }

@@ -228,6 +228,52 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 	return MakeError(ProcessOutput.Error.GetValue());
 }
 
+FString AnchorpointCliOperations::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /*= false*/)
+{
+
+	TArray<FString> Result;
+
+	// config printing is only used by automated tests
+	if(bPrintConfig)
+	{
+		Result.Add(TEXT("print-config=true"));
+	}
+	
+	// Add the default parameters
+	Result.Add(FString::Printf(TEXT("cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
+	Result.Add(TEXT("json=true"));
+	Result.Add(TEXT("apiVersion=1"));
+
+	// Parse the input Command
+	TArray<FString> Args;
+	InCommand.ParseIntoArray(Args, TEXT(" "), true);
+
+	if(!Args.IsEmpty())
+	{
+		FString Command = Args.HeapTop();
+		Result.Add(FString::Printf(TEXT("[%s]"), *Command));
+		Args.RemoveAt(0);
+	}
+
+	while(!Args.IsEmpty())
+	{
+		FString NextArg = Args.HeapTop();
+		if(NextArg.RemoveFromStart(TEXT("--")))
+		{
+			Result.Add(FString::Printf(TEXT("%s="), *NextArg));
+		}
+		else
+		{
+			Result.Last().Appendf(TEXT("%s"), *NextArg);
+		}
+
+		Args.RemoveAt(0);
+	}
+
+	Result.Add(LINE_TERMINATOR);
+	return FString::Join(Result, LINE_TERMINATOR);
+}
+
 #define WAIT_FOR_CONDITION(x) while(x) continue;
 
 FCliResult AnchorpointCliOperations::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
