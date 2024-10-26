@@ -5,7 +5,7 @@
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
-#include "AnchorpointSouceControlOperations.h"
+#include "AnchorpointSourceControlOperations.h"
 
 FAnchorpointModule& FAnchorpointModule::Get()
 {
