@@ -2,16 +2,6 @@
 
 #include "AnchorpointCliStatus.h"
 
-struct FCliResult
-{
-	FString Output;
-	TOptional<FString> Error;
-
-	bool DidSucceed() const;
-	TSharedPtr<FJsonObject> OutputAsJsonObject() const;
-	TArray<TSharedPtr<FJsonValue>> OutputAsJsonArray() const;
-};
-
 namespace AnchorpointCliOperations
 {
 	bool ANCHORPOINTCLI_API IsInstalled();
@@ -25,8 +15,4 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API Revert(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(TArray<FString> InFiles, const FString& InMessage);
-
-	FString ConvertCommandToIni(const FString& InCommand, bool bPrintConfig = false);
-	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
-	FCliResult RunGitCommand(const FString& InCommand);
 }

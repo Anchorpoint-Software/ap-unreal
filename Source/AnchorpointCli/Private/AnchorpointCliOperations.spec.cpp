@@ -1,6 +1,6 @@
 #include <Misc/AutomationTest.h>
 
-#include "AnchorpointCliOperations.h"
+#include "AnchorpointCliUtils.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(AnchorpointCliOperationsTests, "Anchorpoint.CliOperations", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
@@ -9,8 +9,8 @@ bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
 	auto CompareCommands = [this](const FString& InCommand)
 	{
 		const FString CliCommand = FString::Printf(TEXT("--print-config %s"), *InCommand);
-		const FString& ExpectedIniFile = AnchorpointCliOperations::RunApCommand(CliCommand).Output;
-		const FString& ActualIniFile = AnchorpointCliOperations::ConvertCommandToIni(InCommand, true);
+		const FString& ExpectedIniFile = AnchorpointCliUtils::RunApCommand(CliCommand).Output;
+		const FString& ActualIniFile = AnchorpointCliUtils::ConvertCommandToIni(InCommand, true);
 
 		const FString TestName = FString::Printf(TEXT("Comparing command %s"), *InCommand);
 		TestEqual(TestName, ActualIniFile, ExpectedIniFile);
