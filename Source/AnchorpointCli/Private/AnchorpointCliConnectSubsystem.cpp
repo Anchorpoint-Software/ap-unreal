@@ -105,7 +105,7 @@ void UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const FAnchorpointC
 		{
 			if (UnsavedTracker.IsAssetUnsaved(File))
 			{
-				ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *File);
+				ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *AnchorpointCliOperations::ConvertFullPathToApInternal(File));
 			}
 		}
 		
