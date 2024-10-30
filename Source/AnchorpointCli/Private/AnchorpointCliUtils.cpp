@@ -122,6 +122,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bReq
 
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
 	Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 
 	if (!Process)
