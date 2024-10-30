@@ -1,6 +1,7 @@
 #include "AnchorpointCliOperations.h"
 
 #include "AnchorpointCli.h"
+#include "AnchorpointCliLog.h"
 #include "AnchorpointCliUtils.h"
 
 bool AnchorpointCliOperations::IsInstalled()
@@ -15,6 +16,53 @@ void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
 {
 	const FString ApplicationPath = FAnchorpointCliModule::Get().GetApplicationPath();
 	FPlatformProcess::CreateProc(*ApplicationPath, *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
+}
+
+FString AnchorpointCliOperations::GetRepositoryRootPath()
+{
+	static FString RepositoryRootPath;
+	if(!RepositoryRootPath.IsEmpty())
+	{
+		return RepositoryRootPath;
+	}
+
+	// Searching for the .approject file in the project directory and all its parent directories
+	FString SearchPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+
+	while (!SearchPath.IsEmpty())
+	{
+		TArray<FString> AnchorpointProjectFile;
+		IFileManager::Get().FindFiles(AnchorpointProjectFile, *(SearchPath / TEXT("*.approj")), true, false);
+
+		if(!AnchorpointProjectFile.IsEmpty())
+		{
+			RepositoryRootPath = SearchPath;
+			return RepositoryRootPath;
+		}
+
+		SearchPath = FPaths::GetPath(SearchPath);
+	}
+
+	return {};
+}
+
+FString AnchorpointCliOperations::ConvertFullPathToApInternal(const FString& InFullPath)
+{
+	FString Path = InFullPath;
+	FPaths::CollapseRelativeDirectories(Path);
+
+	const FString RootFolder = GetRepositoryRootPath() + TEXT("/");
+	Path = Path.Replace(*RootFolder, TEXT(""), ESearchCase::CaseSensitive);
+
+	return Path;
+}
+
+FString AnchorpointCliOperations::ConvertApInternalToFull(const FString& InRelativePath)
+{
+	FString Path = GetRepositoryRootPath() / InRelativePath;
+	FPaths::NormalizeDirectoryName(Path);
+
+	return Path;
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
@@ -85,7 +133,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 
 	for (const FString& File : InFiles)
 	{
-		LockParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliUtils::ToRelativePath(File)));
+		LockParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
@@ -109,7 +157,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 
 	for (const FString& File : InFiles)
 	{
-		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliUtils::ToRelativePath(File)));
+		UnlockParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
 	FString UnlockCommand = FString::Join(UnlockParams, TEXT(" "));
@@ -133,7 +181,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Revert(TArray<FString>
 
 	for (const FString& File : InFiles)
 	{
-		RevertParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliUtils::ToRelativePath(File)));
+		RevertParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
 	FString RevertCommand = FString::Join(RevertParams, TEXT(" "));
@@ -155,7 +203,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(TArray<FSt
 
 	for (const FString& File : InFiles)
 	{
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *AnchorpointCliUtils::ToRelativePath(File));
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *AnchorpointCliOperations::ConvertFullPathToApInternal(File));
 	}
 
 	FCliResult ProcessOutput = AnchorpointCliUtils::RunGitCommand(CheckoutCommand);
@@ -178,7 +226,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 	for (const FString& File : InFiles)
 	{
-		SubmitParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliUtils::ToRelativePath(File)));
+		SubmitParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
 	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *InMessage));

@@ -10,6 +10,7 @@
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
+#include "AnchorpointCliOperations.h"
 
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -205,10 +206,9 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 	if (FJsonObjectConverter::JsonObjectStringToUStruct(Output, &Message))
 	{
 		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
-		const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 		for (FString& File : Message.Files)
 		{
-			File = ProjectPath / File;
+			File = AnchorpointCliOperations::ConvertApInternalToFull(File);
 		}
 
 		HandleMessage(Message);

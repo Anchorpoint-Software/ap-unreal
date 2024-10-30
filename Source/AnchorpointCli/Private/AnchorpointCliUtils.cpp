@@ -28,16 +28,6 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 	return JsonArray;
 }
 
-FString AnchorpointCliUtils::ToRelativePath(const FString& InFullPath)
-{
-	FString RelativePath = InFullPath;
-	const bool bSuccess = FPaths::MakePathRelativeTo(RelativePath, *FPaths::ProjectDir());
-
-	ensure(bSuccess);
-
-	return RelativePath;
-}
-
 FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */)
 {
 	TArray<FString> Result;

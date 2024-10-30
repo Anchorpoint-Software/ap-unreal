@@ -7,6 +7,10 @@ namespace AnchorpointCliOperations
 	bool ANCHORPOINTCLI_API IsInstalled();
 	void ANCHORPOINTCLI_API ShowInAnchorpoint(const FString& InPath);
 
+	FString ANCHORPOINTCLI_API GetRepositoryRootPath();
+	FString ANCHORPOINTCLI_API ConvertFullPathToApInternal(const FString& InFullPath);
+	FString ANCHORPOINTCLI_API ConvertApInternalToFull(const FString& InRelativePath);
+
 	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus();
 
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();

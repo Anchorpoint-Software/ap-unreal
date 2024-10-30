@@ -12,8 +12,6 @@ struct FCliResult
 
 namespace AnchorpointCliUtils
 {
-	FString ToRelativePath(const FString& InFullPath);
-
 	FString ConvertCommandToIni(const FString& InCommand, bool bPrintConfig = false);
 
 	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
