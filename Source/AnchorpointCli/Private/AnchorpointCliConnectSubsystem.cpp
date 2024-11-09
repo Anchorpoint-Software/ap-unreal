@@ -96,8 +96,16 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 
 void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
 {
-	// When using status caching, we always want to run the status command for the whole project (no specific files)
-	TArray<FString> FilesToUpdate = !UsesStatusCache() ? Message.Files : TArray<FString>();
+	TArray<FString> FilesToUpdate;
+	if(bCanUseStatusCache)
+	{
+		// When using status caching, we always want to run the status command for the whole project (no specific files) and clear our cache
+		StatusCache.Reset();
+	}
+	else
+	{
+		FilesToUpdate = Message.Files;
+	}
 
 	AsyncTask(ENamedThreads::GameThread,
 	          [this, FilesToUpdate]()
@@ -212,7 +220,6 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("project closed"))
 	{
 		bCanUseStatusCache = false;
-		StatusCache.Reset();
 
 		RefreshStatus(Message);
 	}
