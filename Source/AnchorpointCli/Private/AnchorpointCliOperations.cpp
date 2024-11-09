@@ -96,11 +96,24 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 	return MakeError(TEXT("Could not find current user"));
 }
 
-TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
+TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(TEXT("status"));
+	TArray<FString> StatusParams;
+	StatusParams.Add(TEXT("status"));
+
+	if(!StatusParams.IsEmpty())
+	{
+		StatusParams.Add(TEXT("--paths"));
+		for (const FString& File : InFiles)
+		{
+			StatusParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
+		}
+	}
+
+	FString StatusCommand = FString::Join(StatusParams, TEXT(" "));
+	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(StatusCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
 		return MakeError(ProcessOutput.Error.GetValue());
@@ -121,7 +134,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus()
 	return MakeValue(FAnchorpointStatus::FromJson(Object.ToSharedRef()));
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FString>& InFiles)
+TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::LockFiles);
 
@@ -147,7 +160,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(TArray<FStri
 	return MakeValue(TEXT("Success"));
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FString>& InFiles)
+TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::UnlockFiles);
 
@@ -171,7 +184,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(TArray<FSt
 	return MakeValue(TEXT("Success"));
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::Revert(TArray<FString>& InFiles)
+TValueOrError<FString, FString> AnchorpointCliOperations::Revert(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Revert);
 
@@ -195,7 +208,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Revert(TArray<FString>
 	return MakeValue(TEXT("Success"));
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(TArray<FString>& InFiles)
+TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DeleteFiles);
 

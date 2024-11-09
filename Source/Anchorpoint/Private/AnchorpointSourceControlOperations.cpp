@@ -31,7 +31,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunUpdateStatus);
 
-	const auto StatusResult = AnchorpointCliOperations::GetStatus();
+	const auto StatusResult = AnchorpointCliOperations::GetStatus(InputPaths);
 	if (StatusResult.HasError())
 	{
 		return false;
@@ -43,38 +43,10 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		return false;
 	}
 
-	auto IsRelevant = [&InputPaths](const FString& FileToCheck)
-	{
-		if (InputPaths.IsEmpty())
-		{
-			return true;
-		}
-
-		for (const FString& Path : InputPaths)
-		{
-			if (FileToCheck.Compare(Path, ESearchCase::IgnoreCase) == 0)
-			{
-				return true;
-			}
-
-			if (FPaths::IsUnderDirectory(FileToCheck, Path))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	};
-
 	const FAnchorpointStatus Status = StatusResult.GetValue();
 
 	for (const FString& File : Status.GetAllAffectedFiles())
 	{
-		if (!IsRelevant(File))
-		{
-			continue;
-		}
-
 		FAnchorpointSourceControlState& NewState = OutState.Emplace_GetRef(File);
 
 		const FString* LockedBy = Status.Locked.Find(File);
