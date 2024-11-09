@@ -103,7 +103,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	TArray<FString> StatusParams;
 	StatusParams.Add(TEXT("status"));
 
-	if(!StatusParams.IsEmpty())
+	if(!InFiles.IsEmpty())
 	{
 		StatusParams.Add(TEXT("--paths"));
 		for (const FString& File : InFiles)
