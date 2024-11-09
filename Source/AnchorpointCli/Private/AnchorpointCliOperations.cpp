@@ -101,6 +101,12 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	if(TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem->GetCachedStatus())
+	{
+		return MakeValue(CachedStatus.GetValue());
+	}
+
 	TArray<FString> StatusParams;
 	StatusParams.Add(TEXT("status"));
 
@@ -132,7 +138,11 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Error));
 	}
 
-	return MakeValue(FAnchorpointStatus::FromJson(Object.ToSharedRef()));
+	FAnchorpointStatus Status = FAnchorpointStatus::FromJson(Object.ToSharedRef());
+
+	ConnectSubsystem->UpdateStatusCacheIfPossible(Status);
+
+	return MakeValue(Status);
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray<FString>& InFiles)
