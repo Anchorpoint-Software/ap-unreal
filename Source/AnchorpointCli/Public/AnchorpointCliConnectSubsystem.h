@@ -2,6 +2,8 @@
 
 #include <EditorSubsystem.h>
 
+#include "AnchorpointCliStatus.h"
+
 #include "AnchorpointCliConnectSubsystem.generated.h"
 
 class FInteractiveProcess;
@@ -47,6 +49,17 @@ class ANCHORPOINTCLI_API UAnchorpointCliConnectSubsystem : public UEditorSubsyst
 {
 	GENERATED_BODY()
 
+public:
+	/**
+	 * Returns the current cached version of the status if caching is enabled
+	 */
+	TOptional<FAnchorpointStatus> GetCachedStatus() const;
+	/**
+	 * Updates the cached version of the status with a newer value if caching is enabled
+	 */
+	void UpdateStatusCacheIfPossible(const FAnchorpointStatus& Status);
+
+private:
 	//~ Begin UEditorSubsystem Interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	//~ End UEditorSubsystem Interface
@@ -109,5 +122,13 @@ class ANCHORPOINTCLI_API UAnchorpointCliConnectSubsystem : public UEditorSubsyst
 	 * Sanity check to ensure that the sync operation is not started multiple times
 	 */
 	bool bSyncInProgress = false;
+	/**
+	 * Indicates if the project is connected, and we should use the status cache to avoid unnecessary status checks
+	 */
+	bool bCanUseStatusCache = false;
+	/**
+	 * Result of the last "status" command. This should contain all the files in the project not just the ones in the message
+	 */
+	TOptional<FAnchorpointStatus> StatusCache;
 };
 

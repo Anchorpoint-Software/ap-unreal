@@ -1,6 +1,7 @@
 #include "AnchorpointCliOperations.h"
 
 #include "AnchorpointCli.h"
+#include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliUtils.h"
 

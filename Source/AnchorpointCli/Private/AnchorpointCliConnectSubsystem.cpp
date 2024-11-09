@@ -12,6 +12,26 @@
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliOperations.h"
 
+TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus() const
+{
+	if (!bCanUseStatusCache)
+	{
+		return {};
+	}
+
+	return StatusCache;
+}
+
+void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorpointStatus& Status)
+{
+	if (!bCanUseStatusCache)
+	{
+		return;
+	}
+
+	StatusCache = Status;
+}
+
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -76,11 +96,14 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 
 void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
 {
+	// When using status caching, we always want to run the status command for the whole project (no specific files)
+	TArray<FString> FilesToUpdate = !UsesStatusCache() ? Message.Files : TArray<FString>();
+
 	AsyncTask(ENamedThreads::GameThread,
-	          [this, Message]()
+	          [this, FilesToUpdate]()
 	          {
 		          UE_LOG(LogAnchorpointCli, Display, TEXT("Update Status requested by Cli Connect"));
-		          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), Message.Files, EConcurrency::Asynchronous);
+		          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), FilesToUpdate, EConcurrency::Asynchronous);
 	          });
 }
 
@@ -108,8 +131,8 @@ void UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const FAnchorpointC
 				ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *AnchorpointCliOperations::ConvertFullPathToApInternal(File));
 			}
 		}
-		
-		if(!ErrorMessage.IsEmpty())
+
+		if (!ErrorMessage.IsEmpty())
 		{
 			Error = ErrorMessage;
 		}
@@ -179,6 +202,29 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files changed"))
 	{
 		StopSync(Message);
+	}
+	else if (MessageType == TEXT("project opened"))
+	{
+		bCanUseStatusCache = true;
+
+		RefreshStatus(Message);
+	}
+	else if (MessageType == TEXT("project closed"))
+	{
+		bCanUseStatusCache = false;
+		StatusCache.Reset();
+
+		RefreshStatus(Message);
+	}
+	else if (MessageType == TEXT("project dirty"))
+	{
+		StatusCache.Reset();
+
+		RefreshStatus(Message);
+	}
+	else
+	{
+		UE_LOG(LogAnchorpointCli, Warning, TEXT("Unknown message type: %s"), *MessageType);
 	}
 }
 
