@@ -1,5 +1,7 @@
 #include "AnchorpointCliOperations.h"
 
+#include <Misc/MonitoredProcess.h>
+
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliLog.h"
@@ -52,7 +54,7 @@ FString AnchorpointCliOperations::ConvertFullPathToApInternal(const FString& InF
 	FString Path = InFullPath;
 	FPaths::CollapseRelativeDirectories(Path);
 
-	const FString RootFolder = GetRepositoryRootPath() + TEXT("/");
+	const FString RootFolder = GetRepositoryRootPath();
 	Path = Path.Replace(*RootFolder, TEXT(""), ESearchCase::CaseSensitive);
 
 	return Path;
@@ -240,6 +242,19 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 	return MakeValue(TEXT("Success"));
 }
 
+bool IsSubmitFinished(const TSharedPtr<FMonitoredProcess>& InProcess)
+{
+	FString SubmitOutput = InProcess->GetFullOutputWithoutDelegate();
+	if (SubmitOutput.Contains(TEXT("Uploading LFS objects"), ESearchCase::IgnoreCase)
+		|| SubmitOutput.Contains(TEXT("Pushing Git Changes"), ESearchCase::IgnoreCase))
+	{
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
+		return true;
+	}
+
+	return !InProcess->Update();
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FString> InFiles, const FString& InMessage)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::SubmitFiles);
@@ -256,7 +271,11 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *InMessage));
 
 	FString SubmitCommand = FString::Join(SubmitParams, TEXT(" "));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(SubmitCommand);
+
+	FCliParameters Parameters = {SubmitCommand};
+	Parameters.OnProcessUpdate= IsSubmitFinished;
+	
+	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(Parameters);
 
 	if (!ProcessOutput.DidSucceed())
 	{

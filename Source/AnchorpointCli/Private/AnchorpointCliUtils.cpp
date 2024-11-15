@@ -28,6 +28,18 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 	return JsonArray;
 }
 
+bool IsProcessFinished(const TSharedPtr<FMonitoredProcess>& InProcess)
+{
+	return !InProcess->Update();
+}
+
+FCliParameters::FCliParameters(const FString& InCommand)
+	: Command(InCommand)
+	  , bRequestJsonOutput(true)
+	  , OnProcessUpdate(IsProcessFinished)
+{
+}
+
 FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */, bool bJsonOutput /* = true */)
 {
 	TArray<FString> Result;
@@ -99,17 +111,22 @@ FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool 
 	return FString::Join(Result, LINE_TERMINATOR);
 }
 
+FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand)
+{
+	FCliParameters Parameters = {InCommand};
+	return RunApCommand(Parameters);
+}
 
-#define WAIT_FOR_CONDITION(x) while(x) continue;
+#define WAIT_FOR_TRUE(x) while(!x) continue;
 
-FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bRequestJsonOutput)
+FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
 	FCliResult Result;
 
 	FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
-	FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InCommand, false, bRequestJsonOutput);
+	FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
 	FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
 
 	TSharedPtr<FMonitoredProcess> Process = nullptr;
@@ -138,7 +155,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bReq
 		return Result;
 	}
 
-	WAIT_FOR_CONDITION(Process->Update());
+	WAIT_FOR_TRUE(InParameters.OnProcessUpdate(Process));
 
 	if (Process->GetReturnCode() != 0)
 	{
@@ -156,5 +173,5 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bReq
 FCliResult AnchorpointCliUtils::RunGitCommand(const FString& InCommand)
 {
 	const FString GitViaAp = FString::Printf(TEXT("git --command \"%s\""), *InCommand);
-	return RunApCommand(GitViaAp, false);
+	return RunApCommand({GitViaAp, false});
 }
