@@ -23,7 +23,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(NSLOCTEXT("Anchorpoint", "Install DirectoryLabel", "InstallDirectory"))
+				.Text(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel", "Path"))
 				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
 			]
 		]
@@ -37,7 +37,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			[
 				SNew(STextBlock)
 				.Text(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
-				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
+				.ToolTipText(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
 			]
 		]
 	];
