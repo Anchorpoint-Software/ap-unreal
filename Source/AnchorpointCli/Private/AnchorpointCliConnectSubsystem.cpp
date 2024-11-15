@@ -97,7 +97,7 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
 {
 	TArray<FString> FilesToUpdate;
-	if(bCanUseStatusCache)
+	if (bCanUseStatusCache)
 	{
 		// When using status caching, we always want to run the status command for the whole project (no specific files) and clear our cache
 		StatusCache.Reset();
@@ -254,8 +254,19 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener output: %s"), *Output);
 
-	FAnchorpointConnectMessage Message;
+	if (Output.TrimStartAndEnd().EndsWith(TEXT("disconnected"), ESearchCase::IgnoreCase))
+	{
+		UE_LOG(LogAnchorpointCli, Warning, TEXT("CLI connection lost"));
 
+		if (Process)
+		{
+			Process->Cancel(true);
+		}
+
+		return;
+	}
+
+	FAnchorpointConnectMessage Message;
 	if (FJsonObjectConverter::JsonObjectStringToUStruct(Output, &Message))
 	{
 		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
@@ -285,6 +296,11 @@ void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCancelin
 void UAnchorpointCliConnectSubsystem::OnCanceled()
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener canceled"));
+
+	if (Process)
+	{
+		Process.Reset();
+	}
 }
 
 bool UAnchorpointCliConnectSubsystem::UpdateSync(const TArray<FString>& PackageFilenames)
