@@ -28,7 +28,7 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 	return JsonArray;
 }
 
-FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */)
+FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */, bool bJsonOutput /* = true */)
 {
 	TArray<FString> Result;
 
@@ -40,7 +40,12 @@ FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool 
 
 	// Add the default parameters
 	Result.Add(FString::Printf(TEXT("cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-	Result.Add(TEXT("json=true"));
+
+	if (bJsonOutput)
+	{
+		Result.Add(TEXT("json=true"));
+	}
+
 	Result.Add(TEXT("apiVersion=1"));
 
 	FString CurrentKey;
@@ -104,7 +109,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bReq
 	FCliResult Result;
 
 	FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
-	FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InCommand);
+	FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InCommand, false, bRequestJsonOutput);
 	FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
 
 	TSharedPtr<FMonitoredProcess> Process = nullptr;
@@ -112,11 +117,6 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand, bool bReq
 	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
 
 	TArray<FString> Args;
-
-	if (bRequestJsonOutput)
-	{
-		Args.Add(TEXT("--json"));
-	}
 
 	Args.Add(FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile));
 

@@ -280,7 +280,7 @@ bool FAnchorpointAddWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::Execute);
 
-	//TODO: do we need to do anything here? we are going to get an update status call at save callback
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
@@ -302,7 +302,7 @@ bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
 
-	//TODO: do we need to do anything here? we are going to get an update status call at save callback
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
@@ -323,6 +323,8 @@ FName FAnchorpointDeleteWorker::GetName() const
 bool FAnchorpointDeleteWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDeleteWorker::Execute);
+
+	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	TValueOrError<FString, FString> DeleteResult = AnchorpointCliOperations::DeleteFiles(InCommand.Files);
 

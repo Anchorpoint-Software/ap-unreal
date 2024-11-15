@@ -12,7 +12,7 @@ struct FCliResult
 
 namespace AnchorpointCliUtils
 {
-	FString ConvertCommandToIni(const FString& InCommand, bool bPrintConfig = false);
+	FString ConvertCommandToIni(const FString& InCommand, bool bPrintConfig = false, bool bJsonOutput = true);
 
 	FCliResult RunApCommand(const FString& InCommand, bool bRequestJsonOutput = true);
 	FCliResult RunGitCommand(const FString& InCommand);
