@@ -19,8 +19,6 @@ private:
 	virtual void ShutdownModule() override;
 	// ~End IModuleInterface interface
 
-	FString GetCliPath();
-
 	void ExtendFileContextMenu(UToolMenu* InMenu);
 
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;

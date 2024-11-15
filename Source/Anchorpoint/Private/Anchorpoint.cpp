@@ -28,9 +28,6 @@ void FAnchorpointModule::StartupModule()
 	// Load settings for config
 	AnchorpointSourceControlSettings.LoadSettings();
 
-	// Connect the CLI to our settings to ensure we used the configured path 
-	FAnchorpointCliModule::Get().GetInstallFolderDelegate.BindRaw(this, &FAnchorpointModule::GetCliPath);
-
 	// Register our operations
 	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointConnectWorker>("Connect");
 	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCheckOutWorker>("CheckOut");
@@ -58,11 +55,6 @@ void FAnchorpointModule::ShutdownModule()
 
 	AnchorpointSourceControlProvider.Close();
 	IModularFeatures::Get().UnregisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
-}
-
-FString FAnchorpointModule::GetCliPath()
-{
-	return GetSettings().GetInstallDirectory();
 }
 
 void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)

@@ -3,6 +3,8 @@
 #include "AnchorpointSourceControlSettingsWidget.h"
 
 #include "Anchorpoint.h"
+#include "AnchorpointCli.h"
+#include "AnchorpointCliUtils.h"
 #include "AnchorpointSourceControlSettings.h"
 
 void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs)
@@ -33,11 +35,9 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.FillHeight(1.0f)
 			.Padding(2.0f)
 			[
-				SNew(SEditableTextBox)
+				SNew(STextBlock)
 				.Text(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
 				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
-				.OnTextCommitted(this, &SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited)
-				.OnTextChanged(this, &SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited, ETextCommit::Default)
 			]
 		]
 	];
@@ -45,13 +45,6 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 
 FText SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText() const
 {
-	FAnchorpointSourceControlSettings& Settings = FAnchorpointModule::Get().GetSettings();
-	return FText::FromString(Settings.GetInstallDirectory());
-}
-
-void SAnchorpointSourceControlSettingsWidget::OnInstallDirectoryTextCommited(const FText& Text, ETextCommit::Type Arg)
-{
-	FAnchorpointSourceControlSettings& Settings = FAnchorpointModule::Get().GetSettings();
-	Settings.SetInstallDirectory(Text.ToString());
-	Settings.SaveSettings();
+	const FString InstallPath = FAnchorpointCliModule::Get().GetInstallFolder();
+	return FText::FromString(InstallPath);
 }

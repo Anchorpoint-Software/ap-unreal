@@ -22,11 +22,6 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
-	//TODO: In the future we want to validate there an actual CLI .exe in the folder before allowing him to save the settings. 
-	/**
-	 * Callback executed when the user sets a custom install directory for Anchorpoint.
-	 */
-	void OnInstallDirectoryTextCommited(const FText& Text, ETextCommit::Type Arg);
 	/**
 	 * Callback executed to determine the currently selected install directory for Anchorpoint.
 	 */
