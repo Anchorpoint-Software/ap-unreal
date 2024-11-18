@@ -147,6 +147,21 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	return MakeValue(Status);
 }
 
+TValueOrError<FString, FString> AnchorpointCliOperations::SetAutoLock(bool bEnabled)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);
+
+	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock --value %s"), *LexToString(bEnabled));
+	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(AutoLockSetCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	return MakeValue(TEXT("Success"));
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray<FString>& InFiles)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::LockFiles);
