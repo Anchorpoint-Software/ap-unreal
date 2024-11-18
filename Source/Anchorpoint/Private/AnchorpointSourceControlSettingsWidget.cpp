@@ -12,32 +12,49 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 	ChildSlot
 	[
 		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
+		+SHorizontalBox::Slot()
 		.FillWidth(1.0f)
+		.Padding(FMargin(0.0f, 0.0f, 16.0f, 0.0f))
 		[
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			.Padding(2.0f)
-			.HAlign(HAlign_Right)
+
+			+SVerticalBox::Slot()
+			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
 			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Right)
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel", "Path"))
 				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
 			]
+			+SVerticalBox::Slot()
+			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
+			.VAlign(VAlign_Center)
+			.HAlign(HAlign_Right)
+			[
+				SNew(SImage)
+				.Image(FAppStyle::Get().GetBrush("Icons.Warning"))
+			]
 		]
-		+ SHorizontalBox::Slot()
-		.FillWidth(2.0f)
+		+SHorizontalBox::Slot()
+		.FillWidth(4.0f)
 		[
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.FillHeight(1.0f)
-			.Padding(2.0f)
+
+			+SVerticalBox::Slot()
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
 			[
 				SNew(STextBlock)
 				.Text(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
 				.ToolTipText(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
+			]
+			+SVerticalBox::Slot()
+			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
+			.VAlign(VAlign_Center)
+			[
+				SNew(STextBlock)
+				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking in Anchorpoint is controlled by the Unreal Editor."))
 			]
 		]
 	];
