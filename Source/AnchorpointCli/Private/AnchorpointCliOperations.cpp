@@ -39,7 +39,12 @@ FString AnchorpointCliOperations::GetRepositoryRootPath()
 
 		if(!AnchorpointProjectFile.IsEmpty())
 		{
-			RepositoryRootPath = SearchPath + "/";
+			RepositoryRootPath = SearchPath;
+			if (!RepositoryRootPath.EndsWith("/"))
+			{
+				RepositoryRootPath += "/";
+			}
+
 			return RepositoryRootPath;
 		}
 
@@ -159,7 +164,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SetAutoLock(bool bEnab
 		return MakeError(AutoLockSetOutput.Error.GetValue());
 	}
 
-	FString AutoLockPathCommand = FString::Printf(TEXT("config set --key unreal/git-disable-auto-lock-path --value \"%s\""), *FPaths::ProjectDir());
+	FString AutoLockPathCommand = FString::Printf(TEXT("config set --key unreal/git-disable-auto-lock-path --value \"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()));
 	FCliResult AutoLockPathResult = AnchorpointCliUtils::RunApCommand(AutoLockPathCommand);
 
 	if (!AutoLockPathResult.DidSucceed())
