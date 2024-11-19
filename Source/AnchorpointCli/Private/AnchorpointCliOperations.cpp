@@ -151,12 +151,20 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SetAutoLock(bool bEnab
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);
 
-	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock --value %s"), *LexToString(bEnabled));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(AutoLockSetCommand);
+	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock-path --value %s"), *LexToString(bEnabled));
+	FCliResult AutoLockSetOutput = AnchorpointCliUtils::RunApCommand(AutoLockSetCommand);
 
-	if (!ProcessOutput.DidSucceed())
+	if (!AutoLockSetOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(AutoLockSetOutput.Error.GetValue());
+	}
+
+	FString AutoLockPathCommand = FString::Printf(TEXT("config set --key unreal/git-disable-auto-lock-path --value \"%s\""), *FPaths::ProjectDir());
+	FCliResult AutoLockPathResult = AnchorpointCliUtils::RunApCommand(AutoLockPathCommand);
+
+	if (!AutoLockPathResult.DidSucceed())
+	{
+		return MakeError(AutoLockPathResult.Error.GetValue());
 	}
 
 	return MakeValue(TEXT("Success"));
