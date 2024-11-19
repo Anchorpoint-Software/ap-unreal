@@ -39,7 +39,7 @@ FString AnchorpointCliOperations::GetRepositoryRootPath()
 
 		if(!AnchorpointProjectFile.IsEmpty())
 		{
-			RepositoryRootPath = SearchPath;
+			RepositoryRootPath = SearchPath + "/";
 			return RepositoryRootPath;
 		}
 
