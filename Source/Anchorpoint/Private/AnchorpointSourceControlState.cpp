@@ -232,7 +232,9 @@ bool FAnchorpointSourceControlState::GetOtherBranchHeadModification(FString& Hea
 
 bool FAnchorpointSourceControlState::IsCurrent() const
 {
-	return State != EAnchorpointState::OutDated;
+	// TODO: Hack to disable the `Sync` option
+	return true;
+	// return State != EAnchorpointState::OutDated;
 }
 
 bool FAnchorpointSourceControlState::IsSourceControlled() const
