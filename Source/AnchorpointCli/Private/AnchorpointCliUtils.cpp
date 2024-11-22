@@ -189,7 +189,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 		AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask,
 		          [Process]()
 		          {
-			          Process->Run();
+			          while (Process && Process->Update()) { continue; }
 		          });
 	}
 
