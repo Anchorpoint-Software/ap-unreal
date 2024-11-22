@@ -217,6 +217,8 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files changed"))
 	{
 		StopSync(Message);
+
+		RefreshStatus(Message);
 	}
 	else if (MessageType == TEXT("project opened"))
 	{
