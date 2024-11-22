@@ -2,6 +2,7 @@
 
 #include "AnchorpointSourceControlOperations.h"
 
+#include <ISourceControlModule.h>
 #include <SourceControlOperations.h>
 
 #include "Anchorpoint.h"
@@ -109,8 +110,17 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		}
 	}
 
+	TArray<FString> AllRelevantFiles = InputPaths;
+	if (AllRelevantFiles.IsEmpty())
+	{
+		// For project-wide search (not input paths), we will perform this revert on all files in the source control provider's cache
+		ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
+		FAnchorpointSourceControlProvider* AnchorpointProvider = static_cast<FAnchorpointSourceControlProvider*>(&Provider);
+		AnchorpointProvider->StateCache.GenerateKeyArray(AllRelevantFiles);
+	}
+
 	// In case we have files that are not in the status, we add them as UnlockedUnchanged
-	for (const FString& Path : InputPaths)
+	for (const FString& Path : AllRelevantFiles)
 	{
 		if (FPaths::FileExists(Path))
 		{
