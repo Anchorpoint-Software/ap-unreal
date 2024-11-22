@@ -142,6 +142,9 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 		InCommand.ErrorMessages.Add(CurrentUserResult.GetError());
 	}
 
+	UE_LOG(LogAnchorpoint, Display, TEXT("Disabling Anchorpoint's Auto-Lock feature"));
+	AnchorpointCliOperations::DisableAutoLock();
+
 	AsyncTask(ENamedThreads::GameThread,
 	          [this]()
 	          {

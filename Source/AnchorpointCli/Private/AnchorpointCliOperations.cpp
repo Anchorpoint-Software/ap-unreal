@@ -152,11 +152,11 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	return MakeValue(Status);
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::SetAutoLock(bool bEnabled)
+TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);
 
-	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock-path --value %s"), *LexToString(bEnabled));
+	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock-path --value false"));
 	FCliResult AutoLockSetOutput = AnchorpointCliUtils::RunApCommand(AutoLockSetCommand);
 
 	if (!AutoLockSetOutput.DidSucceed())

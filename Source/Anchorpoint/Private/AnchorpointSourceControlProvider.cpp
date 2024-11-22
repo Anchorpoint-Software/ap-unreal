@@ -27,8 +27,6 @@ FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
-	UE_LOG(LogAnchorpoint, Display, TEXT("Disabling Anchorpoint's Aut-Lock feature"));
-	AnchorpointCliOperations::SetAutoLock(false);
 }
 
 void FAnchorpointSourceControlProvider::Close()
