@@ -272,7 +272,13 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 
 bool IsSubmitFinished(const TSharedPtr<FMonitoredProcess>& InProcess)
 {
-	FString SubmitOutput = InProcess->GetFullOutputWithoutDelegate();
+	if (!InProcess.IsValid())
+	{
+		// Process terminated, no need to keep pooling the output.
+		return true;
+	}
+
+	const FString SubmitOutput = InProcess->GetFullOutputWithoutDelegate();
 	if (SubmitOutput.Contains(TEXT("Uploading LFS objects"), ESearchCase::IgnoreCase)
 		|| SubmitOutput.Contains(TEXT("Pushing Git Changes"), ESearchCase::IgnoreCase))
 	{
