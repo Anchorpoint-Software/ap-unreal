@@ -270,19 +270,17 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 	return MakeValue(TEXT("Success"));
 }
 
-bool IsSubmitFinished(const TSharedPtr<FMonitoredProcess>& InProcess)
+bool IsSubmitFinished(const TSharedPtr<FMonitoredProcess>& InProcess, const FString& InProcessOutput)
 {
-	const bool bUpdateResult = InProcess->Update();
-
-	const FString SubmitOutput = InProcess->GetFullOutputWithoutDelegate();
-	if (SubmitOutput.Contains(TEXT("Uploading LFS objects"), ESearchCase::IgnoreCase)
-		|| SubmitOutput.Contains(TEXT("Pushing Git Changes"), ESearchCase::IgnoreCase))
+	if (InProcessOutput.Contains(TEXT("Uploading LFS objects"))
+		|| InProcessOutput.Contains(TEXT("Pushing Git Changes"))
+		|| InProcessOutput.Contains(TEXT("Uploading Files")))
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
 		return true;
 	}
 
-	return !bUpdateResult;
+	return false;
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FString> InFiles, const FString& InMessage)
@@ -304,7 +302,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 	FCliParameters Parameters = {SubmitCommand};
 	Parameters.OnProcessUpdate= IsSubmitFinished;
-	
+
 	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(Parameters);
 
 	if (!ProcessOutput.DidSucceed())

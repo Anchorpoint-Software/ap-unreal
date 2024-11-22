@@ -28,15 +28,10 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 	return JsonArray;
 }
 
-bool IsProcessFinished(const TSharedPtr<FMonitoredProcess>& InProcess)
-{
-	return !InProcess->Update();
-}
-
 FCliParameters::FCliParameters(const FString& InCommand)
 	: Command(InCommand)
 	  , bRequestJsonOutput(true)
-	  , OnProcessUpdate(IsProcessFinished)
+	  , OnProcessUpdate(nullptr)
 {
 }
 
@@ -117,8 +112,6 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand)
 	return RunApCommand(Parameters);
 }
 
-#define WAIT_FOR_TRUE(x) while(!x) continue;
-
 FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
@@ -148,6 +141,18 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 		return Result;
 	}
 
+	FString ProcessOutput;
+	Process->OnOutput().BindLambda([&ProcessOutput](const FString& NewOutput)
+	{
+		if (NewOutput.Contains(TEXT("waiting for daemon")))
+		{
+			UE_LOG(LogAnchorpointCli, Warning, TEXT("Discarding daemon message: %s"), *NewOutput);
+			return;
+		}
+
+		ProcessOutput.Append(NewOutput);
+	});
+
 	const bool bLaunchSuccess = Process->Launch();
 	if (!bLaunchSuccess)
 	{
@@ -155,7 +160,10 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 		return Result;
 	}
 
-	WAIT_FOR_TRUE(InParameters.OnProcessUpdate(Process));
+	while (Process->Update() && (!InParameters.OnProcessUpdate || !InParameters.OnProcessUpdate(Process, ProcessOutput)))
+	{
+		continue;
+	}
 
 	if (Process->GetReturnCode() != 0)
 	{
@@ -163,8 +171,10 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 		return Result;
 	}
 
-	// TODO: We should bind to this delegate all discard all the waiting for daemon message
-	Result.Output = Process->GetFullOutputWithoutDelegate();
+	// We need to perform this final append to ensure we get every bit of output after the program has finished
+	ProcessOutput.Append(Process->GetFullOutputWithoutDelegate());
+
+	Result.Output = ProcessOutput;
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result.Output);
 
 	return Result;

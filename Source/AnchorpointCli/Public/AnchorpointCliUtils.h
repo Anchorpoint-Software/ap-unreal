@@ -19,7 +19,7 @@ struct FCliParameters
 	FString Command;
 	bool bRequestJsonOutput;
 
-	using FOnProcessUpdate = TFunction<bool(const TSharedPtr<FMonitoredProcess>& InProcess)>;
+	using FOnProcessUpdate = TFunction<bool(const TSharedPtr<FMonitoredProcess>& InProcess, const FString& ProcessOutput)>;
 	FOnProcessUpdate OnProcessUpdate;
 };
 
