@@ -39,11 +39,18 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 5.0f);
 }
 
-void UAnchorpointCliConnectSubsystem::EstablishConnection()
+void UAnchorpointCliConnectSubsystem::TickConnection()
 {
 	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	if (Provider.GetName().ToString() != TEXT("Anchorpoint") || !Provider.IsEnabled())
+	const bool bUsesAnchorpoint = Provider.GetName().ToString() == TEXT("Anchorpoint") && Provider.IsEnabled();
+	if (!bUsesAnchorpoint)
 	{
+		if (Process)
+		{
+			UE_LOG(LogAnchorpointCli, Warning, TEXT("Disconnecting listener because the current provider is not Anchorpoint"));
+			Process->Cancel(true);
+		}
+
 		// We should not connect if the current provider is not Anchorpoint
 		return;
 	}
@@ -89,7 +96,7 @@ void UAnchorpointCliConnectSubsystem::EstablishConnection()
 
 bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 {
-	EstablishConnection();
+	TickConnection();
 
 	return true;
 }

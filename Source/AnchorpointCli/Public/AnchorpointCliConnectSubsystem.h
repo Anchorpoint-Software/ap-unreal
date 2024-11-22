@@ -71,7 +71,7 @@ private:
 	/**
 	 * Checks if the connection to the Anchorpoint CLI is established and if not, starts the connection
 	 */
-	void EstablishConnection();
+	void TickConnection();
 	/**
 	 * Refreshes the Source Control status of the files in the message 
 	 */
