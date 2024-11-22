@@ -160,9 +160,10 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 		return Result;
 	}
 
-	while (Process->Update() && (!InParameters.OnProcessUpdate || !InParameters.OnProcessUpdate(Process, ProcessOutput)))
+	bool bProcessIsRunning = true;
+	while (bProcessIsRunning && (!InParameters.OnProcessUpdate || !InParameters.OnProcessUpdate(Process, ProcessOutput)))
 	{
-		continue;
+		bProcessIsRunning = Process->Update();
 	}
 
 	if (Process->GetReturnCode() != 0)
@@ -176,6 +177,21 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 
 	Result.Output = ProcessOutput;
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result.Output);
+
+	if (bProcessIsRunning)
+	{
+		// If the process is still running, it means we exited early due to the OnProcessUpdate callback, in this case:
+
+		// 1. We will stop monitoring the output to prevent any memory access violations
+		Process->OnOutput().Unbind();
+
+		// 2. Let the process run to completion on a separated thread
+		AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask,
+		          [Process]()
+		          {
+			          Process->Run();
+		          });
+	}
 
 	return Result;
 }
