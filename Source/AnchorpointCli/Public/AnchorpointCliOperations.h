@@ -8,6 +8,7 @@ namespace AnchorpointCliOperations
 	void ANCHORPOINTCLI_API ShowInAnchorpoint(const FString& InPath);
 
 	FString ANCHORPOINTCLI_API GetRepositoryRootPath();
+	bool ANCHORPOINTCLI_API IsUnderRepositoryPath(const FString& InPath);
 	FString ANCHORPOINTCLI_API ConvertFullPathToApInternal(const FString& InFullPath);
 	FString ANCHORPOINTCLI_API ConvertApInternalToFull(const FString& InRelativePath);
 

@@ -54,6 +54,12 @@ FString AnchorpointCliOperations::GetRepositoryRootPath()
 	return {};
 }
 
+bool AnchorpointCliOperations::IsUnderRepositoryPath(const FString& InPath)
+{
+	FString RootFolder = GetRepositoryRootPath();
+	return FPaths::IsUnderDirectory(InPath, RootFolder);
+}
+
 FString AnchorpointCliOperations::ConvertFullPathToApInternal(const FString& InFullPath)
 {
 	FString Path = InFullPath;
@@ -122,7 +128,10 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 		StatusParams.Add(TEXT("--paths"));
 		for (const FString& File : InFiles)
 		{
-			StatusParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
+			if (AnchorpointCliOperations::IsUnderRepositoryPath(File))
+			{
+				StatusParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
+			}
 		}
 	}
 
