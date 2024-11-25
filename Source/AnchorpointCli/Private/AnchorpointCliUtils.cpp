@@ -144,7 +144,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	FString ProcessOutput;
 	Process->OnOutput().BindLambda([&ProcessOutput](const FString& NewOutput)
 	{
-		if (NewOutput.Contains(TEXT("waiting for daemon")))
+		if (NewOutput.Contains(TEXT("Waiting for Anchorpoint Daemon")))
 		{
 			UE_LOG(LogAnchorpointCli, Warning, TEXT("Discarding daemon message: %s"), *NewOutput);
 			return;
