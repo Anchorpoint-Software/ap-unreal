@@ -92,7 +92,7 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored", "Ignored");
 	case EAnchorpointState::OutDated:
-		return LOCTEXT("OutDated", "Out dated");
+		return LOCTEXT("OutDated", "Outdated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther", "Locked by: {0}"), FText::FromString(OtherUserCheckedOut));
 	case EAnchorpointState::LockedAdded:
@@ -130,7 +130,7 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored_Tooltip", "Ignored");
 	case EAnchorpointState::OutDated:
-		return LOCTEXT("OutDated_Tooltip", "Out dated");
+		return LOCTEXT("OutDated_Tooltip", "Outdated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther_Tooltip", "Locked by: {0}"), FText::FromString(OtherUserCheckedOut));
 	case EAnchorpointState::LockedAdded:
