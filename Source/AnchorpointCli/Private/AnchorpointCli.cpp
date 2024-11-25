@@ -46,6 +46,11 @@ FString FAnchorpointCliModule::GetInstallFolder() const
 		TArray<FString> AnchorpointVersions;
 		IFileManager::Get().FindFiles(AnchorpointVersions, *(AnchorpointVersionsPath / TEXT("*")), false, true);
 
+		if (AnchorpointVersions.IsEmpty())
+		{
+			return TEXT("");
+		}
+
 		Algo::Sort(AnchorpointVersions, CompareVersions);
 
 		FString ChosenVersion = AnchorpointVersionsPath / AnchorpointVersions.Last();

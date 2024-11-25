@@ -23,9 +23,9 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Right)
 			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel", "Path"))
-				.ToolTipText(NSLOCTEXT("Anchorpoint", "InstallDirectoryLabel_Tooltip", "Path on disk to the InstallDirectory"))
+				SNew(SImage)
+				.Image(FAppStyle::Get().GetBrush("Icons.Warning"))
+				.Visibility_Lambda([this](){ return !IsSoftwareInstalled() ? EVisibility::Visible : EVisibility::Collapsed; })
 			]
 			+SVerticalBox::Slot()
 			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
@@ -34,6 +34,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			[
 				SNew(SImage)
 				.Image(FAppStyle::Get().GetBrush("Icons.Lock"))
+				.Visibility_Lambda([this](){ return IsSoftwareInstalled() ? EVisibility::Visible : EVisibility::Collapsed; })
 			]
 		]
 		+SHorizontalBox::Slot()
@@ -46,8 +47,8 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
 			[
 				SNew(STextBlock)
-				.Text(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
-				.ToolTipText(this, &SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText)
+				.Text(NSLOCTEXT("Anchorpoint", "AnchorpointNotInstalledWarning", "Anchorpoint’s desktop application is not available"))
+				.Visibility_Lambda([this](){ return !IsSoftwareInstalled() ? EVisibility::Visible : EVisibility::Collapsed; })
 			]
 			+SVerticalBox::Slot()
 			.Padding(FMargin(0.0f, 0.0f, 0.0f, 10.0f))
@@ -55,13 +56,14 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking will be controlled by the Unreal Editor"))
+				.Visibility_Lambda([this](){ return IsSoftwareInstalled() ? EVisibility::Visible : EVisibility::Collapsed; })
 			]
 		]
 	];
 }
 
-FText SAnchorpointSourceControlSettingsWidget::GetInstallDirectoryText() const
+bool SAnchorpointSourceControlSettingsWidget::IsSoftwareInstalled() const
 {
 	const FString InstallPath = FAnchorpointCliModule::Get().GetInstallFolder();
-	return FText::FromString(InstallPath);
+	return !InstallPath.IsEmpty() && FPaths::DirectoryExists(InstallPath); 
 }

@@ -23,7 +23,7 @@ public:
 
 private:
 	/**
-	 * Callback executed to determine the currently selected install directory for Anchorpoint.
+	 * Callback executed to determine if Anchorpoint has a valid installation path 
 	 */
-	FText GetInstallDirectoryText() const;
+	bool IsSoftwareInstalled() const;
 };
