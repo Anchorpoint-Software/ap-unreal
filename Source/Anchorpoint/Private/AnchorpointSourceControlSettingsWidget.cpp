@@ -33,7 +33,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.HAlign(HAlign_Right)
 			[
 				SNew(SImage)
-				.Image(FAppStyle::Get().GetBrush("Icons.Warning"))
+				.Image(FAppStyle::Get().GetBrush("Icons.Lock"))
 			]
 		]
 		+SHorizontalBox::Slot()
@@ -54,7 +54,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking in Anchorpoint is controlled by the Unreal Editor."))
+				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking will be controlled by the Unreal Editor"))
 			]
 		]
 	];

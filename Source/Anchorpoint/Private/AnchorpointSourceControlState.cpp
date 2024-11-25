@@ -62,7 +62,7 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 	case EAnchorpointState::LockedDeleted:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.MarkedForDelete");
 	case EAnchorpointState::LockedUnchanged:
-		return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");;
+		return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");
 	case EAnchorpointState::UnlockedAdded:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedModified:
