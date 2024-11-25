@@ -240,7 +240,9 @@ bool FAnchorpointSourceControlProvider::UsesChangelists() const
 
 bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 {
-	return false;
+	// Note: This is required in order to bypass the FEditorFileUtils::MakePackagesWriteable if check (UncontrolledChangelistModule.OnMakeWritable(Filename))
+	// in order to avoid getting the files getting added to PackagesNotToPromptAnyMore 
+	return true;
 }
 
 bool FAnchorpointSourceControlProvider::UsesCheckout() const
