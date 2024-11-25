@@ -198,6 +198,8 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 
 FCliResult AnchorpointCliUtils::RunGitCommand(const FString& InCommand)
 {
-	const FString GitViaAp = FString::Printf(TEXT("git --command \"%s\""), *InCommand);
-	return RunApCommand({GitViaAp, false});
+	FCliParameters Parameters = {FString::Printf(TEXT("git --command \"%s\""), *InCommand)};
+	Parameters.bRequestJsonOutput = false;
+
+	return RunApCommand(Parameters);
 }

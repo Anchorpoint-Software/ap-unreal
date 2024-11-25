@@ -250,7 +250,10 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 
 	for (const FString& File : InFiles)
 	{
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *AnchorpointCliOperations::ConvertFullPathToApInternal(File));
+		//Note: Deleting files is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
+		FString PathToFile = File;
+		FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *PathToFile);
 	}
 
 	FCliResult ProcessOutput = AnchorpointCliUtils::RunGitCommand(CheckoutCommand);
