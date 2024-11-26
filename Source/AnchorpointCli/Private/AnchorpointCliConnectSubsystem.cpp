@@ -55,6 +55,13 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 		return;
 	}
 
+	TValueOrError<FString, FString> CurrentUser = AnchorpointCliOperations::GetCurrentUser();
+	if (CurrentUser.HasError())
+	{
+		// We should not connect until we have a valid user
+		return;
+	}
+
 	if (Process)
 	{
 		// Process already running and connection is established 
