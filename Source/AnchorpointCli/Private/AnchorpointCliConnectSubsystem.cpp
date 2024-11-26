@@ -129,24 +129,24 @@ void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMes
 	          });
 }
 
-void UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const FAnchorpointConnectMessage& Message)
+TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const TArray<FString>& Files)
 {
 	FUnsavedAssetsTrackerModule& UnsavedTracker = FUnsavedAssetsTrackerModule::Get();
 	TOptional<FString> Error;
 
-	if (Message.Files.IsEmpty())
+	if (Files.IsEmpty())
 	{
 		// No specific files specified, checking everything
 		const int32 NumUnsaved = UnsavedTracker.GetUnsavedAssets().Num();
 		if (NumUnsaved > 0)
 		{
-			Error = FString::Printf(TEXT("There are %d unsaved assets"), NumUnsaved);
+			Error = FString::Printf(TEXT("%d unsaved asset(s) present"), NumUnsaved);
 		}
 	}
 	else
 	{
 		FString ErrorMessage;
-		for (const FString& File : Message.Files)
+		for (const FString& File : Files)
 		{
 			if (UnsavedTracker.IsAssetUnsaved(File))
 			{
@@ -160,7 +160,7 @@ void UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const FAnchorpointC
 		}
 	}
 
-	RespondToMessage(Message.Id, Error);
+	return Error;
 }
 
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
@@ -215,11 +215,21 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
-		CheckProjectSaveStatus(Message);
+		const TOptional<FString> Error = CheckProjectSaveStatus(Message.Files);
+		RespondToMessage(Message.Id, Error);
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
-		StartSync(Message);
+		// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
+		const TOptional<FString> Error = CheckProjectSaveStatus({});
+		if (Error.IsSet())
+		{
+			RespondToMessage(Message.Id, Error);
+		}	
+		else
+		{
+			StartSync(Message);
+		}
 	}
 	else if (MessageType == TEXT("files changed"))
 	{

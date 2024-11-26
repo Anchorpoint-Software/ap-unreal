@@ -78,9 +78,8 @@ private:
 	void RefreshStatus(const FAnchorpointConnectMessage& Message);
 	/**
 	 * Checks if the project has been saved and if not, returns an error message
-	 * TODO: In the future this should check only specific files, now it checks the whole project
 	 */
-	void CheckProjectSaveStatus(const FAnchorpointConnectMessage& Message);
+	TOptional<FString> CheckProjectSaveStatus(const TArray<FString>& Files);
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */
