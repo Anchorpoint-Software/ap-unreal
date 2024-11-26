@@ -142,8 +142,11 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	}
 
 	FString ProcessOutput;
-	Process->OnOutput().BindLambda([&ProcessOutput](const FString& NewOutput)
+	FCriticalSection ProcessOutputLock;
+	
+	Process->OnOutput().BindLambda([&ProcessOutput, &ProcessOutputLock](const FString& NewOutput)
 	{
+		FScopeLock _(&ProcessOutputLock);
 		if (NewOutput.Contains(TEXT("Waiting for Anchorpoint Daemon")))
 		{
 			UE_LOG(LogAnchorpointCli, Warning, TEXT("Discarding daemon message: %s"), *NewOutput);
@@ -161,9 +164,13 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	}
 
 	bool bProcessIsRunning = true;
-	while (bProcessIsRunning && (!InParameters.OnProcessUpdate || !InParameters.OnProcessUpdate(Process, ProcessOutput)))
+	bool bEarlyOutRequested = false;
+	while (bProcessIsRunning && !bEarlyOutRequested)
 	{
 		bProcessIsRunning = Process->Update();
+
+		FScopeLock _(&ProcessOutputLock);
+		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, ProcessOutput);
 	}
 
 	if (Process->GetReturnCode() != 0)
