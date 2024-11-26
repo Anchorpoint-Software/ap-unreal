@@ -19,6 +19,7 @@ public class AnchorpointCli : ModuleRules
 			"SourceControl", 
 			"EditorScriptingUtilities",
 			"Slate",
+			"SlateCore",
 		});
 	}
 }

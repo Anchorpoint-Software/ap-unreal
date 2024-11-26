@@ -7,10 +7,12 @@
 #include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>
+#include <FileHelpers.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliOperations.h"
+#include "Dialogs/Dialogs.h"
 
 TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus() const
 {
@@ -186,9 +188,41 @@ void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage
 	AsyncTask(ENamedThreads::GameThread,
 	          [this, PackageToReload, Message]()
 	          {
+		          FAssetData CurrentWorld = FAssetData(GWorld);
+		          if (CurrentWorld.IsValid())
+		          {
+			          GEditor->CreateNewMapForEditing();
+		          }
+
 		          RespondToMessage(Message.Id);
+
 		          auto WaitForSync = [this](const TArray<FString>& PackageFilenames) { return UpdateSync(PackageFilenames); };
 		          USourceControlHelpers::ApplyOperationAndReloadPackages(PackageToReload, WaitForSync, true, false);
+
+		          if (CurrentWorld.IsValid())
+		          {
+			          const FText Title = NSLOCTEXT("Anchorpoint", "ReloadPromptTitle", "Active Level Changed");
+			          const FText Content = NSLOCTEXT("Anchorpoint", "ReloadPromptContent", "An Anchorpoint command changed your active level. Reload the level to see the changes.");
+			          FString CurrentWorldPackageName = CurrentWorld.PackageName.ToString();
+
+			          TSharedRef<SWindow> Win = OpenMsgDlgInt_NonModal(EAppMsgType::Ok,
+			                                                           Content,
+			                                                           Title,
+			                                                           FOnMsgDlgResult::CreateLambda([CurrentWorldPackageName](const TSharedRef<SWindow>&, EAppReturnType::Type Choice)
+			                                                           {
+				                                                           FEditorFileUtils::LoadMap(CurrentWorldPackageName, false, false);
+			                                                           }));
+			          Win->ShowWindow();
+
+			          FSlateApplication::Get().OnPostTick().AddLambda(
+				          [WeakWindow = Win.ToWeakPtr()](float DeltaTime)
+				          {
+					          if (TSharedPtr<SWindow> Window = WeakWindow.Pin())
+					          {
+						          Window->HACK_ForceToFront();
+					          }
+				          });
+		          }
 	          });
 }
 
@@ -225,7 +259,7 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 		if (Error.IsSet())
 		{
 			RespondToMessage(Message.Id, Error);
-		}	
+		}
 		else
 		{
 			StartSync(Message);
