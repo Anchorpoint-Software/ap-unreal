@@ -85,6 +85,10 @@ private:
 	 */
 	void StartSync(const FAnchorpointConnectMessage& Message);
 	/**
+	 * Unlinks and relinks the packages in order to allow Anchorpoint to perform the pull externally
+	 */
+	void PerformSync(const FAnchorpointConnectMessage& Message);
+	/**
 	 * Completes the sync process by reloading the files in the message
 	 */
 	void StopSync(const FAnchorpointConnectMessage& Message);
