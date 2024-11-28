@@ -193,12 +193,30 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		if (FPackageName::TryConvertFilenameToLongPackageName(File, PackageName, nullptr))
 		{
 			PackageToReload.Add(PackageName);
+
 		}
 	}
 
-	FAssetData CurrentWorld = FAssetData(GWorld);
-	if (CurrentWorld.IsValid())
+	FAssetData CurrentWorldAsset;
+	for (const FString& PackageName : PackageToReload)
 	{
+		UPackage* Package = FindPackage(nullptr, *PackageName);
+		if (UObject* Asset = Package ? Package->FindAssetInPackage() : nullptr)
+		{
+			if (Asset->IsPackageExternal())
+			{
+				if (Asset->GetWorld() && Asset->GetWorld() == GWorld && Asset->GetWorld()->GetPackage())
+				{
+					UE_LOG(LogAnchorpointCli, Verbose, TEXT("Current world will be reloaded because of %s"), *PackageName);
+					CurrentWorldAsset = FAssetData(GWorld);
+				}
+			}
+		}
+	}
+
+	if (CurrentWorldAsset.IsValid())
+	{
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Switching to a blank world"));
 		GEditor->CreateNewMapForEditing();
 	}
 
@@ -207,19 +225,21 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 	auto WaitForSync = [this](const TArray<FString>& PackageFilenames) { return UpdateSync(PackageFilenames); };
 	USourceControlHelpers::ApplyOperationAndReloadPackages(PackageToReload, WaitForSync, true, false);
 
-	if (CurrentWorld.IsValid())
+	if (CurrentWorldAsset.IsValid())
 	{
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Waiting for user input to reload the initial world"));
 		const FText Title = NSLOCTEXT("Anchorpoint", "ReloadPromptTitle", "Active Level Changed");
 		const FText Content = NSLOCTEXT("Anchorpoint", "ReloadPromptContent", "Anchorpoint changed your active level. Reload the level to see the changes.");
-		FString CurrentWorldPackageName = CurrentWorld.PackageName.ToString();
+		FString CurrentWorldPackageName = CurrentWorldAsset.PackageName.ToString();
 
 		TSharedRef<SWindow> PopupWindow = OpenMsgDlgInt_NonModal(EAppMsgType::Ok,
-		                                                 Content,
-		                                                 Title,
-		                                                 FOnMsgDlgResult::CreateLambda([CurrentWorldPackageName](const TSharedRef<SWindow>&, EAppReturnType::Type Choice)
-		                                                 {
-			                                                 FEditorFileUtils::LoadMap(CurrentWorldPackageName, false, false);
-		                                                 }));
+		                                                         Content,
+		                                                         Title,
+		                                                         FOnMsgDlgResult::CreateLambda([CurrentWorldPackageName](const TSharedRef<SWindow>&, EAppReturnType::Type Choice)
+		                                                         {
+			                                                         UE_LOG(LogAnchorpointCli, Verbose, TEXT("Reloading initial world"));
+			                                                         FEditorFileUtils::LoadMap(CurrentWorldPackageName, false, false);
+		                                                         }));
 		PopupWindow->ShowWindow();
 
 		FSlateApplication::Get().OnPostTick().AddLambda(
