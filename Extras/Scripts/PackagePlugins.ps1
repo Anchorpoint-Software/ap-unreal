@@ -6,7 +6,8 @@ param (
 )
 Remove-Item -Path "$destinationBase" -Recurse -Force
 
-if($IsWindows) {
+# Pwsh has access to $IsWindows, $IsMacOS, $IsLinux however version 5 of powershell does not have these variables
+if($IsWindows -Or $PSVersionTable.PSVersion.Major -eq 5) {
     $UatFile = "RunUAT.bat"
 }
 if($IsMacOS) {
