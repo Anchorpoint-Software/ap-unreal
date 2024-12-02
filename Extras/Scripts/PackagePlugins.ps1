@@ -6,9 +6,16 @@ param (
 )
 Remove-Item -Path "$destinationBase" -Recurse -Force
 
+if($IsWindows) {
+    $UatFile = "RunUAT.bat"
+}
+if($IsMacOS) {
+    $UatFile = "RunUAT.sh"
+}
+
 foreach ($UnrealVersion in $UnrealVersions) {
-    $destination = "$destinationBase\$UnrealVersion"
-    $RunUAT = "$UnrealPath$UnrealVersion\Engine\Build\BatchFiles\RunUAT.bat"
+    $destination = "$destinationBase/$UnrealVersion"
+    $RunUAT = "$UnrealPath$UnrealVersion\Engine\Build\BatchFiles\$UatFile"
 
     &"$RunUAT" BuildPlugin -Plugin="$source/Anchorpoint.uplugin" -Package="$destination"
 
