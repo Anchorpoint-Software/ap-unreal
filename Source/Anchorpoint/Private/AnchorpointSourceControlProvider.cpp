@@ -5,6 +5,9 @@
 #include <SourceControlHelpers.h>
 #include <ScopedSourceControlProgress.h>
 #include <SourceControlOperations.h>
+#include <ISourceControlModule.h>
+#include <UObject/ObjectSaveContext.h>
+#include <Logging/MessageLog.h>
 
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlCommand.h"
@@ -12,8 +15,6 @@
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
-#include "ISourceControlModule.h"
-#include "UObject/ObjectSaveContext.h"
 
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 {
@@ -52,6 +53,7 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 }
 
 
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
 {
 	// ToImplement: Here we should fill out as many information points as we can
@@ -75,6 +77,7 @@ TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider
 
 	return Result;
 }
+#endif
 
 bool FAnchorpointSourceControlProvider::IsEnabled() const
 {
@@ -203,10 +206,14 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	return IssueCommand(*Command);
 }
 
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
+
 bool FAnchorpointSourceControlProvider::CanExecuteOperation(const FSourceControlOperationRef& InOperation) const
 {
 	return WorkersMap.Find(InOperation->GetName()) != nullptr;
 }
+
+#endif
 
 bool FAnchorpointSourceControlProvider::CanCancelOperation(const FSourceControlOperationRef& InOperation) const
 {

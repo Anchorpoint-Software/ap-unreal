@@ -36,10 +36,19 @@ TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetCurrentRev
 	return nullptr;
 }
 
+TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetBaseRevForMerge() const
+{
+	return nullptr;
+}
+
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
+
 ISourceControlState::FResolveInfo FAnchorpointSourceControlState::GetResolveInfo() const
 {
 	return PendingResolveInfo;
 }
+
+#endif
 
 #if SOURCE_CONTROL_WITH_SLATE
 

@@ -42,8 +42,11 @@ public:
 	FString LocalFilename;
 	FDateTime TimeStamp = 0;
 	FString OtherUserCheckedOut;
-	FResolveInfo PendingResolveInfo;
 	EAnchorpointState State = EAnchorpointState::Unknown;
+
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
+	FResolveInfo PendingResolveInfo;
+#endif
 
 private:
 	/** Being ISourceControlState interface */
@@ -52,7 +55,10 @@ private:
 	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(int32 RevisionNumber) const override;
 	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(const FString& InRevision) const override;
 	virtual TSharedPtr<ISourceControlRevision> GetCurrentRevision() const override;
+	virtual TSharedPtr<ISourceControlRevision> GetBaseRevForMerge() const override;
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
 	virtual FResolveInfo GetResolveInfo() const override;
+#endif
 #if SOURCE_CONTROL_WITH_SLATE
 	virtual FSlateIcon GetIcon() const override;
 #endif // SOURCE_CONTROL_WITH_SLATE

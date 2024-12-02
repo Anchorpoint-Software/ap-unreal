@@ -1,5 +1,6 @@
 #include "AnchorpointCliUtils.h"
 
+#include <Misc/FileHelper.h>
 #include <Misc/MonitoredProcess.h>
 
 #include "AnchorpointCli.h"

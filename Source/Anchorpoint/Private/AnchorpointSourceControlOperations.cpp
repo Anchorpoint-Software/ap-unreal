@@ -2,6 +2,7 @@
 
 #include "AnchorpointSourceControlOperations.h"
 
+#include <Async/Async.h>
 #include <ISourceControlModule.h>
 #include <SourceControlOperations.h>
 

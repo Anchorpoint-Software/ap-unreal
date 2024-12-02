@@ -1,5 +1,6 @@
 #include "AnchorpointCliConnectSubsystem.h"
 
+#include <Async/Async.h>
 #include <ISourceControlModule.h>
 #include <ISourceControlProvider.h>
 #include <JsonObjectConverter.h>

@@ -4,6 +4,8 @@
 
 #include <ISourceControlProvider.h>
 
+#include <Misc/EngineVersionComparison.h>
+
 class FAnchorpointSourceControlState;
 class FAnchorpointSourceControlCommand;
 class IAnchorpointSourceControlWorker;
@@ -25,7 +27,9 @@ public:
 	virtual void Close() override;
 	virtual const FName& GetName() const override;
 	virtual FText GetStatusText() const override;
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
 	virtual TMap<EStatus, FString> GetStatus() const override;
+#endif
 	virtual bool IsEnabled() const override;
 	virtual bool IsAvailable() const override;
 	virtual bool QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest) override;
@@ -37,7 +41,9 @@ public:
 	virtual FDelegateHandle RegisterSourceControlStateChanged_Handle(const FSourceControlStateChanged::FDelegate& SourceControlStateChanged) override;
 	virtual void UnregisterSourceControlStateChanged_Handle(FDelegateHandle Handle) override;
 	virtual ECommandResult::Type Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency = EConcurrency::Synchronous, const FSourceControlOperationComplete& InOperationCompleteDelegate = FSourceControlOperationComplete()) override;
+#if UE_VERSION_NEWER_THAN(5, 3, 0)
 	virtual bool CanExecuteOperation(const FSourceControlOperationRef& InOperation) const override;
+#endif
 	virtual bool CanCancelOperation(const FSourceControlOperationRef& InOperation) const override;
 	virtual void CancelOperation(const FSourceControlOperationRef& InOperation) override;
 	virtual TArray<TSharedRef<ISourceControlLabel>> GetLabels(const FString& InMatchingSpec) const override;
