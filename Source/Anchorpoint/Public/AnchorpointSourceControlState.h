@@ -4,6 +4,8 @@
 
 #include <ISourceControlState.h>
 
+#include <Misc/EngineVersionComparison.h>
+
 enum class EAnchorpointState
 {
 	Unknown,
@@ -55,7 +57,9 @@ private:
 	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(int32 RevisionNumber) const override;
 	virtual TSharedPtr<ISourceControlRevision> FindHistoryRevision(const FString& InRevision) const override;
 	virtual TSharedPtr<ISourceControlRevision> GetCurrentRevision() const override;
+#if UE_VERSION_OLDER_THAN(5, 3, 0)
 	virtual TSharedPtr<ISourceControlRevision> GetBaseRevForMerge() const override;
+#endif
 #if UE_VERSION_NEWER_THAN(5, 3, 0)
 	virtual FResolveInfo GetResolveInfo() const override;
 #endif

@@ -36,10 +36,12 @@ TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetCurrentRev
 	return nullptr;
 }
 
+#if UE_VERSION_OLDER_THAN(5, 3, 0)
 TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetBaseRevForMerge() const
 {
 	return nullptr;
 }
+#endif
 
 #if UE_VERSION_NEWER_THAN(5, 3, 0)
 
