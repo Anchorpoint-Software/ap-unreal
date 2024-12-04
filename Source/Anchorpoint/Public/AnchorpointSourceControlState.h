@@ -9,12 +9,11 @@
 enum class EAnchorpointState
 {
 	Unknown,
+	Added,
 	LockedBySomeone,
-	LockedAdded,
 	LockedDeleted,
 	LockedModified,
 	LockedUnchanged,
-	UnlockedAdded,
 	UnlockedDeleted,
 	UnlockedModified,
 	UnlockedUnchanged,

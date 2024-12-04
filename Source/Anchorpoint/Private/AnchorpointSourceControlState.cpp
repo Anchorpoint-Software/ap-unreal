@@ -60,22 +60,20 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 	{
 	case EAnchorpointState::Unknown:
 		return FSlateIcon();
+	case EAnchorpointState::Added:
+		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.OpenForAdd");
 	case EAnchorpointState::Ignored:
 		return FSlateIcon();
 	case EAnchorpointState::OutDated:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotAtHeadRevision");
 	case EAnchorpointState::LockedBySomeone:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.CheckedOutByOtherUser", NAME_None, "RevisionControl.CheckedOutByOtherUserBadge");
-	case EAnchorpointState::LockedAdded:
-		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.OpenForAdd");
 	case EAnchorpointState::LockedModified:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.CheckedOut");
 	case EAnchorpointState::LockedDeleted:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.MarkedForDelete");
 	case EAnchorpointState::LockedUnchanged:
 		return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");
-	case EAnchorpointState::UnlockedAdded:
-		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedModified:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedDeleted:
@@ -100,22 +98,20 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 	{
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown", "Unknown");
+	case EAnchorpointState::Added:
+		return LOCTEXT("Added", "Added");
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored", "Ignored");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("OutDated", "Outdated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther", "Locked by: {0}"), FText::FromString(OtherUserCheckedOut));
-	case EAnchorpointState::LockedAdded:
-		return LOCTEXT("LockedAdded", "Added (locked)");
 	case EAnchorpointState::LockedModified:
 		return LOCTEXT("LockedModified", "Modified (locked)");
 	case EAnchorpointState::LockedDeleted:
 		return LOCTEXT("LockedDeleted", "Deleted (locked)");
 	case EAnchorpointState::LockedUnchanged:
 		return LOCTEXT("LockedUnchanged", "Unchanged (locked)");
-	case EAnchorpointState::UnlockedAdded:
-		return LOCTEXT("UnlockedAdded", "Added (not locked)");
 	case EAnchorpointState::UnlockedModified:
 		return LOCTEXT("UnlockedModified", "Modified (not locked)");
 	case EAnchorpointState::UnlockedDeleted:
@@ -140,20 +136,18 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 		return LOCTEXT("Unknown_Tooltip", "Unknown");
 	case EAnchorpointState::Ignored:
 		return LOCTEXT("Ignored_Tooltip", "Ignored");
+	case EAnchorpointState::Added:
+		return LOCTEXT("Added_Tooltip", "Added");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("OutDated_Tooltip", "Outdated");
 	case EAnchorpointState::LockedBySomeone:
 		return FText::Format(LOCTEXT("CheckedOutOther_Tooltip", "Locked by: {0}"), FText::FromString(OtherUserCheckedOut));
-	case EAnchorpointState::LockedAdded:
-		return LOCTEXT("LockedAdded_Tooltip", "Added (locked)");
 	case EAnchorpointState::LockedModified:
 		return LOCTEXT("LockedModified_Tooltip", "Modified (locked)");
 	case EAnchorpointState::LockedDeleted:
 		return LOCTEXT("LockedDeleted_Tooltip", "Deleted (locked)");
 	case EAnchorpointState::LockedUnchanged:
         return LOCTEXT("LockedUnchanged_Tooltip", "Unchanged (locked)");
-	case EAnchorpointState::UnlockedAdded:
-		return LOCTEXT("UnlockedAdded_Tooltip", "Added (not locked)");
 	case EAnchorpointState::UnlockedModified:
 		return LOCTEXT("UnlockedModified_Tooltip", "Modified (not locked)");
 	case EAnchorpointState::UnlockedDeleted:
@@ -195,7 +189,7 @@ const FDateTime& FAnchorpointSourceControlState::GetTimeStamp() const
 
 bool FAnchorpointSourceControlState::CanCheckIn() const
 {
-	return State == EAnchorpointState::LockedAdded
+	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted;
 }
@@ -203,14 +197,13 @@ bool FAnchorpointSourceControlState::CanCheckIn() const
 bool FAnchorpointSourceControlState::CanCheckout() const
 {
 	return State == EAnchorpointState::UnlockedUnchanged
-		|| State == EAnchorpointState::UnlockedAdded
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted;
 }
 
 bool FAnchorpointSourceControlState::IsCheckedOut() const
 {
-	return State == EAnchorpointState::LockedAdded
+	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::LockedUnchanged;
@@ -255,7 +248,7 @@ bool FAnchorpointSourceControlState::IsSourceControlled() const
 
 bool FAnchorpointSourceControlState::IsAdded() const
 {
-	return State == EAnchorpointState::LockedAdded;
+	return State == EAnchorpointState::Added;
 }
 
 bool FAnchorpointSourceControlState::IsDeleted() const
@@ -286,17 +279,17 @@ bool FAnchorpointSourceControlState::IsUnknown() const
 
 bool FAnchorpointSourceControlState::IsModified() const
 {
-	return State == EAnchorpointState::LockedAdded
+	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
-		|| State == EAnchorpointState::UnlockedAdded
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted;
 }
 
 bool FAnchorpointSourceControlState::CanAdd() const
 {
-	return State == EAnchorpointState::UnlockedAdded;
+	// Files are automatically added to the repo when they are created, the user can not manually add them
+	return false;
 }
 
 bool FAnchorpointSourceControlState::IsConflicted() const
@@ -306,11 +299,11 @@ bool FAnchorpointSourceControlState::IsConflicted() const
 
 bool FAnchorpointSourceControlState::CanRevert() const
 {
-	return State == EAnchorpointState::LockedAdded
+	//TODO: Test if reverting an added file just deletes it
+	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::LockedUnchanged
-		|| State == EAnchorpointState::UnlockedAdded
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted;
 }

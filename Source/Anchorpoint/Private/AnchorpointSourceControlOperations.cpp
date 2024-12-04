@@ -60,7 +60,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			switch (*StagedState)
 			{
 			case EAnchorpointFileOperation::Added:
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedAdded : EAnchorpointState::UnlockedAdded;
+				NewState.State = EAnchorpointState::Added;
 				break;
 			case EAnchorpointFileOperation::Modified:
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
@@ -77,7 +77,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			switch (*NotStagedState)
 			{
 			case EAnchorpointFileOperation::Added:
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedAdded : EAnchorpointState::UnlockedAdded;
+				NewState.State = EAnchorpointState::Added;
 				break;
 			case EAnchorpointFileOperation::Modified:
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
@@ -200,12 +200,7 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 		for (const FString& File : InCommand.Files)
 		{
 			TSharedRef<FAnchorpointSourceControlState> CurrentState = Provider.GetStateInternal(File);
-			if (CurrentState->State == EAnchorpointState::UnlockedAdded)
-			{
-				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
-				State.State = EAnchorpointState::LockedAdded;
-			}
-			else if (CurrentState->State == EAnchorpointState::UnlockedDeleted)
+			if (CurrentState->State == EAnchorpointState::UnlockedDeleted)
 			{
 				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
 				State.State = EAnchorpointState::LockedDeleted;
@@ -294,8 +289,6 @@ bool FAnchorpointAddWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointAddWorker::Execute);
 
-	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
-
 	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
 }
@@ -315,8 +308,6 @@ FName FAnchorpointCopyWorker::GetName() const
 bool FAnchorpointCopyWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCopyWorker::Execute);
-
-	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
 
 	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
