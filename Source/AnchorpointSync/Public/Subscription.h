@@ -13,7 +13,7 @@
 #include "Subscription.generated.h"
 
 
-ANCHORPOINT_API DECLARE_LOG_CATEGORY_EXTERN(LogAnchorpoint, Log, All);
+ANCHORPOINTSYNC_API DECLARE_LOG_CATEGORY_EXTERN(LogAnchorpointSync, Log, All);
 
 const std::string IpcSenderId = "Unreal Engine " + std::to_string(ENGINE_MAJOR_VERSION) + "." + std::to_string(ENGINE_MINOR_VERSION) + "." + std::to_string(ENGINE_PATCH_VERSION);
 
@@ -21,7 +21,7 @@ const std::string IpcSenderId = "Unreal Engine " + std::to_string(ENGINE_MAJOR_V
  * 
  */
 UCLASS()
-class ANCHORPOINT_API USubscription : public UObject, public FTickableGameObject
+class ANCHORPOINTSYNC_API USubscription : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 	
