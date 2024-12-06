@@ -8,14 +8,18 @@ bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
 {
 	auto CompareCommands = [this](const FString& InCommand)
 	{
-		const FString CliCommand = FString::Printf(TEXT("--print-config %s"), *InCommand);
-		const FString& ExpectedIniFile = AnchorpointCliUtils::RunApCommand(CliCommand).Output;
+		FCliParameters Parameters = {FString::Printf(TEXT("--print-config %s"), *InCommand)};
+		Parameters.bRequestJsonOutput = true;
+		Parameters.bUseIniFile = false;
+
+		const FString& ExpectedIniFile = AnchorpointCliUtils::RunApCommand(Parameters).Output;
 		const FString& ActualIniFile = AnchorpointCliUtils::ConvertCommandToIni(InCommand, true);
 
 		const FString TestName = FString::Printf(TEXT("Comparing command %s"), *InCommand);
 		TestEqual(TestName, ActualIniFile, ExpectedIniFile);
 	};
 
+	// Generic tests
 	CompareCommands(TEXT("status"));
 	CompareCommands(TEXT("git --command status"));
 	CompareCommands(TEXT("git --command \"rm -- 'test1' 'test2' 'test3'\""));
@@ -29,7 +33,8 @@ bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
 	CompareCommands(TEXT("lock create --files \"test1\" \"test2\" \"test3\" --keep --git"));
 	CompareCommands(TEXT("lock create --keep --files \"test1\" \"test2\" \"test3\" --git"));
 	CompareCommands(TEXT("lock create --keep --git --files \"test1\" \"test2\" \"test3\""));
-	
+
+	// Test with multiple file inputs
 	CompareCommands(TEXT("lock remove --files \"test1\" \"test2\" \"test3\""));
 	CompareCommands(TEXT("revert --files \"test1\" \"test2\" \"test3\""));
 

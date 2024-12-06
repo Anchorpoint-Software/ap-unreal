@@ -31,6 +31,7 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 
 FCliParameters::FCliParameters(const FString& InCommand)
 	: Command(InCommand)
+	  , bUseIniFile(true)
 	  , bRequestJsonOutput(true)
 	  , OnProcessUpdate(nullptr)
 {
@@ -103,7 +104,6 @@ FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool 
 		Result.Add(Line);
 	}
 
-	Result.Add(LINE_TERMINATOR);
 	return FString::Join(Result, LINE_TERMINATOR);
 }
 
@@ -119,22 +119,36 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 
 	FCliResult Result;
 
-	FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
-	FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
-	FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
-
-	TSharedPtr<FMonitoredProcess> Process = nullptr;
-
 	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
+	FString CommandLineArgs;
 
-	TArray<FString> Args;
+	if (InParameters.bUseIniFile)
+	{
+		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
+		FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
+		FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
 
-	Args.Add(FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile));
+		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
+	}
+	else
+	{
+		TArray<FString> Args;
+		Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
 
-	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
+		if (InParameters.bRequestJsonOutput)
+		{
+			Args.Add(TEXT("--json"));
+		}
+
+		Args.Add(TEXT("--apiVersion 1"));
+		Args.Add(InParameters.Command);
+
+		CommandLineArgs = FString::Join(Args, TEXT(" "));
+	}
+
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
-	Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
+	TSharedPtr<FMonitoredProcess> Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
 
 	if (!Process)
 	{
@@ -144,7 +158,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 
 	FString ProcessOutput;
 	FCriticalSection ProcessOutputLock;
-	
+
 	Process->OnOutput().BindLambda([&ProcessOutput, &ProcessOutputLock](const FString& NewOutput)
 	{
 		FScopeLock _(&ProcessOutputLock);
@@ -154,7 +168,12 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 			return;
 		}
 
-		ProcessOutput.Append(NewOutput);
+		if (NewOutput.IsEmpty())
+		{
+			return;
+		}
+
+		ProcessOutput.Appendf(TEXT("%s%s"), *NewOutput, LINE_TERMINATOR);
 	});
 
 	const bool bLaunchSuccess = Process->Launch();
@@ -181,7 +200,15 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	}
 
 	// We need to perform this final append to ensure we get every bit of output after the program has finished
-	ProcessOutput.Append(Process->GetFullOutputWithoutDelegate());
+	FString RemainingOutput = Process->GetFullOutputWithoutDelegate();
+	if (!RemainingOutput.IsEmpty())
+	{
+		ProcessOutput.Append(*RemainingOutput);
+	}
+	else
+	{
+		ProcessOutput.RemoveFromEnd(LINE_TERMINATOR);
+	}
 
 	Result.Output = ProcessOutput;
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result.Output);

@@ -10,16 +10,16 @@ public class AnchorpointCli : ModuleRules
 		{
 			"Core",
 			"CoreUObject",
-			"Engine",
+			"EditorScriptingUtilities",
 			"EditorSubsystem",
-			"UnrealEd",
+			"Engine",
 			"Json",
 			"JsonUtilities", 
-			"UnsavedAssetsTracker",
-			"SourceControl", 
-			"EditorScriptingUtilities",
 			"Slate",
 			"SlateCore",
+			"SourceControl", 
+			"UnrealEd",
+			"UnsavedAssetsTracker",
 		});
 	}
 }
