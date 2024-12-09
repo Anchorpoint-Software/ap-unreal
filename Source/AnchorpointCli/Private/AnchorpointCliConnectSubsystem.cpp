@@ -134,36 +134,18 @@ void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMes
 
 TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const TArray<FString>& Files)
 {
+	FString ErrorMessage;
+
 	FUnsavedAssetsTrackerModule& UnsavedTracker = FUnsavedAssetsTrackerModule::Get();
-	TOptional<FString> Error;
-
-	if (Files.IsEmpty())
+	for (const FString& UnsavedAsset : UnsavedTracker.GetUnsavedAssets())
 	{
-		// No specific files specified, checking everything
-		const int32 NumUnsaved = UnsavedTracker.GetUnsavedAssets().Num();
-		if (NumUnsaved > 0)
+		if (Files.IsEmpty() || Files.Contains(UnsavedAsset))
 		{
-			Error = FString::Printf(TEXT("%d unsaved asset(s) present"), NumUnsaved);
-		}
-	}
-	else
-	{
-		FString ErrorMessage;
-		for (const FString& File : Files)
-		{
-			if (UnsavedTracker.IsAssetUnsaved(File))
-			{
-				ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *AnchorpointCliOperations::ConvertFullPathToApInternal(File));
-			}
-		}
-
-		if (!ErrorMessage.IsEmpty())
-		{
-			Error = ErrorMessage;
+			ErrorMessage.Appendf(TEXT("%s is unsaved\n"), *AnchorpointCliOperations::ConvertFullPathToApInternal(UnsavedAsset));
 		}
 	}
 
-	return Error;
+	return !ErrorMessage.IsEmpty() ? ErrorMessage : TOptional<FString>();
 }
 
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
