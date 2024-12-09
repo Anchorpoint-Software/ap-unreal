@@ -22,14 +22,6 @@
 			"LoadingPhase": "Default"
 		},
 		{
-			"Name": "AnchorpointSync",
-			"Type": "Editor",
-			"LoadingPhase": "Default",
-			"PlatformAllowList": [
-				"Linux"
-			]
-		},
-		{
 			"Name": "AnchorpointCli",
 			"Type": "Editor",
 			"LoadingPhase": "Default"
