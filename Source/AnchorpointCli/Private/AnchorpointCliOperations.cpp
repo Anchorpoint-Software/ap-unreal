@@ -114,6 +114,9 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
+	static FCriticalSection StatusUpdateLock;
+	FScopeLock ScopeLock(&StatusUpdateLock);
+
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
 	if(TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem->GetCachedStatus())
 	{
