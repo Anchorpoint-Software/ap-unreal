@@ -59,6 +59,9 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		{
 			switch (*StagedState)
 			{
+			case EAnchorpointFileOperation::Conflicted:
+				NewState.State = EAnchorpointState::Conflicted;
+				break;
 			case EAnchorpointFileOperation::Added:
 				NewState.State = EAnchorpointState::Added;
 				break;
@@ -76,6 +79,9 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		{
 			switch (*NotStagedState)
 			{
+			case EAnchorpointFileOperation::Conflicted:
+				NewState.State = EAnchorpointState::Conflicted;
+				break;
 			case EAnchorpointFileOperation::Added:
 				NewState.State = EAnchorpointState::Added;
 				break;
