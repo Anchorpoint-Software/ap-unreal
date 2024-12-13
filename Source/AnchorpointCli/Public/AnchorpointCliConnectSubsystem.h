@@ -62,6 +62,7 @@ public:
 private:
 	//~ Begin UEditorSubsystem Interface
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 	//~ End UEditorSubsystem Interface
 
 	/**
@@ -117,6 +118,9 @@ private:
 	 * Callback executed to determine if the sync operation is completed
 	 */
 	bool UpdateSync(const TArray<FString>& PackageFilenames);
+
+	void OnFakeAnchorpointCliMessage(const TArray<FString>& Params, UWorld* InWorld, FOutputDevice& Ar);
+
 	/**
 	 * The process that is running the Anchorpoint CLI connect command
 	 */
@@ -133,5 +137,6 @@ private:
 	 * Result of the last "status" command. This should contain all the files in the project not just the ones in the message
 	 */
 	TOptional<FAnchorpointStatus> StatusCache;
-};
 
+	IConsoleObject* FakeAnchorpointCliMessage = nullptr;
+};

@@ -40,6 +40,23 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	Super::Initialize(Collection);
 
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
+
+	FakeAnchorpointCliMessage = IConsoleManager::Get().RegisterConsoleCommand(
+		TEXT("FakeAnchorpointCliMessage"),
+		TEXT("Mimics a message from the Anchorpoint CLI"),
+		FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::OnFakeAnchorpointCliMessage),
+		ECVF_Default
+	);
+}
+
+void UAnchorpointCliConnectSubsystem::Deinitialize()
+{
+	Super::Deinitialize();
+
+	if (FakeAnchorpointCliMessage)
+	{
+		IConsoleManager::Get().UnregisterConsoleObject(FakeAnchorpointCliMessage);
+	}
 }
 
 void UAnchorpointCliConnectSubsystem::TickConnection()
@@ -394,4 +411,12 @@ bool UAnchorpointCliConnectSubsystem::UpdateSync(const TArray<FString>& PackageF
 	}
 
 	return true;
+}
+
+void UAnchorpointCliConnectSubsystem::OnFakeAnchorpointCliMessage(const TArray<FString>& Params, UWorld* InWorld, FOutputDevice& Ar)
+{
+	const FString FakeMessage = FString::Join(Params, TEXT(" "));
+
+	UE_LOG(LogAnchorpointCli, Warning, TEXT("Simulating fake message: %s"), *FakeMessage);
+	OnOutput(FakeMessage);
 }
