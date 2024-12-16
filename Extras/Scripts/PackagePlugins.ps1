@@ -19,11 +19,4 @@ foreach ($UnrealVersion in $UnrealVersions) {
     $RunUAT = "$UnrealPath$UnrealVersion\Engine\Build\BatchFiles\$UatFile"
 
     &"$RunUAT" BuildPlugin -Plugin="$source/Anchorpoint.uplugin" -Package="$destination"
-
-    Remove-Item -Path "$destination/Source/Anchorpoint/Private" -Recurse -Force
-    Remove-Item -Path "$destination/Source/Anchorpoint/Public" -Recurse -Force
-    Remove-Item -Path "$destination/Source/AnchorpointCli/Private" -Recurse -Force
-    Remove-Item -Path "$destination/Source/AnchorpointCli/Public" -Recurse -Force
-    Remove-Item -Path "$destination/Source/AnchorpointSync/Private" -Recurse -Force
-    Remove-Item -Path "$destination/Source/AnchorpointSync/Public" -Recurse -Force
 }
