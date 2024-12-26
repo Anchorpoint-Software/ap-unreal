@@ -107,12 +107,6 @@ FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool 
 	return FString::Join(Result, LINE_TERMINATOR);
 }
 
-FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand)
-{
-	FCliParameters Parameters = {InCommand};
-	return RunApCommand(Parameters);
-}
-
 FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
