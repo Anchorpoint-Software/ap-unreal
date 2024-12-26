@@ -59,7 +59,7 @@ struct FCliParameters
 	FOnProcessUpdate OnProcessUpdate;
 };
 
-namespace AnchorpointCliUtils
+namespace AnchorpointCliCommands
 {
 	/**
 	 * Helper function to convert a command string to an .ini file
