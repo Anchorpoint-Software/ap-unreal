@@ -1,3 +1,5 @@
+// Copyright (C) 2024-2025 Anchorpoint GmbH. All rights reserved.
+
 #include "AnchorpointCliUtils.h"
 
 #include <Misc/FileHelper.h>
