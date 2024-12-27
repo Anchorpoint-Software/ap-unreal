@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "AnchorpointSourceControlRevision.h"
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlWorker.h"
 
@@ -45,6 +46,8 @@ public:
 	//~ End IAnchorpointSourceControlWorker Interface
 
 	TArray<FAnchorpointSourceControlState> States;
+
+	TMap<FString, TAnchorpointSourceControlHistory> Histories;
 };
 
 class FAnchorpointAddWorker final : public IAnchorpointSourceControlWorker
