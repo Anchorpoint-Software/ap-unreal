@@ -51,3 +51,30 @@ struct ANCHORPOINTCLI_API FAnchorpointStatus
 	 */
 	TArray<FString> GetAllAffectedFiles() const;
 };
+
+struct ANCHORPOINTCLI_API FAnchorpointHistoryEntry
+{
+	/**
+	 * Constructs an array of history entries from a json array 
+	 */
+	static TArray<FAnchorpointHistoryEntry> ArrayFromJsonArray(const TArray<TSharedPtr<FJsonValue>>& HistoryEntries);
+
+	/**
+	 * SHA of the git commit 
+	 */
+	FString Commit;
+	/**
+	 * Author of the git commit
+	 */
+	FString Author;
+	/**
+	 * Message of the git commit
+	 */
+	FString Message;
+	/**
+	 * Date of the git commit
+	 */
+	FDateTime Date;
+};
+
+using FAnchorpointHistory = TArray<FAnchorpointHistoryEntry>;
