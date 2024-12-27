@@ -6,8 +6,7 @@
 
 #include "AnchorpointCliConnectSubsystem.generated.h"
 
-class FInteractiveProcess;
-
+class FAnchorpointCliProcess;
 /**
  * Structure of the JSON messages received from the Anchorpoint CLI connect
  */
@@ -125,7 +124,7 @@ private:
 	/**
 	 * The process that is running the Anchorpoint CLI connect command
 	 */
-	TSharedPtr<FInteractiveProcess> Process = nullptr;
+	TSharedPtr<FAnchorpointCliProcess> Process = nullptr;
 	/**
 	 * Sanity check to ensure that the sync operation is not started multiple times
 	 */

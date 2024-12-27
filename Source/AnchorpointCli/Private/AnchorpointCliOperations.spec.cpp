@@ -12,7 +12,7 @@ bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
 		Parameters.bRequestJsonOutput = true;
 		Parameters.bUseIniFile = false;
 
-		const FString& ExpectedIniFile = AnchorpointCliCommands::RunApCommand(Parameters).Output;
+		const FString& ExpectedIniFile = AnchorpointCliCommands::RunApCommand(Parameters).StdOutOutput;
 		const FString& ActualIniFile = AnchorpointCliCommands::ConvertCommandToIni(InCommand, true);
 
 		const FString TestName = FString::Printf(TEXT("Comparing command %s"), *InCommand);
