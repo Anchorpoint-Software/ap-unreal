@@ -4,6 +4,13 @@
 
 #include <Widgets/SCompoundWidget.h>
 
+enum class EAnchorpointInstallationState
+{
+	NotInstalledOnDesktop,
+	NotInstalledInProject,
+	Ready
+};
+
 /**
  * Widget used to display the configurable settings inside the Source Control connection dialog. 
  */
@@ -23,7 +30,7 @@ public:
 
 private:
 	/**
-	 * Callback executed to determine if Anchorpoint has a valid installation path 
+	 * Determines the status of the Anchorpoint setup for this project & machine
 	 */
-	bool IsSoftwareInstalled() const;
+	EAnchorpointInstallationState GetInstallationState() const;
 };
