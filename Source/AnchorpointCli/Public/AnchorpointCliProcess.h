@@ -82,13 +82,13 @@ struct FCliParameters
 /**
  * Struct representing the output data from a CLI process
  */
-struct FAnchorpointCliProcessOutputData 
+struct FAnchorpointCliProcessOutputData
 {
 	/**
 	 * Decides if we should read the data from the pipe as binary or string
 	 */
 	bool bUseBinaryData = false;
-	
+
 	/**
 	 * All the string data we read from the pipe
 	 */
@@ -127,8 +127,20 @@ public:
 	 */
 	void Cancel();
 
-	FAnchorpointCliProcessOutputData GetStdOutData();
-	FAnchorpointCliProcessOutputData GetStdErrData();
+	/**
+	 * Sends the string message when process is ready
+	 */
+	void SendWhenReady(const FString& Message);
+
+	void GetStdOutData(FString& OutStringData, TArray<uint8>& OutBinaryData);
+	void GetStdErrData(FString& OutStringData, TArray<uint8>& OutBinaryData);
+	void ClearStdOutData();
+	void ClearStdErrData();
+
+	using FOnProcessEvent = TMulticastDelegate<void()>;
+	FOnProcessEvent OnProcessStarted;
+	FOnProcessEvent OnProcessUpdated;
+	FOnProcessEvent OnProcessEnded;
 
 private:
 	// ~Begin FRunnable Interface
@@ -137,6 +149,10 @@ private:
 	// ~End FRunnable Interface
 
 	void TickInternal();
+
+	void SendQueuedMessages();
+
+	TQueue<FString> MessagesToSend;
 
 	FProcHandle ProcessHandle;
 	TSAN_ATOMIC(bool) bIsRunning = false;
@@ -151,7 +167,7 @@ private:
 
 	FCriticalSection OutputLock;
 	FAnchorpointCliProcessOutputData StdOutData;
-	FAnchorpointCliProcessOutputData StdErrData; 
+	FAnchorpointCliProcessOutputData StdErrData;
 
 	FRunnableThread* Thread = nullptr;
 };

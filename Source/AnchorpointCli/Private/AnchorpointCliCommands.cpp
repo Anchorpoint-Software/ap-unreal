@@ -119,9 +119,12 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 	while (bProcessIsRunning && !bEarlyOutRequested)
 	{
 		bProcessIsRunning = Process->IsRunning();
-		FString StdOutOutput = Process->GetStdOutData().StringData;
 
-		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, StdOutOutput);
+		FString StdOutString;
+		TArray<uint8> StdOutBinary;
+		Process->GetStdOutData(StdOutString, StdOutBinary);
+
+		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, StdOutString);
 	}
 
 	if (bProcessIsRunning)

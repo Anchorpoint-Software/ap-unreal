@@ -6,55 +6,6 @@
 #include "AnchorpointCliCommands.h"
 #include "AnchorpointCliLog.h"
 
-/*
-FCliResult AnchorpointCliProcess::LaunchProcessWithBinaryOutput(const FString& Executable, const FString& Parameters)
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliProcess::LaunchProcessWithBinaryOutput);
-
-	FCliResult Result;
-
-	int32 ReturnCode = -1;
-	FString FullCommand;
-
-	if (ProcessHandle.IsValid())
-	{
-		FPlatformProcess::Sleep(0.01f);
-
-		while (FPlatformProcess::IsProcRunning(ProcessHandle))
-		{
-			TArray<uint8> BinaryData;
-			FPlatformProcess::ReadPipeToArray(PipeRead, BinaryData);
-			if (BinaryData.Num() > 0)
-			{
-				Result.Output.Append(MoveTemp(BinaryData));
-			}
-		}
-
-		TArray<uint8> BinaryData;
-		FPlatformProcess::ReadPipeToArray(PipeRead, BinaryData);
-		if (BinaryData.Num() > 0)
-		{
-			checkf(false, TEXT("Should we ever have output after the process is done?"));
-			Result.Output.Append(MoveTemp(BinaryData));
-		}
-
-		FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode);
-		FPlatformProcess::CloseProc(ProcessHandle);
-	}
-	else
-	{
-		Result.Error = TEXT("Failed to create process");
-		return Result;
-	}
-
-
-	FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
-	FPlatformProcess::ClosePipe(PipeReadErr, PipeWriteErr);
-
-	return Result;
-}
-*/
-
 void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 {
 	if (bUseBinaryData)
@@ -68,12 +19,6 @@ void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 	{
 		FString NewOutput = FPlatformProcess::ReadPipe(InReadPipe);
 		NewOutput.TrimEndInline();
-
-		if (NewOutput.Contains(TEXT("Waiting for Anchorpoint Daemon")))
-		{
-			UE_LOG(LogAnchorpointCli, Warning, TEXT("Discarding daemon message: %s"), *NewOutput);
-			return;
-		}
 
 		if (NewOutput.IsEmpty())
 		{
@@ -183,10 +128,8 @@ FCliResult FAnchorpointCliProcess::GetResult()
 	}
 	else
 	{
-		Result.StdOutOutput = GetStdOutData().StringData;
-		Result.StdErrOutput = GetStdErrData().StringData;
-		Result.StdOutBinary = GetStdOutData().BinaryData;
-		Result.StdErrBinary = GetStdErrData().BinaryData;
+		GetStdOutData(Result.StdOutOutput, Result.StdOutBinary);
+		GetStdErrData(Result.StdErrOutput, Result.StdErrBinary);
 	}
 
 	return Result;
@@ -197,27 +140,60 @@ void FAnchorpointCliProcess::Cancel()
 	bIsCanceling = true;
 }
 
-FAnchorpointCliProcessOutputData FAnchorpointCliProcess::GetStdOutData()
+void FAnchorpointCliProcess::SendWhenReady(const FString& Message)
 {
-	FScopeLock ScopeLock(&OutputLock);
-	return StdOutData;
+	MessagesToSend.Enqueue(Message);
 }
 
-FAnchorpointCliProcessOutputData FAnchorpointCliProcess::GetStdErrData()
+void FAnchorpointCliProcess::GetStdOutData(FString& OutStringData, TArray<uint8>& OutBinaryData)
 {
 	FScopeLock ScopeLock(&OutputLock);
-	return StdErrData;
+	OutStringData = StdOutData.StringData;
+	OutBinaryData = StdOutData.BinaryData;
+}
+
+void FAnchorpointCliProcess::GetStdErrData(FString& OutStringData, TArray<uint8>& OutBinaryData)
+{
+	FScopeLock ScopeLock(&OutputLock);
+	OutStringData = StdErrData.StringData;
+	OutBinaryData = StdErrData.BinaryData;
+}
+
+void FAnchorpointCliProcess::ClearStdOutData()
+{
+	FScopeLock ScopeLock(&OutputLock);
+	StdOutData.StringData.Empty();
+	StdOutData.BinaryData.Empty();
+}
+
+void FAnchorpointCliProcess::ClearStdErrData()
+{
+	FScopeLock ScopeLock(&OutputLock);
+	StdErrData.StringData.Empty();
+	StdErrData.BinaryData.Empty();
 }
 
 uint32 FAnchorpointCliProcess::Run()
 {
+	OnProcessStarted.Broadcast();
+
 	while (bIsRunning)
 	{
 		constexpr float SleepInterval = 0.01f;
 		FPlatformProcess::Sleep(SleepInterval);
 		TickInternal();
+
+		OnProcessUpdated.Broadcast();
 	}
 
+	FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
+	PipeRead = PipeWrite = nullptr;
+
+	FPlatformProcess::ClosePipe(PipeReadErr, PipeWriteErr);
+	PipeReadErr = PipeWriteErr = nullptr;
+
+
+	OnProcessEnded.Broadcast();
 	return 0;
 }
 
@@ -235,30 +211,36 @@ void FAnchorpointCliProcess::TickInternal()
 		StdErrData.ReadData(PipeReadErr);
 	}
 
+	SendQueuedMessages();
+
 	if (bIsCanceling)
 	{
 		FPlatformProcess::TerminateProc(ProcessHandle, true);
-		// TODO: Do we need a cancel delegate now?
-		// CanceledDelegate.ExecuteIfBound();
 		bIsRunning = false;
 	}
 	else if (!FPlatformProcess::IsProcRunning(ProcessHandle))
 	{
-		// close output pipes
-		FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
-		PipeRead = PipeWrite = nullptr;
-
-		FPlatformProcess::ClosePipe(PipeReadErr, PipeWriteErr);
-		PipeReadErr = PipeWriteErr = nullptr;
-
-		// get completion status
 		if (!FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode))
 		{
 			ReturnCode = -1;
 		}
 
-		// TODO: Do we need a completion delegate now?
-		// CompletedDelegate.ExecuteIfBound(ReturnCode);
 		bIsRunning = false;
+	}
+}
+
+void FAnchorpointCliProcess::SendQueuedMessages()
+{
+	if (!MessagesToSend.IsEmpty())
+	{
+		FString MessageToSend, MessageSent;
+		MessagesToSend.Dequeue(MessageToSend);
+
+		FPlatformProcess::WritePipe(PipeWrite, MessageToSend, &MessageSent);
+
+		UE_LOG(LogAnchorpointCli, Log, TEXT("MessageToSend: \n%s\n MessageSent: \n%s\n"), *MessageToSend, *MessageSent);
+
+		UE_CLOG(MessageSent.Len() == 0, LogAnchorpointCli, Error, TEXT("Writing message through pipe failed"));
+		UE_CLOG(MessageToSend.Len() > MessageSent.Len(), LogAnchorpointCli, Error, TEXT("Writing some part of the message through pipe failed"));
 	}
 }

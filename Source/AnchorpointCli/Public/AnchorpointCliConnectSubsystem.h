@@ -102,17 +102,13 @@ private:
 	 */
 	void RespondToMessage(const FString& Id, TOptional<FString> Error = TOptional<FString>());
 	/**
-	 * Callback executed when the CLI produces any output
+	 * Callback executed when the CLI process is updated 
 	 */
-	void OnOutput(const FString& Output);
+	void OnProcessUpdated();
 	/**
-	 * Callback executed when the CLI process completes
+	 * Callback executed when the CLI process finishes 
 	 */
-	void OnCompleted(int ReturnCode, bool bCanceling);
-	/**
-	 * Callback executed when the CLI process is canceled
-	 */
-	void OnCanceled();
+	void OnProcessEnded();
 	/**
 	 * Callback executed to determine if the sync operation is completed
 	 */
@@ -142,3 +138,4 @@ private:
 	 */
 	IConsoleObject* FakeAnchorpointCliMessage = nullptr;
 };
+

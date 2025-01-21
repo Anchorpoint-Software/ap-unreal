@@ -13,6 +13,7 @@
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointCliProcess.h"
 #include "Dialogs/Dialogs.h"
 
 TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus() const
@@ -68,7 +69,7 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 		if (Process)
 		{
 			UE_LOG(LogAnchorpointCli, Warning, TEXT("Disconnecting listener because the current provider is not Anchorpoint"));
-			Process->Cancel(true);
+			Process->Cancel();
 		}
 
 		// We should not connect if the current provider is not Anchorpoint
@@ -98,25 +99,16 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 	Args.Add(TEXT("--changedFiles"));
 	const FString CommandLineArgs = FString::Join(Args, TEXT(" "));
 
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
-	Process = MakeShared<FInteractiveProcess>(CommandLineExecutable, CommandLineArgs, true, true);
-
-	if (!Process)
-	{
-		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to create process"));
-		return;
-	}
-
-	const bool bLaunchSuccess = Process->Launch();
+	Process = MakeShared<FAnchorpointCliProcess>();
+	const bool bLaunchSuccess = Process->Launch(CommandLineExecutable, CommandLineArgs);
 	if (!bLaunchSuccess)
 	{
 		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to launch process"));
 		return;
 	}
 
-	Process->OnOutput().BindUObject(this, &UAnchorpointCliConnectSubsystem::OnOutput);
-	Process->OnCompleted().BindUObject(this, &UAnchorpointCliConnectSubsystem::OnCompleted);
-	Process->OnCanceled().BindUObject(this, &UAnchorpointCliConnectSubsystem::OnCanceled);
+	Process->OnProcessUpdated.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnProcessUpdated);
+	Process->OnProcessEnded.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnProcessEnded);
 
 	UE_LOG(LogAnchorpointCli, Display, TEXT("Anchorpoint listener connected"));
 }
@@ -337,24 +329,34 @@ void UAnchorpointCliConnectSubsystem::RespondToMessage(const FString& Id, TOptio
 	Process->SendWhenReady(JsonMessage);
 }
 
-void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
+void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 {
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener output: %s"), *Output);
+	FString StringOutput;
+	TArray<uint8> BinaryOutput;
 
-	if (Output.TrimStartAndEnd().EndsWith(TEXT("disconnected"), ESearchCase::IgnoreCase))
+	Process->GetStdOutData(StringOutput, BinaryOutput);
+
+	if (StringOutput.IsEmpty())
+	{
+		return;
+	}
+
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener output: %s"), *StringOutput);
+
+	if (StringOutput.TrimStartAndEnd().EndsWith(TEXT("disconnected"), ESearchCase::IgnoreCase))
 	{
 		UE_LOG(LogAnchorpointCli, Warning, TEXT("CLI connection lost"));
 
 		if (Process)
 		{
-			Process->Cancel(true);
+			Process->Cancel();
 		}
 
 		return;
 	}
 
 	FAnchorpointConnectMessage Message;
-	if (FJsonObjectConverter::JsonObjectStringToUStruct(Output, &Message))
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(StringOutput, &Message))
 	{
 		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
 		for (FString& File : Message.Files)
@@ -363,24 +365,18 @@ void UAnchorpointCliConnectSubsystem::OnOutput(const FString& Output)
 		}
 
 		HandleMessage(Message);
+
+		// We only clear the stderr data if we successfully parsed the message,
+		// otherwise we might lose important information when longer messages are split into multiple parts
+		Process->ClearStdOutData();
 	}
 	else
 	{
-		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to parse message: %s"), *Output);
+		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to parse message: %s"), *StringOutput);
 	}
 }
 
-void UAnchorpointCliConnectSubsystem::OnCompleted(int ReturnCode, bool bCanceling)
-{
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener completed with exit code %d Cannceling: %s"), ReturnCode, *LexToString(bCanceling));
-
-	if (Process)
-	{
-		Process.Reset();
-	}
-}
-
-void UAnchorpointCliConnectSubsystem::OnCanceled()
+void UAnchorpointCliConnectSubsystem::OnProcessEnded()
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener canceled"));
 
@@ -418,5 +414,14 @@ void UAnchorpointCliConnectSubsystem::OnFakeAnchorpointCliMessage(const TArray<F
 	const FString FakeMessage = FString::Join(Params, TEXT(" "));
 
 	UE_LOG(LogAnchorpointCli, Warning, TEXT("Simulating fake message: %s"), *FakeMessage);
-	OnOutput(FakeMessage);
+
+	FAnchorpointConnectMessage Message;
+	if (FJsonObjectConverter::JsonObjectStringToUStruct(FakeMessage, &Message))
+	{
+		HandleMessage(Message);
+	}
+	else
+	{
+		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to parse fake message: %s"), *FakeMessage);
+	}
 }
