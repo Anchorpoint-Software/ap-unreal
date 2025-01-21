@@ -1,8 +1,15 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
 #pragma once
 
 #include <Widgets/SCompoundWidget.h>
+
+enum class EAnchorpointInstallationState
+{
+	NotInstalledOnDesktop,
+	NotInstalledInProject,
+	Ready
+};
 
 /**
  * Widget used to display the configurable settings inside the Source Control connection dialog. 
@@ -23,7 +30,7 @@ public:
 
 private:
 	/**
-	 * Callback executed to determine if Anchorpoint has a valid installation path 
+	 * Determines the status of the Anchorpoint setup for this project & machine
 	 */
-	bool IsSoftwareInstalled() const;
+	EAnchorpointInstallationState GetInstallationState() const;
 };

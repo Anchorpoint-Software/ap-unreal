@@ -1,4 +1,6 @@
-﻿#pragma once
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
+
+#pragma once
 
 #include <ISourceControlProvider.h>
 #include <Misc/IQueuedWork.h>

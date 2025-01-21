@@ -1,10 +1,9 @@
-// Copyright (C) 2024-2025 Anchorpoint GmbH. All rights reserved.
+// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
 #include "AnchorpointCliCommands.h"
 
 #include <Misc/FileHelper.h>
 
-#include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliProcess.h"
 

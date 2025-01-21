@@ -1,4 +1,6 @@
-﻿#include "AnchorpointCli.h"
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
+
+#include "AnchorpointCli.h"
 
 bool CompareVersions(const FString& Version1, const FString& Version2)
 {
