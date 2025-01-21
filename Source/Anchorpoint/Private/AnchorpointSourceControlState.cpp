@@ -13,21 +13,41 @@ FAnchorpointSourceControlState::FAnchorpointSourceControlState(const FString& In
 
 int32 FAnchorpointSourceControlState::GetHistorySize() const
 {
-	return 0;
+	return History.Num();
 }
 
 TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetHistoryItem(int32 HistoryIndex) const
 {
-	return nullptr;
+	check(History.IsValidIndex(HistoryIndex));
+	return History[HistoryIndex];
 }
 
 TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::FindHistoryRevision(int32 RevisionNumber) const
 {
+	for (const TSharedRef<FAnchorpointSourceControlRevision>& Revision : History)
+	{
+		if (Revision->GetRevisionNumber() == RevisionNumber)
+		{
+			return Revision;
+		}
+	}
+
 	return nullptr;
 }
 
 TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::FindHistoryRevision(const FString& InRevision) const
 {
+	for (const TSharedRef<FAnchorpointSourceControlRevision>& Revision : History)
+	{
+		// We might be searching for the full hash or the short hash, we will compare for the shortest length
+		const int32 Len = FMath::Min(Revision->CommitId.Len(), InRevision.Len());
+
+		if (Revision->CommitId.Left(Len) == InRevision.Left(Len))
+		{
+			return Revision;
+		}
+	}
+
 	return nullptr;
 }
 
@@ -147,7 +167,7 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 	case EAnchorpointState::LockedDeleted:
 		return LOCTEXT("LockedDeleted_Tooltip", "Deleted (locked)");
 	case EAnchorpointState::LockedUnchanged:
-        return LOCTEXT("LockedUnchanged_Tooltip", "Unchanged (locked)");
+		return LOCTEXT("LockedUnchanged_Tooltip", "Unchanged (locked)");
 	case EAnchorpointState::UnlockedModified:
 		return LOCTEXT("UnlockedModified_Tooltip", "Modified (not locked)");
 	case EAnchorpointState::UnlockedDeleted:
@@ -168,7 +188,7 @@ TOptional<FText> FAnchorpointSourceControlState::GetStatusText() const
 {
 	// Same as ISourceControlState::GetStatusText() but we display it even if the asset is not CheckedOut
 	const bool bWorthDisplaying = State != EAnchorpointState::UnlockedUnchanged;
-	
+
 	TOptional<FText> StatusText = GetWarningText();
 	if (!StatusText.IsSet() && bWorthDisplaying)
 	{

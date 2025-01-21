@@ -276,6 +276,37 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointUpdateStatusWorker::Execute);
 
 	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
+
+	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
+	if (Operation->ShouldUpdateHistory())
+	{
+		for (int32 Index = 0; Index < InCommand.Files.Num(); Index++)
+		{
+			FString& File = InCommand.Files[Index];
+			TValueOrError<FAnchorpointHistory, FString> HistoryResult = AnchorpointCliOperations::GetHistoryInfo(File);
+
+			if (HistoryResult.HasValue())
+			{
+				InCommand.bCommandSuccessful = true;
+
+				TAnchorpointSourceControlHistory History;
+				TArray<FAnchorpointHistoryEntry> HistoryResultValue = HistoryResult.GetValue();
+				for (const FAnchorpointHistoryEntry& HistoryResultEntry : HistoryResultValue)
+				{
+					const int RevisionNumber = HistoryResultValue.Num() - History.Num();
+					TSharedRef<FAnchorpointSourceControlRevision> HistoryItem = MakeShared<FAnchorpointSourceControlRevision>(HistoryResultEntry, File, RevisionNumber);
+					History.Emplace(MoveTemp(HistoryItem));
+				}
+
+				Histories.Add(*File, History);
+			}
+			else
+			{
+				InCommand.bCommandSuccessful = false;
+			}
+		}
+	}
+
 	return InCommand.bCommandSuccessful;
 }
 
@@ -283,7 +314,17 @@ bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointUpdateStatusWorker::UpdateStates);
 
-	return UpdateCachedStates(States);
+	bool bUpdated = UpdateCachedStates(States);
+
+	for (const auto& History : Histories)
+	{
+		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(History.Key);
+		State->History = History.Value;
+		State->TimeStamp = FDateTime::Now();
+		bUpdated = true;
+	}
+
+	return bUpdated;
 }
 
 FName FAnchorpointAddWorker::GetName() const

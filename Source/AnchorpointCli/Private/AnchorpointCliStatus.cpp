@@ -78,3 +78,25 @@ TArray<FString> FAnchorpointStatus::GetAllAffectedFiles() const
 
 	return Result;
 }
+
+TArray<FAnchorpointHistoryEntry> FAnchorpointHistoryEntry::ArrayFromJsonArray(const TArray<TSharedPtr<FJsonValue>>& HistoryEntries)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointHistoryEntry::ArrayFromJsonArray);
+
+	TArray<FAnchorpointHistoryEntry> Result;
+
+	for (const TSharedPtr<FJsonValue>& HistoryEntry : HistoryEntries)
+	{
+		TSharedPtr<FJsonObject> HistoryObject = HistoryEntry->AsObject();
+
+		FAnchorpointHistoryEntry Entry;
+		Entry.Commit = HistoryObject->GetStringField(TEXT("commit"));
+		Entry.Author = HistoryObject->GetStringField(TEXT("author"));
+		Entry.Message = HistoryObject->GetStringField(TEXT("message"));
+		Entry.Date = FDateTime::FromUnixTimestamp(HistoryObject->GetNumberField(TEXT("date")));
+
+		Result.Add(Entry);
+	}
+
+	return Result;
+}

@@ -6,6 +6,8 @@
 
 #include <Misc/EngineVersionComparison.h>
 
+#include "AnchorpointSourceControlRevision.h"
+
 enum class EAnchorpointState
 {
 	Unknown,
@@ -40,6 +42,7 @@ public:
 	FAnchorpointSourceControlState& operator=(const FAnchorpointSourceControlState& Other) = default;
 	FAnchorpointSourceControlState& operator=(FAnchorpointSourceControlState&& Other) noexcept = default;
 
+	TAnchorpointSourceControlHistory History;
 	FString LocalFilename;
 	FDateTime TimeStamp = 0;
 	FString OtherUserCheckedOut;
