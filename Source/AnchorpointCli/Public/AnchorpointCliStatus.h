@@ -12,6 +12,7 @@ enum class EAnchorpointFileOperation
 	Renamed,
 	Conflicted,
 };
+
 EAnchorpointFileOperation LexFromString(const FString& InString);
 
 /**

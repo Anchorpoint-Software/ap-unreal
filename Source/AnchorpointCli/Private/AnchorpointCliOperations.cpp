@@ -5,7 +5,7 @@
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliLog.h"
-#include "AnchorpointCliUtils.h"
+#include "AnchorpointCliCommands.h"
 
 bool AnchorpointCliOperations::IsInstalled()
 {
@@ -24,7 +24,7 @@ void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
 FString AnchorpointCliOperations::GetRepositoryRootPath()
 {
 	static FString RepositoryRootPath;
-	if(!RepositoryRootPath.IsEmpty())
+	if (!RepositoryRootPath.IsEmpty())
 	{
 		return RepositoryRootPath;
 	}
@@ -37,7 +37,7 @@ FString AnchorpointCliOperations::GetRepositoryRootPath()
 		TArray<FString> AnchorpointProjectFile;
 		IFileManager::Get().FindFiles(AnchorpointProjectFile, *(SearchPath / TEXT("*.approj")), true, false);
 
-		if(!AnchorpointProjectFile.IsEmpty())
+		if (!AnchorpointProjectFile.IsEmpty())
 		{
 			RepositoryRootPath = SearchPath;
 			if (!RepositoryRootPath.EndsWith("/"))
@@ -90,7 +90,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 		return MakeValue(CurrentUser);
 	}
 
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(TEXT("user list"));
+	FString UserCommand = TEXT("user list");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(UserCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
 		return MakeError(ProcessOutput.Error.GetValue());
@@ -118,7 +119,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	FScopeLock ScopeLock(&StatusUpdateLock);
 
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	if(TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem->GetCachedStatus())
+	if (TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem->GetCachedStatus())
 	{
 		return MakeValue(CachedStatus.GetValue());
 	}
@@ -126,7 +127,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	TArray<FString> StatusParams;
 	StatusParams.Add(TEXT("status"));
 
-	if(!InFiles.IsEmpty())
+	if (!InFiles.IsEmpty())
 	{
 		StatusParams.Add(TEXT("--paths"));
 		for (const FString& File : InFiles)
@@ -139,7 +140,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	}
 
 	FString StatusCommand = FString::Join(StatusParams, TEXT(" "));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(StatusCommand);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(StatusCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
 		return MakeError(ProcessOutput.Error.GetValue());
@@ -170,7 +171,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 
 	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key unreal/git-auto-lock-path --value false"));
 
-	FCliResult AutoLockSetOutput = AnchorpointCliUtils::RunApCommand(AutoLockSetCommand);
+	FCliResult AutoLockSetOutput = AnchorpointCliCommands::RunApCommand(AutoLockSetCommand);
 
 	if (!AutoLockSetOutput.DidSucceed())
 	{
@@ -196,7 +197,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray
 	}
 
 	FString LockCommand = FString::Join(LockParams, TEXT(" "));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(LockCommand);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(LockCommand);
 
 	if (!ProcessOutput.DidSucceed())
 	{
@@ -220,7 +221,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(const TArr
 	}
 
 	FString UnlockCommand = FString::Join(UnlockParams, TEXT(" "));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(UnlockCommand);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(UnlockCommand);
 
 	if (!ProcessOutput.DidSucceed())
 	{
@@ -244,7 +245,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Revert(const TArray<FS
 	}
 
 	FString RevertCommand = FString::Join(RevertParams, TEXT(" "));
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(RevertCommand);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(RevertCommand);
 
 	if (!ProcessOutput.DidSucceed())
 	{
@@ -268,7 +269,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 		CheckoutCommand.Appendf(TEXT(" '%s'"), *PathToFile);
 	}
 
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunGitCommand(CheckoutCommand);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(CheckoutCommand);
 
 	if (!ProcessOutput.DidSucceed())
 	{
@@ -309,9 +310,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 	FString SubmitCommand = FString::Join(SubmitParams, TEXT(" "));
 
 	FCliParameters Parameters = {SubmitCommand};
-	Parameters.OnProcessUpdate= IsSubmitFinished;
+	Parameters.OnProcessUpdate = IsSubmitFinished;
 
-	FCliResult ProcessOutput = AnchorpointCliUtils::RunApCommand(Parameters);
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(Parameters);
 
 	if (!ProcessOutput.DidSucceed())
 	{

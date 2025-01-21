@@ -1,4 +1,6 @@
-#include "AnchorpointCliUtils.h"
+// Copyright (C) 2024-2025 Anchorpoint GmbH. All rights reserved.
+
+#include "AnchorpointCliCommands.h"
 
 #include <Misc/FileHelper.h>
 #include <Misc/MonitoredProcess.h>
@@ -37,7 +39,7 @@ FCliParameters::FCliParameters(const FString& InCommand)
 {
 }
 
-FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */, bool bJsonOutput /* = true */)
+FString AnchorpointCliCommands::ConvertCommandToIni(const FString& InCommand, bool bPrintConfig /* = false */, bool bJsonOutput /* = true */)
 {
 	TArray<FString> Result;
 
@@ -107,13 +109,7 @@ FString AnchorpointCliUtils::ConvertCommandToIni(const FString& InCommand, bool 
 	return FString::Join(Result, LINE_TERMINATOR);
 }
 
-FCliResult AnchorpointCliUtils::RunApCommand(const FString& InCommand)
-{
-	FCliParameters Parameters = {InCommand};
-	return RunApCommand(Parameters);
-}
-
-FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
+FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParameters)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
@@ -125,7 +121,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	if (InParameters.bUseIniFile)
 	{
 		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
-		FString IniConfigContent = AnchorpointCliUtils::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
+		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
 		FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
 
 		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
@@ -231,7 +227,7 @@ FCliResult AnchorpointCliUtils::RunApCommand(const FCliParameters& InParameters)
 	return Result;
 }
 
-FCliResult AnchorpointCliUtils::RunGitCommand(const FString& InCommand)
+FCliResult AnchorpointCliCommands::RunGitCommand(const FString& InCommand)
 {
 	FCliParameters Parameters = {FString::Printf(TEXT("git --command \"%s\""), *InCommand)};
 	Parameters.bRequestJsonOutput = false;
