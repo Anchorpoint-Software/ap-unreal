@@ -21,4 +21,7 @@ namespace AnchorpointCliOperations
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API Revert(const TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(const TArray<FString>& InFiles);
 	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(const TArray<FString> InFiles, const FString& InMessage);
+
+	TValueOrError<FAnchorpointHistory, FString> ANCHORPOINTCLI_API GetHistoryInfo(const FString& InFile);
+	TValueOrError<FString, FString> ANCHORPOINTCLI_API DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination);
 }

@@ -30,13 +30,14 @@ bool FAnchorpointSourceControlRevision::Get(FString& InOutFilename, EConcurrency
 		InOutFilename = FPaths::ConvertRelativePathToFull(TempFileName);
 	}
 
-	if (!FPaths::FileExists(InOutFilename))
+	if (FPaths::FileExists(InOutFilename))
 	{
 		// File has been previously downloaded so we assume it's still valid
 		return true;
 	}
 
-	return AnchorpointCliOperations::DownloadFile(CommitId, Filename, InOutFilename);
+	TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFile(CommitId, Filename, InOutFilename);
+	return DownloadResult.HasValue();
 }
 
 bool FAnchorpointSourceControlRevision::GetAnnotated(TArray<FAnnotationLine>& OutLines) const

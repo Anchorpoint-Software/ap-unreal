@@ -3,10 +3,10 @@
 #include "AnchorpointCliCommands.h"
 
 #include <Misc/FileHelper.h>
-#include <Misc/MonitoredProcess.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
+#include "AnchorpointCliProcess.h"
 
 bool FCliResult::DidSucceed() const
 {
@@ -16,7 +16,7 @@ bool FCliResult::DidSucceed() const
 TSharedPtr<FJsonObject> FCliResult::OutputAsJsonObject() const
 {
 	TSharedPtr<FJsonObject> JsonObject = nullptr;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(StdErrOutput);
 	FJsonSerializer::Deserialize(Reader, JsonObject);
 
 	return JsonObject;
@@ -25,7 +25,7 @@ TSharedPtr<FJsonObject> FCliResult::OutputAsJsonObject() const
 TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 {
 	TArray<TSharedPtr<FJsonValue>> JsonArray;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Output);
+	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(StdErrOutput);
 	FJsonSerializer::Deserialize(Reader, JsonArray);
 
 	return JsonArray;
@@ -33,9 +33,6 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 
 FCliParameters::FCliParameters(const FString& InCommand)
 	: Command(InCommand)
-	  , bUseIniFile(true)
-	  , bRequestJsonOutput(true)
-	  , OnProcessUpdate(nullptr)
 {
 }
 
@@ -113,124 +110,46 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
 
-	FCliResult Result;
+	TSharedRef<FAnchorpointCliProcess> Process = MakeShared<FAnchorpointCliProcess>();
 
-	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
-	FString CommandLineArgs;
-
-	if (InParameters.bUseIniFile)
-	{
-		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
-		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
-		FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
-
-		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
-		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
-	}
-	else
-	{
-		TArray<FString> Args;
-		Args.Add(FString::Printf(TEXT("--cwd=\"%s\""), *FPaths::ConvertRelativePathToFull(FPaths::ProjectDir())));
-
-		if (InParameters.bRequestJsonOutput)
-		{
-			Args.Add(TEXT("--json"));
-		}
-
-		Args.Add(TEXT("--apiVersion 1"));
-		Args.Add(InParameters.Command);
-
-		CommandLineArgs = FString::Join(Args, TEXT(" "));
-	}
-
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *CommandLineExecutable, *CommandLineArgs);
-	TSharedPtr<FMonitoredProcess> Process = MakeShared<FMonitoredProcess>(CommandLineExecutable, CommandLineArgs, true);
-
-	if (!Process)
-	{
-		Result.Error = TEXT("Failed to create process");
-		return Result;
-	}
-
-	FString ProcessOutput;
-	FCriticalSection ProcessOutputLock;
-
-	Process->OnOutput().BindLambda([&ProcessOutput, &ProcessOutputLock](const FString& NewOutput)
-	{
-		FScopeLock _(&ProcessOutputLock);
-		if (NewOutput.Contains(TEXT("Waiting for Anchorpoint Daemon")))
-		{
-			UE_LOG(LogAnchorpointCli, Warning, TEXT("Discarding daemon message: %s"), *NewOutput);
-			return;
-		}
-
-		if (NewOutput.IsEmpty())
-		{
-			return;
-		}
-
-		ProcessOutput.Appendf(TEXT("%s%s"), *NewOutput, LINE_TERMINATOR);
-	});
-
-	const bool bLaunchSuccess = Process->Launch();
-	if (!bLaunchSuccess)
-	{
-		Result.Error = TEXT("Failed to launch process");
-		return Result;
-	}
+	Process->Launch(InParameters);
 
 	bool bProcessIsRunning = true;
 	bool bEarlyOutRequested = false;
 	while (bProcessIsRunning && !bEarlyOutRequested)
 	{
-		bProcessIsRunning = Process->Update();
+		bProcessIsRunning = Process->IsRunning();
 
-		FScopeLock _(&ProcessOutputLock);
-		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, ProcessOutput);
-	}
+		FString StdOutString;
+		TArray<uint8> StdOutBinary;
+		Process->GetStdOutData(StdOutString, StdOutBinary);
 
-	if (Process->GetReturnCode() != 0)
-	{
-		Result.Error = FString::Printf(TEXT("Process failed with code %d"), Process->GetReturnCode());
-		return Result;
+		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, StdOutString);
 	}
-
-	// We need to perform this final append to ensure we get every bit of output after the program has finished
-	FString RemainingOutput = Process->GetFullOutputWithoutDelegate();
-	if (!RemainingOutput.IsEmpty())
-	{
-		ProcessOutput.Append(*RemainingOutput);
-	}
-	else
-	{
-		ProcessOutput.RemoveFromEnd(LINE_TERMINATOR);
-	}
-
-	Result.Output = ProcessOutput;
-	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI output: %s"), *Result.Output);
 
 	if (bProcessIsRunning)
 	{
-		// If the process is still running, it means we exited early due to the OnProcessUpdate callback, in this case:
-
-		// 1. We will stop monitoring the output to prevent any memory access violations
-		Process->OnOutput().Unbind();
-
-		// 2. Let the process run to completion on a separated thread
+		// If the process is still running, it means we exited early due to the OnProcessUpdate callback
+		// So we let the process run to completion on a separated thread
 		AsyncTask(ENamedThreads::AnyHiPriThreadHiPriTask,
 		          [Process]()
 		          {
-			          while (Process && Process->Update()) { continue; }
+			          while (Process->IsRunning()) { continue; }
 		          });
 	}
 
-	return Result;
+	FCliResult Result = Process->GetResult();
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stdout output: %s"), *Result.StdOutOutput);
+	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stderr output: %s"), *Result.StdErrOutput);
+
+	return Process->GetResult();
 }
 
-FCliResult AnchorpointCliCommands::RunGitCommand(const FString& InCommand)
+FCliResult AnchorpointCliCommands::RunGitCommand(const FString& InCommand, bool bUseBinaryData /* = false */)
 {
 	FCliParameters Parameters = {FString::Printf(TEXT("git --command \"%s\""), *InCommand)};
 	Parameters.bRequestJsonOutput = false;
+	Parameters.bUseBinaryOutput = bUseBinaryData;
 
 	return RunApCommand(Parameters);
 }

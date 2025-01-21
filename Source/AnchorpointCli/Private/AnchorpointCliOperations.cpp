@@ -1,11 +1,10 @@
 #include "AnchorpointCliOperations.h"
 
-#include <Misc/MonitoredProcess.h>
-
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliCommands.h"
+#include "AnchorpointCliProcess.h"
 
 bool AnchorpointCliOperations::IsInstalled()
 {
@@ -279,7 +278,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 	return MakeValue(TEXT("Success"));
 }
 
-bool IsSubmitFinished(const TSharedPtr<FMonitoredProcess>& InProcess, const FString& InProcessOutput)
+bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const FString& InProcessOutput)
 {
 	if (InProcessOutput.Contains(TEXT("Uploading LFS objects"))
 		|| InProcessOutput.Contains(TEXT("Pushing Git Changes"))
@@ -317,6 +316,63 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 	if (!ProcessOutput.DidSucceed())
 	{
 		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	return MakeValue(TEXT("Success"));
+}
+
+TValueOrError<FAnchorpointHistory, FString> AnchorpointCliOperations::GetHistoryInfo(const FString& InFile)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetHistoryInfo);
+
+	TArray<FString> HistoryParams;
+	HistoryParams.Add(TEXT("log"));
+	HistoryParams.Add(TEXT("--file"));
+	HistoryParams.Add(AnchorpointCliOperations::ConvertFullPathToApInternal(InFile));
+	HistoryParams.Add(TEXT("--n"));
+	HistoryParams.Add(TEXT("100")); //TODO: Talk to Jochen to remove this hardcoded thing and just get all the history
+
+	FString HistoryCommand = FString::Join(HistoryParams, TEXT(" "));
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(HistoryCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	TArray<TSharedPtr<FJsonValue>> HistoryEntries = ProcessOutput.OutputAsJsonArray();
+	TArray<FAnchorpointHistoryEntry> History = FAnchorpointHistoryEntry::ArrayFromJsonArray(HistoryEntries);
+
+	return MakeValue(History);
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination)
+{
+	TArray<FString> DownloadParameters;
+	DownloadParameters.Add(TEXT("cat-file"));
+	DownloadParameters.Add(TEXT("--filters"));
+	DownloadParameters.Add(FString::Printf(TEXT("%s:%s"), *InCommitId, *ConvertFullPathToApInternal(InFile)));
+
+	FString DownloadCommand = FString::Join(DownloadParameters, TEXT(" "));
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(DownloadCommand, true);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	TArray<uint8> BinaryResult = ProcessOutput.StdOutBinary;
+	if (BinaryResult.IsEmpty())
+	{
+		return MakeError(TEXT("No data received"));
+	}
+
+	const bool bWriteSuccess = FFileHelper::SaveArrayToFile(BinaryResult, *Destination);
+	if (!bWriteSuccess)
+	{
+		return MakeError(FString::Printf(TEXT("Failed to write file to %s"), *Destination));
 	}
 
 	return MakeValue(TEXT("Success"));
