@@ -1,11 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
 #include "AnchorpointSourceControlSettingsWidget.h"
 
-#include "Anchorpoint.h"
 #include "AnchorpointCli.h"
-#include "AnchorpointCliCommands.h"
-#include "AnchorpointSourceControlSettings.h"
 
 void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs)
 {

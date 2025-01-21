@@ -1,9 +1,10 @@
+// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
+
 #include "Anchorpoint.h"
 
 #include <ContentBrowserDataMenuContexts.h>
 #include <ISourceControlModule.h>
 
-#include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlOperations.h"
 

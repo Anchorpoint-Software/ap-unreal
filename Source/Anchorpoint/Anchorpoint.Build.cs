@@ -1,7 +1,5 @@
-﻿// Some copyright should be here...
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
-using System;
-using System.IO;
 using UnrealBuildTool;
 
 public class Anchorpoint : ModuleRules

@@ -1,10 +1,11 @@
+// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
+
 #include "AnchorpointCliConnectSubsystem.h"
 
 #include <Async/Async.h>
 #include <ISourceControlModule.h>
 #include <ISourceControlProvider.h>
 #include <JsonObjectConverter.h>
-#include <Misc/InteractiveProcess.h>
 #include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>

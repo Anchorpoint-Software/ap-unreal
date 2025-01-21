@@ -1,4 +1,6 @@
-﻿#include "AnchorpointCliStatus.h"
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
+
+#include "AnchorpointCliStatus.h"
 
 #include "AnchorpointCliOperations.h"
 

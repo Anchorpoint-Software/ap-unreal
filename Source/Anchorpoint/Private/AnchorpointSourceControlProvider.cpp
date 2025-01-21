@@ -1,4 +1,4 @@
-﻿// Some copyright should be here...
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
 #include "AnchorpointSourceControlProvider.h"
 
@@ -13,7 +13,6 @@
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointSourceControlState.h"
-#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlSettingsWidget.h"
 
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()

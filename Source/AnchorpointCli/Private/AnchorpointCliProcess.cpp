@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2024-2025 Anchorpoint GmbH. All rights reserved.
+﻿// Copyright (C) 2024-2025 Anchorpoint Software GmbH. All rights reserved.
 
 #include "AnchorpointCliProcess.h"
 
