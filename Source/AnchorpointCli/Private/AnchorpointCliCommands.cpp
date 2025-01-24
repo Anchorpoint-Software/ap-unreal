@@ -2,8 +2,8 @@
 
 #include "AnchorpointCliCommands.h"
 
-#include <JsonSerializer.h>
-#include <Async.h>
+#include <Serialization/JsonSerializer.h>
+#include <Async/Async.h>
 
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliProcess.h"

@@ -3,7 +3,7 @@
 #include "AnchorpointStyle.h"
 
 #include <Styling/SlateStyleRegistry.h>
-#include <IPluginManager.h>
+#include <Interfaces/IPluginManager.h>
 
 FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle"))
 {
