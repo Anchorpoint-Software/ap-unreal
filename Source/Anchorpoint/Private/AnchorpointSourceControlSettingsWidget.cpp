@@ -12,7 +12,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.0f)
-		.Padding(FMargin(0.0f, 0.0f, 16.0f, 0.0f))
+		.Padding(FMargin(0.0f, 0.0f, 16.0f, 16.0f))
 		[
 			SNew(SVerticalBox)
 
@@ -35,7 +35,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(4.0f)
-		.Padding(FMargin(0.0f, 0.0f, 16.0f, 0.0f))
+		.Padding(FMargin(0.0f, 0.0f, 16.0f, 16.0f))
 		[
 			SNew(SVerticalBox)
 
