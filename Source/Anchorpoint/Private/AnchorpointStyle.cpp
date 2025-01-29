@@ -13,9 +13,17 @@ FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle")
 		SetContentRoot(FPaths::Combine(Plugin->GetBaseDir(), TEXT("Resources")));
 	}
 
+	FSlateColor IconColor =
+#if UE_VERSION_NEWER_THAN(5, 4, 0)
+		// Needs to match FDefaultRevisionControlStyle::StatusCheckedOutColor
+		FLinearColor::FromSRGBColor(FColor::FromHex("#1FE44B"));
+#else 
+		FStyleColors::AccentRed;
+#endif
+
 #define IMAGE_BRUSH_SVG(RelativePath, ...) FSlateVectorImageBrush(RootToContentDir(RelativePath, TEXT(".svg")), __VA_ARGS__)
 
-	Set("Icons.Lock", new IMAGE_BRUSH_SVG("Icons/lock", CoreStyleConstants::Icon16x16));
+	Set("Icons.Lock", new IMAGE_BRUSH_SVG("Icons/lock", CoreStyleConstants::Icon16x16, IconColor));
 
 #undef IMAGE_BRUSH_SVG
 
