@@ -398,7 +398,9 @@ ECommandResult::Type FAnchorpointSourceControlProvider::ExecuteSynchronousComman
 
 	// Display the progress dialog if a string was provided
 	{
-		FScopedSourceControlProgress Progress(Task);
+		// Perforce uses an empty text for the progress in FPerforceSourceControlProvider::ExecuteSynchronousCommand
+		// This prevents the popups from showing up at all, so we will do the same
+		FScopedSourceControlProgress Progress(FText::GetEmpty());
 
 		// Issue the command asynchronously...
 		IssueCommand(InCommand);
