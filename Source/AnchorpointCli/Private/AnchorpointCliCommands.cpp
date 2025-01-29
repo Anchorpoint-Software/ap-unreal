@@ -119,11 +119,11 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 	{
 		bProcessIsRunning = Process->IsRunning();
 
-		FString StdOutString;
-		TArray<uint8> StdOutBinary;
-		Process->GetStdOutData(StdOutString, StdOutBinary);
+		FString StdErrString;
+		TArray<uint8> StdErrBinary;
+		Process->GetStdErrData(StdErrString, StdErrBinary);
 
-		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, StdOutString);
+		bEarlyOutRequested = InParameters.OnProcessUpdate && InParameters.OnProcessUpdate(Process, StdErrString);
 	}
 
 	if (bProcessIsRunning)
