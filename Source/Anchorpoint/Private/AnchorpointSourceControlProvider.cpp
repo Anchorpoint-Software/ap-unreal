@@ -35,7 +35,7 @@ void FAnchorpointSourceControlProvider::Close()
 
 const FName& FAnchorpointSourceControlProvider::GetName() const
 {
-	static FName ProviderName("Anchorpoint");
+	static FName ProviderName("Anchorpoint (Git)");
 	return ProviderName;
 }
 

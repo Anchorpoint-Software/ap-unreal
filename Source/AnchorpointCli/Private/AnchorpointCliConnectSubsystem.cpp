@@ -64,7 +64,7 @@ void UAnchorpointCliConnectSubsystem::Deinitialize()
 void UAnchorpointCliConnectSubsystem::TickConnection()
 {
 	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	const bool bUsesAnchorpoint = Provider.GetName().ToString() == TEXT("Anchorpoint") && Provider.IsEnabled();
+	const bool bUsesAnchorpoint =  Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
 	if (!bUsesAnchorpoint)
 	{
 		if (Process)
