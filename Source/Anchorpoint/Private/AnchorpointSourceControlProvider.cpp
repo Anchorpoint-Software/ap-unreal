@@ -8,6 +8,7 @@
 #include <ISourceControlModule.h>
 #include <UObject/ObjectSaveContext.h>
 #include <Logging/MessageLog.h>
+#include <FileHelpers.h>
 
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlCommand.h"
@@ -246,9 +247,18 @@ bool FAnchorpointSourceControlProvider::UsesChangelists() const
 
 bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 {
-	// Note: This is required in order to bypass the FEditorFileUtils::MakePackagesWriteable if check (UncontrolledChangelistModule.OnMakeWritable(Filename))
-	// in order to avoid getting the files getting added to PackagesNotToPromptAnyMore 
-	return true;
+	// Anchorpoint does not need uncontrolled changelists and git generally does not support them, so most of the time, we want to return false.
+	// However, after reverting a writeable file, we need to make sure that the file is not added to the PackagesNotToPromptAnyMore
+	// Otherwise, the user will not be prompted to checkout/make writable the file again
+	// More info and context on the problem in the following link: point 3. of https://discord.com/channels/764147942298484737/1272849248005787718/1308842855317377085
+	
+	// In order to avoid this, we need `UncontrolledChangelistModule.OnMakeWritable(Filename)` to return true
+	// To achieve this, use an empty call to PromptForCheckoutAndSave, if bIsPromptingForCheckoutAndSave is true, we will get a PR_Cancelled
+	// This way, we can ensure we only return true when the user is actively saving a writeable file
+
+	const FEditorFileUtils::EPromptReturnCode Code = FEditorFileUtils::PromptForCheckoutAndSave({}, false, false, nullptr, false, true);
+	const bool bISaving = Code == FEditorFileUtils::EPromptReturnCode::PR_Cancelled;
+	return bISaving;
 }
 
 bool FAnchorpointSourceControlProvider::UsesCheckout() const
