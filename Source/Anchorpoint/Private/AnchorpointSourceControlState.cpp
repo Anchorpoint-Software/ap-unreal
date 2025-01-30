@@ -4,6 +4,8 @@
 
 #include <RevisionControlStyle/RevisionControlStyle.h>
 
+#include "AnchorpointStyle.h"
+
 #define LOCTEXT_NAMESPACE "Anchorpoint"
 
 FAnchorpointSourceControlState::FAnchorpointSourceControlState(const FString& InLocalFilename)
@@ -93,7 +95,7 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 	case EAnchorpointState::LockedDeleted:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.MarkedForDelete");
 	case EAnchorpointState::LockedUnchanged:
-		return FSlateIcon(FAppStyle::GetAppStyleSetName(), "Icons.Lock");
+		return FSlateIcon(FAnchorpointStyle::Get().GetStyleSetName(), "Icons.Lock");
 	case EAnchorpointState::UnlockedModified:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedDeleted:

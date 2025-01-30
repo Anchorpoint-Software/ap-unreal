@@ -2,6 +2,10 @@
 
 #include "AnchorpointCliOperations.h"
 
+#include <Misc/FileHelper.h>
+#include <Dom/JsonObject.h>
+#include <Dom/JsonValue.h>
+
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliLog.h"
