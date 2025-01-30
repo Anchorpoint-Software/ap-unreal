@@ -97,7 +97,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 			.VAlign(VAlign_Center)
 			[
 				SNew(STextBlock)
-				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking will be controlled by the Unreal Editor. Keep the Anchorpoint project open for faster change detection"))
+				.Text(NSLOCTEXT("Anchorpoint", "UnrealFileLockingWarning", "File locking will be controlled by the Unreal Editor. Keep the Anchorpoint project open for faster change detection."))
 				.WrapTextAt(300.0f)
 				.Visibility_Lambda([this]() { return GetInstallationState() == EAnchorpointInstallationState::Ready ? EVisibility::Visible : EVisibility::Collapsed; })
 			]
