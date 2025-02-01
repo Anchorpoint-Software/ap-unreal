@@ -71,7 +71,7 @@ public:
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);
-	ECommandResult::Type ExecuteSynchronousCommand(FAnchorpointSourceControlCommand& InCommand, const FText& Task);
+	ECommandResult::Type ExecuteSynchronousCommand(FAnchorpointSourceControlCommand& InCommand, const FText& TaskPrompt);
 	ECommandResult::Type IssueCommand(FAnchorpointSourceControlCommand& InCommand);
 
 	TMap<FName, FGetAnchorpointSourceControlWorker> WorkersMap;
