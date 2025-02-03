@@ -4,6 +4,7 @@
 
 #include <Styling/SlateStyleRegistry.h>
 #include <Interfaces/IPluginManager.h>
+#include <Misc/EngineVersionComparison.h>
 
 FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle"))
 {

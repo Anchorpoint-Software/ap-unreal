@@ -199,7 +199,24 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	if (InConcurrency == EConcurrency::Synchronous)
 	{
 		Command->bAutoDelete = false;
-		return ExecuteSynchronousCommand(*Command, InOperation->GetInProgressString());
+
+		FText PromptText = FText::GetEmpty();
+
+		if (InOperation->GetName() == TEXT("CheckIn") || InOperation->GetName() == TEXT("Revert"))
+		{
+			PromptText = InOperation->GetInProgressString();
+		}
+
+		if (InOperation->GetName() == TEXT("UpdateStatus"))
+		{
+			TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InOperation);
+			if (Operation->ShouldUpdateHistory())
+			{
+				PromptText = NSLOCTEXT("Anchorpoint", "UpdateStatusWithHistory", "Updating file(s) Revision Control history...");
+			}
+		}
+
+		return ExecuteSynchronousCommand(*Command, PromptText);
 	}
 
 	Command->bAutoDelete = true;
@@ -402,15 +419,15 @@ void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpoint
 }
 
 
-ECommandResult::Type FAnchorpointSourceControlProvider::ExecuteSynchronousCommand(FAnchorpointSourceControlCommand& InCommand, const FText& Task)
+ECommandResult::Type FAnchorpointSourceControlProvider::ExecuteSynchronousCommand(FAnchorpointSourceControlCommand& InCommand, const FText& TaskPrompt)
 {
 	ECommandResult::Type Result = ECommandResult::Failed;
 
 	// Display the progress dialog if a string was provided
 	{
 		// Perforce uses an empty text for the progress in FPerforceSourceControlProvider::ExecuteSynchronousCommand
-		// This prevents the popups from showing up at all, so we will do the same
-		FScopedSourceControlProgress Progress(FText::GetEmpty());
+		// In our case, the caller of this function may can choose to hide the prompt by sending an empty text
+		FScopedSourceControlProgress Progress(TaskPrompt);
 
 		// Issue the command asynchronously...
 		IssueCommand(InCommand);
