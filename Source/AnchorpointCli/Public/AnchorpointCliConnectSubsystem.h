@@ -96,6 +96,10 @@ private:
 	void StopSync(const FAnchorpointConnectMessage& Message);
 
 	/**
+	 * Callback executed when the Anchorpoint Source Control Provider is initialized
+	 */
+	void OnAnchorpointProviderConnected();
+	/**
 	 * Callback executed when a message is received from the Anchorpoint CLI
 	 */
 	void HandleMessage(const FAnchorpointConnectMessage& Message);

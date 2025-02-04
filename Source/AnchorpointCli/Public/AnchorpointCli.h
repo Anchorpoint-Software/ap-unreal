@@ -14,4 +14,9 @@ public:
 	FString GetInstallFolder() const;
 	FString GetCliPath() const;
 	FString GetApplicationPath() const;
+
+	/**
+	 * Delegate executed when the `Connect` source control command is executed by Anchorpoint
+	 */
+	FSimpleMulticastDelegate OnAnchorpointConnected;
 };
