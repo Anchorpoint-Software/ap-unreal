@@ -165,7 +165,11 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 
 	FAnchorpointStatus Status = FAnchorpointStatus::FromJson(Object.ToSharedRef());
 
-	ConnectSubsystem->UpdateStatusCacheIfPossible(Status);
+	if (InFiles.IsEmpty())
+	{
+		// Only a project-wide (no specific files provided) status update should be cached
+		ConnectSubsystem->UpdateStatusCacheIfPossible(Status);
+	}
 
 	return MakeValue(Status);
 }
