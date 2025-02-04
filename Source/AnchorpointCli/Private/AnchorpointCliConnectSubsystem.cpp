@@ -3,19 +3,21 @@
 #include "AnchorpointCliConnectSubsystem.h"
 
 #include <Async/Async.h>
+#include <Dialogs/Dialogs.h>
+#include <FileHelpers.h>
+#include <Framework/Notifications/NotificationManager.h>
 #include <ISourceControlModule.h>
 #include <ISourceControlProvider.h>
 #include <JsonObjectConverter.h>
 #include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>
-#include <FileHelpers.h>
+#include <Widgets/Notifications/SNotificationList.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointCliProcess.h"
-#include "Dialogs/Dialogs.h"
 
 TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus() const
 {
@@ -42,6 +44,8 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	Super::Initialize(Collection);
 
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
+
+	FAnchorpointCliModule::Get().OnAnchorpointConnected.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected);
 
 	FakeAnchorpointCliMessage = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("FakeAnchorpointCliMessage"),
@@ -112,6 +116,13 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 	Process->OnProcessEnded.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnProcessEnded);
 
 	UE_LOG(LogAnchorpointCli, Display, TEXT("Anchorpoint listener connected"));
+
+	const FText NotificationText = NSLOCTEXT("Anchorpoint", "AnchorpointCliConnected", "Anchorpoint Unreal Engine Integration activated");
+	FNotificationInfo* Info = new FNotificationInfo(NotificationText);
+	Info->ExpireDuration = 2.0f;
+	Info->Image = FAppStyle::Get().GetBrush("Icons.SuccessWithColor.Large");
+
+	FSlateNotificationManager::Get().QueueNotification(Info);
 }
 
 bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
@@ -256,6 +267,12 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 
 	bSyncInProgress = false;
 	RespondToMessage(Message.Id);
+}
+
+void UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected()
+{
+	// Extra ticks in case a relevant event happened.
+	TickConnection();
 }
 
 void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMessage& Message)

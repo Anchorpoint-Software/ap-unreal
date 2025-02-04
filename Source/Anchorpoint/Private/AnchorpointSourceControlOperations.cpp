@@ -7,6 +7,7 @@
 #include <SourceControlOperations.h>
 
 #include "Anchorpoint.h"
+#include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlCommand.h"
@@ -171,6 +172,8 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 			          EnableRevertViaOutlinerVar->Set(true);
 		          }
 	          });
+
+	FAnchorpointCliModule::Get().OnAnchorpointConnected.Broadcast();
 
 	InCommand.bCommandSuccessful = CurrentUserResult.HasValue();
 	return InCommand.bCommandSuccessful;
