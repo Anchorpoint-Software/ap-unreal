@@ -15,7 +15,7 @@ FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle")
 	}
 
 	FSlateColor IconColor =
-#if UE_VERSION_NEWER_THAN(5, 4, 0)
+#if UE_VERSION_NEWER_THAN(5, 5, 0)
 		// Needs to match FDefaultRevisionControlStyle::StatusCheckedOutColor
 		FLinearColor::FromSRGBColor(FColor::FromHex("#1FE44B"));
 #else 
