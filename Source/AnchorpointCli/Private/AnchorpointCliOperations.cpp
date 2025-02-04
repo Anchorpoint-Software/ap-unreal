@@ -174,7 +174,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);
 
-	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key unreal/git-auto-lock-path --value false"));
+	// Note: Running `config set --key key --value value` is not directly supported, but this is the format the unreal the ini parser expects
+	// Alternatively, (1) we could run the command directly skipping the ini file or (2) implement key-value pairs in the parser
+	FString AutoLockSetCommand = FString::Printf(TEXT("config set --key git-auto-lock --value false"));
 
 	FCliResult AutoLockSetOutput = AnchorpointCliCommands::RunApCommand(AutoLockSetCommand);
 
