@@ -160,10 +160,12 @@ private:
 
 	int ReturnCode = -1;
 
-	void* PipeRead = nullptr;
-	void* PipeWrite = nullptr;
-	void* PipeReadErr = nullptr;
-	void* PipeWriteErr = nullptr;
+	void* PipeOutputRead = nullptr;
+	void* PipeOutputWrite = nullptr;
+	void* PipeInputRead = nullptr;
+	void* PipeInputWrite = nullptr;
+	void* PipeOutputReadErr = nullptr;
+	void* PipeOutputWriteErr = nullptr;
 
 	FCriticalSection OutputLock;
 	FAnchorpointCliProcessOutputData StdOutData;
