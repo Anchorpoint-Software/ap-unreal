@@ -6,6 +6,10 @@
 #include "AnchorpointCliCommands.h"
 #include "AnchorpointCliLog.h"
 
+#if PLATFORM_WINDOWS
+#include "Windows/WindowsHWrapper.h"
+#endif
+
 void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 {
 	if (bUseBinaryData)
@@ -89,15 +93,16 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Parameters)
 {
 	checkf(!bIsRunning, TEXT("Process is already running"));
-	checkf(FPlatformProcess::CreatePipe(PipeRead, PipeWrite), TEXT("Failed to create pipe for stdout"));
-	checkf(FPlatformProcess::CreatePipe(PipeReadErr, PipeWriteErr), TEXT("Failed to create pipe for stderr"));
+	checkf(FPlatformProcess::CreatePipe(PipeOutputRead, PipeOutputWrite, false), TEXT("Failed to create pipe for stdout"));
+	checkf(FPlatformProcess::CreatePipe(PipeInputRead, PipeInputWrite, true), TEXT("Failed to create pipe for stdout"));
+	checkf(FPlatformProcess::CreatePipe(PipeOutputReadErr, PipeOutputWriteErr, false), TEXT("Failed to create pipe for stderr"));
 
 	constexpr bool bLaunchDetached = false;
 	constexpr bool bLaunchHidden = true;
 	constexpr bool bLaunchReallyHidden = bLaunchHidden;
 
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Running %s %s"), *Executable, *Parameters);
-	ProcessHandle = FPlatformProcess::CreateProc(*Executable, *Parameters, bLaunchDetached, bLaunchHidden, bLaunchReallyHidden, nullptr, 0, nullptr, PipeWrite, PipeRead, PipeWriteErr);
+	ProcessHandle = FPlatformProcess::CreateProc(*Executable, *Parameters, bLaunchDetached, bLaunchHidden, bLaunchReallyHidden, nullptr, 0, nullptr, PipeOutputWrite, PipeInputRead, PipeOutputWriteErr);
 	if (!ProcessHandle.IsValid())
 	{
 		return false;
@@ -186,12 +191,14 @@ uint32 FAnchorpointCliProcess::Run()
 		OnProcessUpdated.Broadcast();
 	}
 
-	FPlatformProcess::ClosePipe(PipeRead, PipeWrite);
-	PipeRead = PipeWrite = nullptr;
+	FPlatformProcess::ClosePipe(PipeOutputRead, PipeOutputWrite);
+	PipeOutputRead = PipeOutputWrite = nullptr;
 
-	FPlatformProcess::ClosePipe(PipeReadErr, PipeWriteErr);
-	PipeReadErr = PipeWriteErr = nullptr;
+	FPlatformProcess::ClosePipe(PipeInputRead, PipeInputWrite);
+	PipeInputRead = PipeInputWrite = nullptr;
 
+	FPlatformProcess::ClosePipe(PipeOutputReadErr, PipeOutputWriteErr);
+	PipeOutputReadErr = PipeOutputWriteErr = nullptr;
 
 	OnProcessEnded.Broadcast();
 	return 0;
@@ -207,8 +214,8 @@ void FAnchorpointCliProcess::TickInternal()
 {
 	{
 		FScopeLock ScopeLock(&OutputLock);
-		StdOutData.ReadData(PipeRead);
-		StdErrData.ReadData(PipeReadErr);
+		StdOutData.ReadData(PipeOutputRead);
+		StdErrData.ReadData(PipeOutputReadErr);
 	}
 
 	SendQueuedMessages();
@@ -236,9 +243,9 @@ void FAnchorpointCliProcess::SendQueuedMessages()
 		FString MessageToSend, MessageSent;
 		MessagesToSend.Dequeue(MessageToSend);
 
-		FPlatformProcess::WritePipe(PipeWrite, MessageToSend, &MessageSent);
+		FPlatformProcess::WritePipe(PipeInputWrite, MessageToSend, &MessageSent);
 
-		UE_LOG(LogAnchorpointCli, Log, TEXT("MessageToSend: \n%s\n MessageSent: \n%s\n"), *MessageToSend, *MessageSent);
+		UE_LOG(LogAnchorpointCli, Log, TEXT("MessageToSend: \n%s\nMessageSent: \n%s\n"), *MessageToSend, *MessageSent);
 
 		UE_CLOG(MessageSent.Len() == 0, LogAnchorpointCli, Error, TEXT("Writing message through pipe failed"));
 		UE_CLOG(MessageToSend.Len() > MessageSent.Len(), LogAnchorpointCli, Error, TEXT("Writing some part of the message through pipe failed"));
