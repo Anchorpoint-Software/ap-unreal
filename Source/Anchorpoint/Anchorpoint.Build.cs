@@ -9,6 +9,7 @@ public class Anchorpoint : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
+				"AssetDefinition",
 				"AssetTools",
 				"ContentBrowser",
 				"ContentBrowserData",

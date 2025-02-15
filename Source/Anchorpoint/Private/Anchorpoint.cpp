@@ -148,6 +148,11 @@ void FAnchorpointModule::RegisterMergeWithAnchorpoint(FToolMenuSection& InSectio
 		}
 	}
 
+	if (FileStates.IsEmpty())
+	{
+		return;
+	}
+
 	InSection.AddMenuEntry(
 		"MergeInAnchorpoint",
 		NSLOCTEXT("Anchorpoint", "MergeInAnchorpoint", "Merge in Anchorpoint"),
