@@ -9,25 +9,26 @@ public class Anchorpoint : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
-				"DeveloperSettings",
-				"SourceControl",
 				"AssetTools",
-				"Projects",
-				"InputCore",
-				"EditorFramework",
-				"UnrealEd",
-				"EditorSubsystem",
-				"JsonUtilities",
-				"ToolMenus",
+				"ContentBrowser",
+				"ContentBrowserData",
+				"Core",
 				"CoreUObject",
+				"DeveloperSettings",
+				"EditorFramework",
+				"EditorScriptingUtilities",
+				"EditorSubsystem",
 				"Engine",
+				"InputCore",
+				"Json", 
+				"JsonUtilities",
+				"Projects",
 				"Slate",
 				"SlateCore",
-				"Json", 
-				"EditorScriptingUtilities",
-				"ContentBrowserData",
-				
+				"SourceControl",
+				"ToolMenus",
+				"UnrealEd",
+
 				// Anchorpoint
 				"AnchorpointCli", 
 			});
