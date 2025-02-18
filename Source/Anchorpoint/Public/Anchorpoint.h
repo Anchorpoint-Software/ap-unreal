@@ -22,7 +22,9 @@ private:
 	// ~End IModuleInterface interface
 
 	void ExtendFileContextMenu(UToolMenu* InMenu);
+	void RegisterMergeWithAnchorpoint(FToolMenuSection& InSection, TSoftClassPtr<> AssetSoftClass);
 
 	FAnchorpointSourceControlProvider AnchorpointSourceControlProvider;
 	FAnchorpointSourceControlSettings AnchorpointSourceControlSettings;
 };
+

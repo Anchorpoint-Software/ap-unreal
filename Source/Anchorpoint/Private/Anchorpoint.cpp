@@ -2,8 +2,11 @@
 
 #include "Anchorpoint.h"
 
+#include <AssetDefinitionRegistry.h>
+#include <ContentBrowserMenuContexts.h>
 #include <ContentBrowserDataMenuContexts.h>
 #include <ISourceControlModule.h>
+#include <SourceControlHelpers.h>
 
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlOperations.h"
@@ -46,6 +49,23 @@ void FAnchorpointModule::StartupModule()
 	{
 		Menu->AddDynamicSection(TEXT("AnchorpointDynamicSection"), FNewToolMenuDelegate::CreateRaw(this, &FAnchorpointModule::ExtendFileContextMenu));
 	}
+
+	for (TObjectIterator<UClass> ClassIt; ClassIt; ++ClassIt)
+	{
+		TSoftClassPtr<UObject> AssetSoftClass = *ClassIt;
+		FNameBuilder Builder;
+		Builder << TEXT("ContentBrowser.AssetContextMenu.");
+		Builder << AssetSoftClass->GetFName();
+		Builder << TEXT(".SourceControlSubMenu");
+
+		const FName MenuName(Builder.ToView());
+
+		if (UToolMenu* Menu = UToolMenus::Get()->ExtendMenu(MenuName))
+		{
+			FToolMenuSection& Section = Menu->AddSection("Anchorpoint", NSLOCTEXT("Anchorpoint", "Anchorpoint", "Anchorpoint"));
+			Section.AddDynamicEntry("MergeInAnchorpointDynamic", FNewToolMenuSectionDelegate::CreateRaw(this, &FAnchorpointModule::RegisterMergeWithAnchorpoint, AssetSoftClass));
+		}
+	}
 }
 
 void FAnchorpointModule::ShutdownModule()
@@ -70,7 +90,7 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 	TArray<FContentBrowserItem> Items = Context->SelectedItems;
 
 	FString Path;
-	if(Items.Num() != 1 || !Items[0].GetItemPhysicalPath(Path))
+	if (Items.Num() != 1 || !Items[0].GetItemPhysicalPath(Path))
 	{
 		return;
 	}
@@ -90,6 +110,68 @@ void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 			})
 		)
 	);
+}
+
+void FAnchorpointModule::RegisterMergeWithAnchorpoint(FToolMenuSection& InSection, TSoftClassPtr<> AssetSoftClass)
+{
+	UContentBrowserAssetContextMenuContext* const Context = InSection.FindContext<UContentBrowserAssetContextMenuContext>();
+	if (!Context || Context->CommonClass != AssetSoftClass)
+	{
+		return;
+	}
+
+	TArray<FString> Files;
+	for (const FAssetData& AssetData : Context->SelectedAssets)
+	{
+		if (const UAssetDefinition* AssetDefinition = UAssetDefinitionRegistry::Get()->GetAssetDefinitionForAsset(AssetData))
+		{
+			if (AssetDefinition->CanMerge())
+			{
+				// Unreal is handling at least one of the selected asset type
+				return;
+			}
+		}
+
+		const FString Filename = USourceControlHelpers::PackageFilename(AssetData.PackageName.ToString());
+		Files.Add(Filename);
+	}
+
+	TArray<FSourceControlStateRef> FileStates;
+	ISourceControlProvider& SourceControlProvider = ISourceControlModule::Get().GetProvider();
+
+	SourceControlProvider.GetState(Files, FileStates, EStateCacheUsage::Use);
+	for (const FSourceControlStateRef& State : FileStates)
+	{
+		if (!State->IsConflicted())
+		{
+			return;
+		}
+	}
+
+	if (FileStates.IsEmpty())
+	{
+		return;
+	}
+
+	InSection.AddMenuEntry(
+		"MergeInAnchorpoint",
+		NSLOCTEXT("Anchorpoint", "MergeInAnchorpoint", "Merge in Anchorpoint"),
+		NSLOCTEXT("Anchorpoint", "MergeInAnchorpointTip", "Manually complete the merge in Anchorpoint using the merge UI helpers."),
+		FSlateIcon("DefaultRevisionControlStyle", "RevisionControl.Actions.Merge"),
+		FUIAction(
+			FExecuteAction::CreateLambda([Files]()
+			{
+				if (Files.Num() == 1)
+				{
+					AnchorpointCliOperations::ShowInAnchorpoint(Files[0]);
+				}
+				else
+				{
+					const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+					AnchorpointCliOperations::ShowInAnchorpoint(ProjectPath);
+				}
+			})
+		));
 }
 
 IMPLEMENT_MODULE(FAnchorpointModule, Anchorpoint)
