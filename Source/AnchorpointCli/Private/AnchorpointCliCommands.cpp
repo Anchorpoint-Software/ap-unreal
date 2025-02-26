@@ -142,7 +142,7 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stdout output: %s"), *Result.StdOutOutput);
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stderr output: %s"), *Result.StdErrOutput);
 
-	return Process->GetResult();
+	return Result;
 }
 
 FCliResult AnchorpointCliCommands::RunGitCommand(const FString& InCommand, bool bUseBinaryData /* = false */)
