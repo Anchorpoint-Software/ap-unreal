@@ -52,18 +52,20 @@ void FAnchorpointModule::StartupModule()
 
 	for (TObjectIterator<UClass> ClassIt; ClassIt; ++ClassIt)
 	{
-		TSoftClassPtr<UObject> AssetSoftClass = *ClassIt;
-		FNameBuilder Builder;
-		Builder << TEXT("ContentBrowser.AssetContextMenu.");
-		Builder << AssetSoftClass->GetFName();
-		Builder << TEXT(".SourceControlSubMenu");
-
-		const FName MenuName(Builder.ToView());
-
-		if (UToolMenu* Menu = UToolMenus::Get()->ExtendMenu(MenuName))
+		if(TSoftClassPtr<UObject> AssetSoftClass = *ClassIt)
 		{
-			FToolMenuSection& Section = Menu->AddSection("Anchorpoint", NSLOCTEXT("Anchorpoint", "Anchorpoint", "Anchorpoint"));
-			Section.AddDynamicEntry("MergeInAnchorpointDynamic", FNewToolMenuSectionDelegate::CreateRaw(this, &FAnchorpointModule::RegisterMergeWithAnchorpoint, AssetSoftClass));
+			FNameBuilder Builder;
+			Builder << TEXT("ContentBrowser.AssetContextMenu.");
+			Builder << AssetSoftClass->GetFName();
+			Builder << TEXT(".SourceControlSubMenu");
+
+			const FName MenuName(Builder.ToView());
+
+			if (UToolMenu* Menu = UToolMenus::Get()->ExtendMenu(MenuName))
+			{
+				FToolMenuSection& Section = Menu->AddSection("Anchorpoint", NSLOCTEXT("Anchorpoint", "Anchorpoint", "Anchorpoint"));
+				Section.AddDynamicEntry("MergeInAnchorpointDynamic", FNewToolMenuSectionDelegate::CreateRaw(this, &FAnchorpointModule::RegisterMergeWithAnchorpoint, AssetSoftClass));
+			}
 		}
 	}
 }
