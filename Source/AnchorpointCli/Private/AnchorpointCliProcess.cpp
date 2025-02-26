@@ -127,9 +127,9 @@ FCliResult FAnchorpointCliProcess::GetResult()
 	FCliResult Result;
 	Result.ReturnCode = ReturnCode;
 
-	if (ReturnCode != 0)
+	if (ReturnCode.IsSet() && ReturnCode.GetValue() != 0)
 	{
-		Result.Error = FString::Printf(TEXT("Process failed with code %d"), ReturnCode);
+		Result.Error = FString::Printf(TEXT("Process failed with code %d"), ReturnCode.GetValue());
 	}
 	else
 	{
@@ -227,11 +227,13 @@ void FAnchorpointCliProcess::TickInternal()
 	}
 	else if (!FPlatformProcess::IsProcRunning(ProcessHandle))
 	{
-		if (!FPlatformProcess::GetProcReturnCode(ProcessHandle, &ReturnCode))
+		int ProcessReturnCode = -1;
+		if (!FPlatformProcess::GetProcReturnCode(ProcessHandle, &ProcessReturnCode))
 		{
 			ReturnCode = -1;
 		}
 
+		ReturnCode = ProcessReturnCode;
 		bIsRunning = false;
 	}
 }

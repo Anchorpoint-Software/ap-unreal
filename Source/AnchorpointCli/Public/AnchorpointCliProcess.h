@@ -26,9 +26,9 @@ struct FCliResult
 	 */
 	TArray<uint8> StdErrBinary;
 	/**
-	 * Exit code of the process
+	 * Exit code of the process. If unset, the process was still running when the result was retrieved
 	 */
-	int ReturnCode = -1;
+	TOptional<int> ReturnCode;
 	/**
 	 * Error encountered while running the command, if any
 	 */
@@ -158,7 +158,10 @@ private:
 	TSAN_ATOMIC(bool) bIsRunning = false;
 	bool bIsCanceling = false;
 
-	int ReturnCode = -1;
+	/**
+	 * If unset, the process might still be running
+	 */
+	TOptional<int> ReturnCode;
 
 	void* PipeOutputRead = nullptr;
 	void* PipeOutputWrite = nullptr;
