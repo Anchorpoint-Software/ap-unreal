@@ -1,6 +1,6 @@
 # Anchorpoint plugin for Unreal
 
-This plugin allows revision control to be handled directly from the Unreal editor. If you’re working in a team, it’s highly recommended that you use the plugin, as it gives you more control over your modified files. Unreal Engine can communicate with the Anchorpoint desktop application via an IPC connection. 
+This plugin allows revision control to be handled directly from the Unreal editor. If you’re working in a team, it’s highly recommended that you use the plugin, as it gives you more control over your modified files. Unreal Engine can communicate with the Anchorpoint desktop application. 
 
 ## Features
 
