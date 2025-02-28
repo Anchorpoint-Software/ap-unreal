@@ -26,10 +26,3 @@ Put the compiled plugin in your project/plugins or in your engine folder. Check 
 ## Contribution
 
 We appreciate any kind of contribution via a pull request. If you have other ideas for features or other improvements, please join our [Discord](https://discord.com/invite/ZPyPzvx) server.
-
-
-## Generate Project files
-sh generate.sh
-
-### Run
-Open XCode and Select PluginEditor schema
