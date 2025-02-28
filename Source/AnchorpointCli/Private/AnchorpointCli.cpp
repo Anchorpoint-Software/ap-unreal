@@ -38,6 +38,13 @@ FString FAnchorpointCliModule::GetInstallFolder() const
 	// In case some values are unset, let's find some good defaults 
 	if (InstallDirectory.IsEmpty())
 	{
+		FString AnchorpointRootPath = FPlatformMisc::GetEnvironmentVariable(TEXT("ANCHORPOINT_ROOT"));
+		if (!AnchorpointRootPath.IsEmpty()) {
+			FPaths::NormalizeDirectoryName(AnchorpointRootPath);
+			InstallDirectory = AnchorpointRootPath;
+			return AnchorpointRootPath;
+		}
+		
 #if PLATFORM_MAC
 		InstallDirectory = TEXT("/Applications/Anchorpoint.app/Contents/Frameworks");
 #elif PLATFORM_WINDOWS
