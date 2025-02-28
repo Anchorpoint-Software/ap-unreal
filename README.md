@@ -28,8 +28,16 @@ Put the compiled plugin in your project/plugins or in your engine folder. Check 
 We appreciate any kind of contribution via a pull request. If you have other ideas for features or other improvements, please join our [Discord](https://discord.com/invite/ZPyPzvx) server.
 
 
-## Generate Project files
-sh generate.sh
+## Building from Source
 
-### Run
-Open XCode and Select PluginEditor schema
+To build the plugin from source in your project:
+
+1. Create a `Plugins` folder in the root folder of your project (where the `.uproject` file is located).
+2. Run in your terminal:
+```
+cd `Plugins`
+git clone https://github.com/configcat/unreal-engine-sdk.git
+```
+
+3. Right-click the `.uproject` file and select `Generate Visual Studio project files`.
+4. Open the .sln to run via Visual Studio or double-click the `.uproject` and you will be prompted to build the plugin.
