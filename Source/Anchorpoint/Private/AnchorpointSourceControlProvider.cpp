@@ -342,6 +342,8 @@ void FAnchorpointSourceControlProvider::Tick()
 			// of the command queue (which can happen in the completion delegate)
 			break;
 		}
+
+		Command.Worker->TickWhileInProgress();
 	}
 
 	if (bStatesUpdated)

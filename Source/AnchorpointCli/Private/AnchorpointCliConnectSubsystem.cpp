@@ -280,6 +280,8 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	const FString& MessageType = Message.Type;
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Anchorpoint Source Control Provider received message: %s"), *MessageType);
 
+	OnPreMessageHandled.Broadcast(Message);
+
 	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
 		RefreshStatus(Message);

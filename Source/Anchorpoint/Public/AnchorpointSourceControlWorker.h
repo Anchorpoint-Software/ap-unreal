@@ -22,4 +22,8 @@ public:
 	 * @returns true if states were updated
 	 */
 	virtual bool UpdateStates() const = 0;
+	/**
+	 * Allows to perform some work while the command is in progress. This is always executed on the main thread.
+	 */
+	virtual void TickWhileInProgress() {};
 };

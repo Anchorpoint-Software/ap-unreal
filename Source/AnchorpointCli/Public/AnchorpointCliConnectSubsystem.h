@@ -59,6 +59,10 @@ public:
 	 * Updates the cached version of the status with a newer value if caching is enabled
 	 */
 	void UpdateStatusCacheIfPossible(const FAnchorpointStatus& Status);
+	/**
+	 * Callback executed after a message is received and parsed, but before it is handled
+	 */
+	TMulticastDelegate<void(const FAnchorpointConnectMessage& InMessage)> OnPreMessageHandled;
 
 private:
 	//~ Begin UEditorSubsystem Interface

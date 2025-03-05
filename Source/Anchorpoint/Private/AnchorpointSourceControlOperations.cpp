@@ -8,6 +8,7 @@
 
 #include "Anchorpoint.h"
 #include "AnchorpointCli.h"
+#include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointSourceControlCommand.h"
@@ -195,7 +196,12 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::Execute);
 
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	const FDelegateHandle PreMessageHandle = ConnectSubsystem->OnPreMessageHandled.AddRaw(this, &FAnchorpointCheckOutWorker::OnCliConnectMessage);
+
 	TValueOrError<FString, FString> LockResult = AnchorpointCliOperations::LockFiles(InCommand.Files);
+
+	ConnectSubsystem->OnPreMessageHandled.Remove(PreMessageHandle);
 
 	if (LockResult.HasError())
 	{
@@ -236,6 +242,30 @@ bool FAnchorpointCheckOutWorker::UpdateStates() const
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::UpdateStates);
 
 	return UpdateCachedStates(States);
+}
+
+void FAnchorpointCheckOutWorker::TickWhileInProgress()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckOutWorker::TickWhileInProgress);
+
+	const TArray<FSlowTask*>& ScopeStack = GWarn->GetScopeStack();
+	for (FSlowTask* Task : ScopeStack)
+	{
+		const int TotalFilesToLock = Task->TotalAmountOfWork;
+		const FString LockProgressMessage = FString::Printf(TEXT("Locking files... (%d/%d)"), NumFilesLockedSinceStart, TotalFilesToLock);
+
+		Task->FrameMessage = FText::FromString(LockProgressMessage);
+		Task->CompletedWork = NumFilesLockedSinceStart;
+		Task->TickProgress();
+	}
+}
+
+void FAnchorpointCheckOutWorker::OnCliConnectMessage(const FAnchorpointConnectMessage& Message)
+{
+	if (Message.Type == TEXT("files locked"))
+	{
+		NumFilesLockedSinceStart += Message.Files.Num();
+	}
 }
 
 FName FAnchorpointRevertWorker::GetName() const

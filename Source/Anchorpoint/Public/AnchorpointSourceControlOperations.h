@@ -6,6 +6,8 @@
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlWorker.h"
 
+struct FAnchorpointConnectMessage;
+
 class FAnchorpointConnectWorker final : public IAnchorpointSourceControlWorker
 {
 public:
@@ -23,9 +25,14 @@ public:
 	virtual FName GetName() const override;
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
+	virtual void TickWhileInProgress() override;
 	//~ End IAnchorpointSourceControlWorker Interface
 
+private:
+	void OnCliConnectMessage(const FAnchorpointConnectMessage& Message);
+
 	TArray<FAnchorpointSourceControlState> States;
+	int NumFilesLockedSinceStart = 0;
 };
 
 class FAnchorpointRevertWorker final : public IAnchorpointSourceControlWorker
