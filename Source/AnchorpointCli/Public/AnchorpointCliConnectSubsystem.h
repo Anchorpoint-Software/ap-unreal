@@ -63,6 +63,10 @@ public:
 	 * Callback executed after a message is received and parsed, but before it is handled
 	 */
 	TMulticastDelegate<void(const FAnchorpointConnectMessage& InMessage)> OnPreMessageHandled;
+	/**
+	 * Checks if the integration is currently connected to the Anchorpoint CLI
+	 */
+	bool IsConnected() const;
 
 private:
 	//~ Begin UEditorSubsystem Interface
