@@ -402,38 +402,43 @@ void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<F
 	AsyncTask(ENamedThreads::GameThread,
 	          [=]()
 	          {
-		          FProgressNotificationHandle NotificationHandle = FSlateNotificationManager::Get().StartProgressNotification(ProgressText, 1);
+		          FProgressNotificationHandle NotificationHandle = FSlateNotificationManager::Get().StartProgressNotification(ProgressText, 100);
 
-		          // We need to tick every frame to make sure the notification stays visible for the user.
-		          FTimerHandle UpdateHandle;
-		          GEditor->GetTimerManager()->SetTimer(
-			          UpdateHandle,
-			          FTimerDelegate::CreateLambda(
-				          [NotificationHandle]()
-				          {
-					          FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, 0);
-				          }
-			          ),
-			          1.0f,
-			          true
-		          );
-
-		          Process->OnProcessUpdated.AddLambda([Process]()
+		          // This process will be monitored in the background, so whatever was in the output doesn't matter anymore.
+		          Process->ClearStdErrData();
+		          Process->OnProcessUpdated.AddLambda([Process, NotificationHandle]()
 		          {
 			          FString StdErrString;
 			          TArray<uint8> StdErrBinary;
 			          Process->GetStdErrData(StdErrString, StdErrBinary);
 
-			          UE_LOG(LogTemp, Warning, TEXT("Process output: %s"), *StdErrString);
+			          TSharedPtr<FJsonObject> JsonObject;
+			          TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(StdErrString);
+			          if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+			          {
+				          FString ProgressText;
+				          JsonObject->TryGetStringField(TEXT("progress-text"), ProgressText);
+
+				          int ProgressValue = 0;
+				          JsonObject->TryGetNumberField(TEXT("progress-value"), ProgressValue);
+
+				          AsyncTask(ENamedThreads::GameThread,
+				                    [=]()
+				                    {
+					                    FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, ProgressValue, 0, FText::FromString(ProgressText));
+				                    });
+			          }
+
+			          UE_LOG(LogTemp, Warning, TEXT("StdErrString: %s"), *StdErrString);
+
+			          Process->ClearStdErrData();
 		          });
 
-		          Process->OnProcessEnded.AddLambda([NotificationHandle, UpdateHandle, FinishText]()
+		          Process->OnProcessEnded.AddLambda([NotificationHandle, FinishText]()
 		          {
 			          AsyncTask(ENamedThreads::GameThread,
-			                    [NotificationHandle, UpdateHandle, FinishText]()
+			                    [NotificationHandle, FinishText]()
 			                    {
-				                    GEditor->GetTimerManager()->PauseTimer(UpdateHandle);
-
 				                    FSlateNotificationManager::Get().CancelProgressNotification(NotificationHandle);
 
 				                    FNotificationInfo* Info = new FNotificationInfo(FinishText);
