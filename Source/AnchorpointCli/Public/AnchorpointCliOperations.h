@@ -4,26 +4,30 @@
 
 #include "AnchorpointCliStatus.h"
 
+class FAnchorpointCliProcess;
+
 namespace AnchorpointCliOperations
 {
-	bool ANCHORPOINTCLI_API IsInstalled();
-	void ANCHORPOINTCLI_API ShowInAnchorpoint(const FString& InPath);
+	ANCHORPOINTCLI_API bool IsInstalled();
+	ANCHORPOINTCLI_API void ShowInAnchorpoint(const FString& InPath);
 
-	FString ANCHORPOINTCLI_API GetRepositoryRootPath();
-	bool ANCHORPOINTCLI_API IsUnderRepositoryPath(const FString& InPath);
-	FString ANCHORPOINTCLI_API ConvertFullPathToApInternal(const FString& InFullPath);
-	FString ANCHORPOINTCLI_API ConvertApInternalToFull(const FString& InRelativePath);
+	ANCHORPOINTCLI_API FString GetRepositoryRootPath();
+	ANCHORPOINTCLI_API bool IsUnderRepositoryPath(const FString& InPath);
+	ANCHORPOINTCLI_API FString ConvertFullPathToApInternal(const FString& InFullPath);
+	ANCHORPOINTCLI_API FString ConvertApInternalToFull(const FString& InRelativePath);
 
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API GetCurrentUser();
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
 
-	TValueOrError<FAnchorpointStatus, FString> ANCHORPOINTCLI_API GetStatus(const TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API DisableAutoLock();
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API LockFiles(const TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API UnlockFiles(const TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API Revert(const TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API DeleteFiles(const TArray<FString>& InFiles);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API SubmitFiles(const TArray<FString> InFiles, const FString& InMessage);
+	ANCHORPOINTCLI_API TValueOrError<FAnchorpointStatus, FString> GetStatus(const TArray<FString>& InFiles);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> DisableAutoLock();
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> LockFiles(const TArray<FString>& InFiles);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> UnlockFiles(const TArray<FString>& InFiles);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> Revert(const TArray<FString>& InFiles);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> DeleteFiles(const TArray<FString>& InFiles);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> SubmitFiles(const TArray<FString> InFiles, const FString& InMessage);
 
-	TValueOrError<FAnchorpointHistory, FString> ANCHORPOINTCLI_API GetHistoryInfo(const FString& InFile);
-	TValueOrError<FString, FString> ANCHORPOINTCLI_API DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination);
+	ANCHORPOINTCLI_API TValueOrError<FAnchorpointHistory, FString> GetHistoryInfo(const FString& InFile);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination);
+
+	ANCHORPOINTCLI_API void MonitorProcessWithNotification(const TSharedRef<FAnchorpointCliProcess>& InProcess, const FText& ProgressText, const FText& FinishText);
 }
