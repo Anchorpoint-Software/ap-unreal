@@ -300,7 +300,7 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
 
-		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Commit successful. Pushing in background.");
+		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Background push started.");
 		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
 		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
 
@@ -399,14 +399,26 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 
 void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<FAnchorpointCliProcess>& Process, const FText& ProgressText, const FText& FinishText)
 {
+	struct FMonitorProcessNotification
+	{
+		FString Message;
+		int Progress;
+	};
+
+	TSharedPtr<FMonitorProcessNotification> NotificationData = MakeShared<FMonitorProcessNotification>();
+	NotificationData->Message = ProgressText.ToString();
+	NotificationData->Progress = 0;
+
 	AsyncTask(ENamedThreads::GameThread,
 	          [=]()
 	          {
 		          FProgressNotificationHandle NotificationHandle = FSlateNotificationManager::Get().StartProgressNotification(ProgressText, 100);
 
 		          // This process will be monitored in the background, so whatever was in the output doesn't matter anymore.
+		          // So in order to simplify the parsing of the output, we clear it.
 		          Process->ClearStdErrData();
-		          Process->OnProcessUpdated.AddLambda([Process, NotificationHandle]()
+
+		          Process->OnProcessUpdated.AddLambda([Process, NotificationHandle, NotificationData]()
 		          {
 			          FString StdErrString;
 			          TArray<uint8> StdErrBinary;
@@ -422,14 +434,15 @@ void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<F
 				          int ProgressValue = 0;
 				          JsonObject->TryGetNumberField(TEXT("progress-value"), ProgressValue);
 
-				          AsyncTask(ENamedThreads::GameThread,
-				                    [=]()
-				                    {
-					                    FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, ProgressValue, 0, FText::FromString(ProgressText));
-				                    });
+				          NotificationData->Message = ProgressText;
+				          NotificationData->Progress = ProgressValue;
 			          }
 
-			          UE_LOG(LogTemp, Warning, TEXT("StdErrString: %s"), *StdErrString);
+			          AsyncTask(ENamedThreads::GameThread,
+			                    [=]()
+			                    {
+				                    FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, NotificationData->Progress, 0, FText::FromString(NotificationData->Message));
+			                    });
 
 			          Process->ClearStdErrData();
 		          });
