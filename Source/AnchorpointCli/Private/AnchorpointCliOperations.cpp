@@ -323,7 +323,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 		SubmitParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
-	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *InMessage));
+	FString EscapedMessage = InMessage;
+	EscapedMessage.ReplaceInline(TEXT("\r\n"), TEXT(R"(\\\r\\\n)"));
+	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *EscapedMessage));
 
 	FString SubmitCommand = FString::Join(SubmitParams, TEXT(" "));
 
