@@ -449,10 +449,6 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	{
 		InCommand.ErrorMessages.Add(SubmitResult.GetError());
 	}
-	else
-	{
-		Operation->SetSuccessMessage(NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Commit successful. Pushing files in background."));
-	}
 
 	InCommand.bCommandSuccessful = SubmitResult.HasValue();
 	return InCommand.bCommandSuccessful;

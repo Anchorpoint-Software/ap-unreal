@@ -5,6 +5,8 @@
 #include <Misc/FileHelper.h>
 #include <Dom/JsonObject.h>
 #include <Dom/JsonValue.h>
+#include <Framework/Notifications/NotificationManager.h>
+#include <Widgets/Notifications/SNotificationList.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
@@ -297,6 +299,11 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 		|| InProcessOutput.Contains(TEXT("Uploading Files")))
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
+
+		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Commit successful. Pushing in background.");
+		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
+		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
+
 		return true;
 	}
 
@@ -388,4 +395,52 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 	}
 
 	return MakeValue(TEXT("Success"));
+}
+
+void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<FAnchorpointCliProcess>& Process, const FText& ProgressText, const FText& FinishText)
+{
+	AsyncTask(ENamedThreads::GameThread,
+	          [=]()
+	          {
+		          FProgressNotificationHandle NotificationHandle = FSlateNotificationManager::Get().StartProgressNotification(ProgressText, 1);
+
+		          // We need to tick every frame to make sure the notification stays visible for the user.
+		          FTimerHandle UpdateHandle;
+		          GEditor->GetTimerManager()->SetTimer(
+			          UpdateHandle,
+			          FTimerDelegate::CreateLambda(
+				          [NotificationHandle]()
+				          {
+					          FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, 0);
+				          }
+			          ),
+			          1.0f,
+			          true
+		          );
+
+		          Process->OnProcessUpdated.AddLambda([Process]()
+		          {
+			          FString StdErrString;
+			          TArray<uint8> StdErrBinary;
+			          Process->GetStdErrData(StdErrString, StdErrBinary);
+
+			          UE_LOG(LogTemp, Warning, TEXT("Process output: %s"), *StdErrString);
+		          });
+
+		          Process->OnProcessEnded.AddLambda([NotificationHandle, UpdateHandle, FinishText]()
+		          {
+			          AsyncTask(ENamedThreads::GameThread,
+			                    [NotificationHandle, UpdateHandle, FinishText]()
+			                    {
+				                    GEditor->GetTimerManager()->PauseTimer(UpdateHandle);
+
+				                    FSlateNotificationManager::Get().CancelProgressNotification(NotificationHandle);
+
+				                    FNotificationInfo* Info = new FNotificationInfo(FinishText);
+				                    Info->ExpireDuration = 5.0f;
+				                    Info->Image = FAppStyle::Get().GetBrush("Icons.SuccessWithColor.Large");
+				                    FSlateNotificationManager::Get().QueueNotification(Info);
+			                    });
+		          });
+	          });
 }
