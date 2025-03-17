@@ -10,6 +10,7 @@
 #include <Logging/MessageLog.h>
 #include <FileHelpers.h>
 
+#include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
@@ -42,14 +43,27 @@ const FName& FAnchorpointSourceControlProvider::GetName() const
 
 FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
+	TArray<FString> StatusMessages;
+
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	bool bCliConnected = ConnectSubsystem->IsConnected();
+	StatusMessages.Add(FString::Printf(TEXT("CLI connected: %s"), *LexToString(bCliConnected)));
+
+	bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
+	StatusMessages.Add(FString::Printf(TEXT("Status cache valid: %s"), *LexToString(bValidCache)));
+
 	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
 	const int32 TimeSeconds = FMath::FloorToInt(TimeSinceLastSync.GetTotalSeconds());
-	if (TimeSeconds < 0)
+	if (TimeSeconds >= 0)
 	{
-		return INVTEXT("Not synced yet");
+		StatusMessages.Add(FString::Printf(TEXT("Last sync %d seconds ago"), TimeSeconds));
+	}
+	else
+	{
+		StatusMessages.Add(TEXT("Never synced"));
 	}
 
-	return FText::Format(INVTEXT("Last sync {0} seconds ago"), FText::AsNumber(TimeSeconds));
+	return FText::FromString(FString::Join(StatusMessages, TEXT("\n")));
 }
 
 

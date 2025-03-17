@@ -39,6 +39,11 @@ void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorp
 	StatusCache = Status;
 }
 
+bool UAnchorpointCliConnectSubsystem::IsConnected() const
+{
+	return Process && Process->IsRunning();
+}
+
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);

@@ -5,6 +5,8 @@
 #include <Misc/FileHelper.h>
 #include <Dom/JsonObject.h>
 #include <Dom/JsonValue.h>
+#include <Framework/Notifications/NotificationManager.h>
+#include <Widgets/Notifications/SNotificationList.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
@@ -297,6 +299,11 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 		|| InProcessOutput.Contains(TEXT("Uploading Files")))
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
+
+		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Background push started.");
+		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
+		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
+
 		return true;
 	}
 
@@ -388,4 +395,70 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 	}
 
 	return MakeValue(TEXT("Success"));
+}
+
+void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<FAnchorpointCliProcess>& Process, const FText& ProgressText, const FText& FinishText)
+{
+	struct FMonitorProcessNotification
+	{
+		FString Message;
+		int Progress;
+	};
+
+	TSharedPtr<FMonitorProcessNotification> NotificationData = MakeShared<FMonitorProcessNotification>();
+	NotificationData->Message = ProgressText.ToString();
+	NotificationData->Progress = 0;
+
+	AsyncTask(ENamedThreads::GameThread,
+	          [=]()
+	          {
+		          FProgressNotificationHandle NotificationHandle = FSlateNotificationManager::Get().StartProgressNotification(ProgressText, 100);
+
+		          // This process will be monitored in the background, so whatever was in the output doesn't matter anymore.
+		          // So in order to simplify the parsing of the output, we clear it.
+		          Process->ClearStdErrData();
+
+		          Process->OnProcessUpdated.AddLambda([Process, NotificationHandle, NotificationData]()
+		          {
+			          FString StdErrString;
+			          TArray<uint8> StdErrBinary;
+			          Process->GetStdErrData(StdErrString, StdErrBinary);
+
+			          TSharedPtr<FJsonObject> JsonObject;
+			          TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(StdErrString);
+			          if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+			          {
+				          FString ProgressText;
+				          JsonObject->TryGetStringField(TEXT("progress-text"), ProgressText);
+
+				          int ProgressValue = 0;
+				          JsonObject->TryGetNumberField(TEXT("progress-value"), ProgressValue);
+
+				          NotificationData->Message = ProgressText;
+				          NotificationData->Progress = ProgressValue;
+			          }
+
+			          AsyncTask(ENamedThreads::GameThread,
+			                    [=]()
+			                    {
+				                    FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, NotificationData->Progress, 0, FText::FromString(NotificationData->Message));
+			                    });
+
+			          Process->ClearStdErrData();
+		          });
+
+		          Process->OnProcessEnded.AddLambda([NotificationHandle, FinishText]()
+		          {
+			          AsyncTask(ENamedThreads::GameThread,
+			                    [NotificationHandle, FinishText]()
+			                    {
+				                    FSlateNotificationManager::Get().CancelProgressNotification(NotificationHandle);
+
+				                    FNotificationInfo* Info = new FNotificationInfo(FinishText);
+				                    Info->ExpireDuration = 5.0f;
+				                    Info->Image = FAppStyle::Get().GetBrush("Icons.SuccessWithColor.Large");
+				                    FSlateNotificationManager::Get().QueueNotification(Info);
+			                    });
+		          });
+	          });
 }
