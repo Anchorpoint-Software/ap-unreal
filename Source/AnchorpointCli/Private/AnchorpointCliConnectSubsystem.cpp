@@ -73,12 +73,15 @@ void UAnchorpointCliConnectSubsystem::Deinitialize()
 void UAnchorpointCliConnectSubsystem::TickConnection()
 {
 	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	const bool bUsesAnchorpoint =  Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
+	const bool bUsesAnchorpoint = Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
 	if (!bUsesAnchorpoint)
 	{
 		if (Process)
 		{
 			UE_LOG(LogAnchorpointCli, Warning, TEXT("Disconnecting listener because the current provider is not Anchorpoint"));
+
+			ToastConnectionState(false);
+
 			Process->Cancel();
 		}
 
@@ -122,12 +125,7 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 
 	UE_LOG(LogAnchorpointCli, Display, TEXT("Anchorpoint listener connected"));
 
-	const FText NotificationText = NSLOCTEXT("Anchorpoint", "AnchorpointCliConnected", "Anchorpoint Unreal Engine Integration activated");
-	FNotificationInfo* Info = new FNotificationInfo(NotificationText);
-	Info->ExpireDuration = 2.0f;
-	Info->Image = FAppStyle::Get().GetBrush("Icons.SuccessWithColor.Large");
-
-	FSlateNotificationManager::Get().QueueNotification(Info);
+	ToastConnectionState(true);
 }
 
 bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
@@ -372,6 +370,8 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 	{
 		UE_LOG(LogAnchorpointCli, Warning, TEXT("CLI connection lost"));
 
+		ToastConnectionState(false);
+
 		if (Process)
 		{
 			Process->Cancel();
@@ -404,6 +404,8 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 void UAnchorpointCliConnectSubsystem::OnProcessEnded()
 {
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("Listener canceled"));
+
+	ToastConnectionState(false);
 
 	if (Process)
 	{
@@ -449,4 +451,19 @@ void UAnchorpointCliConnectSubsystem::OnFakeAnchorpointCliMessage(const TArray<F
 	{
 		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to parse fake message: %s"), *FakeMessage);
 	}
+}
+
+void UAnchorpointCliConnectSubsystem::ToastConnectionState(bool bConnected)
+{
+	const FText ConnectText = NSLOCTEXT("Anchorpoint", "AnchorpointCliConnected", "Anchorpoint Unreal Engine Integration activated");
+	const FText DisconnectText = NSLOCTEXT("Anchorpoint", "AnchorpointCliDisconnected", "Anchorpoint Unreal Engine Integration deactivated");
+
+	const FSlateBrush* ConnectBrush = FAppStyle::Get().GetBrush("Icons.SuccessWithColor.Large");
+	const FSlateBrush* DisconnectBrush = FAppStyle::Get().GetBrush("Icons.ErrorWithColor.Large");
+
+	FNotificationInfo* Info = new FNotificationInfo(bConnected ? ConnectText : DisconnectText);
+	Info->ExpireDuration = 2.0f;
+	Info->Image = bConnected ? ConnectBrush : DisconnectBrush;
+
+	FSlateNotificationManager::Get().QueueNotification(Info);
 }

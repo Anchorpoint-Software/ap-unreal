@@ -132,6 +132,10 @@ private:
 	 */
 	void OnFakeAnchorpointCliMessage(const TArray<FString>& Params, UWorld* InWorld, FOutputDevice& Ar);
 	/**
+	 * Displays a toast message indicating the connection state
+	 */
+	void ToastConnectionState(bool bConnected);
+	/**
 	 * The process that is running the Anchorpoint CLI connect command
 	 */
 	TSharedPtr<FAnchorpointCliProcess> Process = nullptr;

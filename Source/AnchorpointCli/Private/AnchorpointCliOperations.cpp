@@ -7,6 +7,9 @@
 #include <Dom/JsonValue.h>
 #include <Framework/Notifications/NotificationManager.h>
 #include <Widgets/Notifications/SNotificationList.h>
+#include <ISourceControlModule.h>
+#include <ISourceControlProvider.h>
+#include <SourceControlOperations.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
@@ -304,6 +307,17 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
 		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
 
+		// Note: In case we detach the process early, we will queue a status update at the end of the push.
+		// This is particularly important when the CLI is not connected because we won't receive any status updates.
+		InProcess->OnProcessEnded.AddLambda([]()
+		{
+			AsyncTask(ENamedThreads::GameThread,
+			          []
+			          {
+				          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), {}, EConcurrency::Asynchronous);
+			          });
+		});
+
 		return true;
 	}
 
@@ -323,7 +337,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 		SubmitParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
-	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *InMessage));
+	FString EscapedMessage = InMessage;
+	EscapedMessage.ReplaceInline(TEXT("\r\n"), TEXT(R"(\\\r\\\n)"));
+	SubmitParams.Add(FString::Printf(TEXT("--message \"%s\""), *EscapedMessage));
 
 	FString SubmitCommand = FString::Join(SubmitParams, TEXT(" "));
 
@@ -418,40 +434,42 @@ void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<F
 		          // So in order to simplify the parsing of the output, we clear it.
 		          Process->ClearStdErrData();
 
-		          Process->OnProcessUpdated.AddLambda([Process, NotificationHandle, NotificationData]()
+		          Process->OnProcessUpdated.AddLambda([Process, NotificationData]()
 		          {
 			          FString StdErrString;
 			          TArray<uint8> StdErrBinary;
 			          Process->GetStdErrData(StdErrString, StdErrBinary);
+			          Process->ClearStdErrData();
 
 			          TSharedPtr<FJsonObject> JsonObject;
 			          TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(StdErrString);
-			          if (FJsonSerializer::Deserialize(JsonReader, JsonObject) && JsonObject.IsValid())
+			          if (!FJsonSerializer::Deserialize(JsonReader, JsonObject) || !JsonObject.IsValid())
 			          {
-				          FString ProgressText;
-				          JsonObject->TryGetStringField(TEXT("progress-text"), ProgressText);
-
-				          int ProgressValue = 0;
-				          JsonObject->TryGetNumberField(TEXT("progress-value"), ProgressValue);
-
-				          NotificationData->Message = ProgressText;
-				          NotificationData->Progress = ProgressValue;
+				          return;
 			          }
 
-			          AsyncTask(ENamedThreads::GameThread,
-			                    [=]()
-			                    {
-				                    FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, NotificationData->Progress, 0, FText::FromString(NotificationData->Message));
-			                    });
+			          FString ProgressText;
+			          JsonObject->TryGetStringField(TEXT("progress-text"), ProgressText);
 
-			          Process->ClearStdErrData();
+			          int ProgressValue = 0;
+			          JsonObject->TryGetNumberField(TEXT("progress-value"), ProgressValue);
+
+			          NotificationData->Message = ProgressText;
+			          NotificationData->Progress = ProgressValue;
 		          });
 
-		          Process->OnProcessEnded.AddLambda([NotificationHandle, FinishText]()
+		          FDelegateHandle PostTickHandle = FSlateApplication::Get().OnPostTick().AddLambda([NotificationHandle, NotificationData](float DeltaTime)
+		          {
+			          FSlateNotificationManager::Get().UpdateProgressNotification(NotificationHandle, NotificationData->Progress, 0, FText::FromString(NotificationData->Message));
+		          });
+
+		          Process->OnProcessEnded.AddLambda([NotificationHandle, PostTickHandle, FinishText]()
 		          {
 			          AsyncTask(ENamedThreads::GameThread,
-			                    [NotificationHandle, FinishText]()
+			                    [NotificationHandle, PostTickHandle, FinishText]()
 			                    {
+				                    FSlateApplication::Get().OnPostTick().Remove(PostTickHandle);
+
 				                    FSlateNotificationManager::Get().CancelProgressNotification(NotificationHandle);
 
 				                    FNotificationInfo* Info = new FNotificationInfo(FinishText);
