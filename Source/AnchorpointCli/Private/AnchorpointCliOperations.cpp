@@ -7,6 +7,9 @@
 #include <Dom/JsonValue.h>
 #include <Framework/Notifications/NotificationManager.h>
 #include <Widgets/Notifications/SNotificationList.h>
+#include <ISourceControlModule.h>
+#include <ISourceControlProvider.h>
+#include <SourceControlOperations.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
@@ -303,6 +306,11 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Background push started.");
 		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
 		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
+
+		InProcess->OnProcessEnded.AddLambda([]()
+		{
+			ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), {}, EConcurrency::Asynchronous);
+		});
 
 		return true;
 	}
