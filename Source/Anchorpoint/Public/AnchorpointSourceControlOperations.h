@@ -57,6 +57,7 @@ public:
 	TArray<FAnchorpointSourceControlState> States;
 
 	TMap<FString, TAnchorpointSourceControlHistory> Histories;
+	TMap<FString, FAnchorpointConflictStatus> Conflicts;
 };
 
 class FAnchorpointAddWorker final : public IAnchorpointSourceControlWorker

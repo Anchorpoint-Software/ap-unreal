@@ -382,6 +382,37 @@ TValueOrError<FAnchorpointHistory, FString> AnchorpointCliOperations::GetHistory
 	return MakeValue(History);
 }
 
+TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::GetConflictStatus(const FString& InFile)
+{
+	//Note: This command is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
+	FString PathToFile = InFile;
+	FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
+
+	TArray<FString> ConflictParams;
+	ConflictParams.Add(TEXT("ls-files"));
+	ConflictParams.Add(TEXT("--unmerged"));
+	ConflictParams.Add(PathToFile);
+
+	FString ConflictCommand = FString::Join(ConflictParams, TEXT(" "));
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(ConflictCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	TArray<FString> OutputLines;
+	ProcessOutput.StdOutOutput.ParseIntoArray(OutputLines, TEXT("\n"), true);
+	if (!ensureMsgf(OutputLines.Num() == 3, TEXT("git ls-files for a single file should produce exactly 3 lines")))
+	{
+		return MakeError(TEXT("Failed to parse conflict status"));
+	}
+
+	FAnchorpointConflictStatus Result = {OutputLines};
+	return MakeValue(Result);
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination)
 {
 	TArray<FString> DownloadParameters;

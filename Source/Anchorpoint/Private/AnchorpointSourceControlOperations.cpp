@@ -340,6 +340,15 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 		}
 	}
 
+	for (auto State : States)
+	{
+		if (State.State == EAnchorpointState::Conflicted)
+		{
+			auto ConflictResult = AnchorpointCliOperations::GetConflictStatus(State.LocalFilename);
+			Conflicts.Add(State.LocalFilename, MoveTemp(ConflictResult.GetValue()));
+		}
+	}
+
 	return InCommand.bCommandSuccessful;
 }
 
@@ -354,6 +363,16 @@ bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(History.Key);
 		State->History = History.Value;
 		State->TimeStamp = FDateTime::Now();
+		bUpdated = true;
+	}
+
+	for (const auto& Conflict : Conflicts)
+	{
+		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(Conflict.Key);
+		State->PendingResolveInfo.BaseFile = Conflict.Value.CommonAncestorFilename;
+		State->PendingResolveInfo.BaseRevision = Conflict.Value.CommonAncestorFileId;
+		State->PendingResolveInfo.RemoteFile = Conflict.Value.RemoteFilename;
+		State->PendingResolveInfo.RemoteRevision = Conflict.Value.RemoteFileId;
 		bUpdated = true;
 	}
 

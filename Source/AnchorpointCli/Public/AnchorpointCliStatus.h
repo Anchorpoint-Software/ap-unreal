@@ -80,3 +80,42 @@ struct ANCHORPOINTCLI_API FAnchorpointHistoryEntry
 };
 
 using FAnchorpointHistory = TArray<FAnchorpointHistoryEntry>;
+
+/**
+ * Copy of FGitConflictStatusParser for Anchorpoint
+ * 
+ * Extract the status of a unmerged (conflict) file
+ *
+ * Example output of git ls-files --unmerged Content/Blueprints/BP_Test.uasset
+100644 d9b33098273547b57c0af314136f35b494e16dcb 1	Content/Blueprints/BP_Test.uasset
+100644 a14347dc3b589b78fb19ba62a7e3982f343718bc 2	Content/Blueprints/BP_Test.uasset
+100644 f3137a7167c840847cd7bd2bf07eefbfb2d9bcd2 3	Content/Blueprints/BP_Test.uasset
+ *
+ * 1: The "common ancestor" of the file (the version of the file that both the current and other branch originated from).
+ * 2: The version from the current branch (the master branch in this case).
+ * 3: The version from the other branch (the test branch)
+ */
+class ANCHORPOINTCLI_API FAnchorpointConflictStatus
+{
+public:
+	/** Parse the unmerge status: extract the base SHA1 identifier of the file */
+	FAnchorpointConflictStatus(const TArray<FString>& InResults)
+	{
+		const FString& CommonAncestor = InResults[0]; // 1: The common ancestor of merged branches
+		CommonAncestorFileId = CommonAncestor.Mid(7, 40);
+		CommonAncestorFilename = CommonAncestor.Right(50);
+
+		if (ensure(InResults.IsValidIndex(2)))
+		{
+			const FString& RemoteBranch = InResults[2]; // 1: The common ancestor of merged branches
+			RemoteFileId = RemoteBranch.Mid(7, 40);
+			RemoteFilename = RemoteBranch.Right(50);
+		}
+	}
+
+	FString CommonAncestorFileId; ///< SHA1 Id of the file (warning: not the commit Id)
+	FString RemoteFileId; ///< SHA1 Id of the file (warning: not the commit Id)
+
+	FString CommonAncestorFilename;
+	FString RemoteFilename;
+};
