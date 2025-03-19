@@ -307,9 +307,15 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
 		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
 
+		// Note: In case we detach the process early, we will queue a status update at the end of the push.
+		// This is particularly important when the CLI is not connected because we won't receive any status updates.
 		InProcess->OnProcessEnded.AddLambda([]()
 		{
-			ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), {}, EConcurrency::Asynchronous);
+			AsyncTask(ENamedThreads::GameThread,
+			          []
+			          {
+				          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), {}, EConcurrency::Asynchronous);
+			          });
 		});
 
 		return true;
