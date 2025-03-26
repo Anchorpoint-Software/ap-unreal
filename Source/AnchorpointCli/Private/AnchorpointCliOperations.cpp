@@ -89,6 +89,13 @@ FString AnchorpointCliOperations::ConvertApInternalToFull(const FString& InRelat
 	return Path;
 }
 
+FString AnchorpointCliOperations::ConvertFullPathToProjectRelative(const FString& InPath)
+{
+	FString Result = InPath;
+	FPaths::MakePathRelativeTo(Result, *FPaths::ProjectDir());
+	return Result;
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
@@ -279,10 +286,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 
 	for (const FString& File : InFiles)
 	{
-		//Note: Deleting files is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
-		FString PathToFile = File;
-		FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *PathToFile);
+		//Note: This will run as a git command so we need project relative paths 
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *ConvertFullPathToProjectRelative(File));
 	}
 
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(CheckoutCommand);
@@ -384,14 +389,12 @@ TValueOrError<FAnchorpointHistory, FString> AnchorpointCliOperations::GetHistory
 
 TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::GetConflictStatus(const FString& InFile)
 {
-	//Note: This command is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
-	FString PathToFile = InFile;
-	FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
-
 	TArray<FString> ConflictParams;
 	ConflictParams.Add(TEXT("ls-files"));
 	ConflictParams.Add(TEXT("--unmerged"));
-	ConflictParams.Add(ConvertFullPathToApInternal(PathToFile));
+
+	//Note: This will run as a git command so we need project relative paths 
+	ConflictParams.Add(ConvertFullPathToProjectRelative(InFile));
 
 	FString ConflictCommand = FString::Join(ConflictParams, TEXT(" "));
 
@@ -424,7 +427,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 	TArray<FString> DownloadParameters;
 	DownloadParameters.Add(TEXT("cat-file"));
 	DownloadParameters.Add(FString::Printf(TEXT("--filters %s"), *InCommitId));
-	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToApInternal(InFile)));
+
+	//Note: This will run as a git command so we need project relative paths 
+	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToProjectRelative(InFile)));
 
 	FString DownloadCommand = FString::Join(DownloadParameters, TEXT(" "));
 
@@ -456,10 +461,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::MarkConflictSolved(con
 
 	for (const FString& File : InFiles)
 	{
-		//Note: Deleting files is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
-		FString PathToFile = File;
-		FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
-		ResolveCommand.Appendf(TEXT(" '%s'"), *PathToFile);
+		//Note: This will run as a git command so we need project relative paths 
+		ResolveCommand.Appendf(TEXT(" '%s'"), *ConvertFullPathToProjectRelative(File));
 	}
 
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(ResolveCommand);

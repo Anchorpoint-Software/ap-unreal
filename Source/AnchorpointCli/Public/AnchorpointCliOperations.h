@@ -15,6 +15,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API bool IsUnderRepositoryPath(const FString& InPath);
 	ANCHORPOINTCLI_API FString ConvertFullPathToApInternal(const FString& InFullPath);
 	ANCHORPOINTCLI_API FString ConvertApInternalToFull(const FString& InRelativePath);
+	ANCHORPOINTCLI_API FString ConvertFullPathToProjectRelative(const FString& InPath);
 
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
 
