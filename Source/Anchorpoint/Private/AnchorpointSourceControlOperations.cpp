@@ -531,3 +531,36 @@ bool FAnchorpointDownloadFileWorker::UpdateStates() const
 	// Downloading a file from the server will never affect the cached file states.
 	return false;
 }
+
+FName FAnchorpointResolveWorker::GetName() const
+{
+	return "Resolve";
+}
+
+bool FAnchorpointResolveWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointResolveWorker::Execute);
+
+	TValueOrError<FString, FString> ResolveResult = AnchorpointCliOperations::MarkConflictSolved(InCommand.Files);
+
+	if (ResolveResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(ResolveResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = ResolveResult.HasValue();
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointResolveWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointResolveWorker::UpdateStates);
+
+	for (const FString& Filename : UpdatedFiles)
+	{
+		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(Filename);
+		State->PendingResolveInfo = {};
+	}
+
+	return UpdatedFiles.Num() > 0;
+}

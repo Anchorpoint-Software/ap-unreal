@@ -407,13 +407,9 @@ TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::Get
 
 	if (OutputLines.Num() != 3)
 	{
-		FPlatformProcess::Sleep(0.1f);
-		return GetConflictStatus(InFile);
-	}
-	
-	if (!ensureMsgf(OutputLines.Num() == 3, TEXT("git ls-files for a single file should produce exactly 3 lines")))
-	{
-		return MakeError(TEXT("Failed to parse conflict status"));
+		// Not output reported means no conflict
+		FAnchorpointConflictStatus Result = {};
+		return MakeValue(Result);
 	}
 
 	FAnchorpointConflictStatus Result = {OutputLines};
@@ -449,6 +445,28 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 	if (!bWriteSuccess)
 	{
 		return MakeError(FString::Printf(TEXT("Failed to write file to %s"), *Destination));
+	}
+
+	return MakeValue(TEXT("Success"));
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::MarkConflictSolved(const TArray<FString>& InFiles)
+{
+	FString ResolveCommand = TEXT("add");
+
+	for (const FString& File : InFiles)
+	{
+		//Note: Deleting files is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
+		FString PathToFile = File;
+		FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
+		ResolveCommand.Appendf(TEXT(" '%s'"), *PathToFile);
+	}
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(ResolveCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
 	}
 
 	return MakeValue(TEXT("Success"));

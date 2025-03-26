@@ -55,7 +55,7 @@ TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::FindHistoryRe
 
 TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetCurrentRevision() const
 {
-	
+	return nullptr;
 }
 
 #if UE_VERSION_OLDER_THAN(5, 3, 0)

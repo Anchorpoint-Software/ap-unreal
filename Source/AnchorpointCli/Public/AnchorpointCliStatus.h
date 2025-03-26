@@ -98,6 +98,8 @@ using FAnchorpointHistory = TArray<FAnchorpointHistoryEntry>;
 class ANCHORPOINTCLI_API FAnchorpointConflictStatus
 {
 public:
+	FAnchorpointConflictStatus() = default;
+	
 	FAnchorpointConflictStatus(const TArray<FString>& InResults)
 	{
 		ParseLine(InResults[0], CommonAncestorFilename, CommonAncestorFileId);

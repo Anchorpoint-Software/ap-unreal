@@ -104,3 +104,14 @@ class FAnchorpointDownloadFileWorker final : public IAnchorpointSourceControlWor
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
 };
+
+class FAnchorpointResolveWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray< FString > UpdatedFiles;
+};
