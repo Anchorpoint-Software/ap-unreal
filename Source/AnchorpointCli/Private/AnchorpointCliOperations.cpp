@@ -335,6 +335,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 	TArray<FString> SubmitParams;
 	SubmitParams.Add(TEXT("sync"));
+	SubmitParams.Add(TEXT("--noProjectSaved"));
 	SubmitParams.Add(TEXT("--files"));
 
 	for (const FString& File : InFiles)
