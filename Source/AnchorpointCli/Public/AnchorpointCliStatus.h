@@ -98,24 +98,25 @@ using FAnchorpointHistory = TArray<FAnchorpointHistoryEntry>;
 class ANCHORPOINTCLI_API FAnchorpointConflictStatus
 {
 public:
-	/** Parse the unmerge status: extract the base SHA1 identifier of the file */
 	FAnchorpointConflictStatus(const TArray<FString>& InResults)
 	{
-		const FString& CommonAncestor = InResults[0]; // 1: The common ancestor of merged branches
-		CommonAncestorFileId = CommonAncestor.Mid(7, 40);
-		CommonAncestorFilename = CommonAncestor.Right(50);
-
-		if (ensure(InResults.IsValidIndex(2)))
-		{
-			const FString& RemoteBranch = InResults[2]; // 1: The common ancestor of merged branches
-			RemoteFileId = RemoteBranch.Mid(7, 40);
-			RemoteFilename = RemoteBranch.Right(50);
-		}
+		ParseLine(InResults[0], CommonAncestorFilename, CommonAncestorFileId);
+		ParseLine(InResults[2], RemoteFilename, RemoteFileId);
 	}
 
-	FString CommonAncestorFileId; ///< SHA1 Id of the file (warning: not the commit Id)
-	FString RemoteFileId; ///< SHA1 Id of the file (warning: not the commit Id)
+	void ParseLine(FString Line, FString& OutFilename, FString& OutFileId)
+	{
+		Line.ReplaceInline(TEXT("\t"), TEXT(" "));
 
+		TArray<FString> Elements;
+		Line.ParseIntoArray(Elements, TEXT(" "), true);
+		OutFileId = Elements[1];
+		OutFilename = Elements[3];
+	}
+
+	FString CommonAncestorFileId;
 	FString CommonAncestorFilename;
+
 	FString RemoteFilename;
+	FString RemoteFileId;
 };

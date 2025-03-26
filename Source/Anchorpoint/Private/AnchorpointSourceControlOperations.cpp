@@ -344,7 +344,7 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 	{
 		if (State.State == EAnchorpointState::Conflicted)
 		{
-			auto ConflictResult = AnchorpointCliOperations::GetConflictStatus(State.LocalFilename);
+			TValueOrError<FAnchorpointConflictStatus, FString> ConflictResult = AnchorpointCliOperations::GetConflictStatus(State.LocalFilename);
 			Conflicts.Add(State.LocalFilename, MoveTemp(ConflictResult.GetValue()));
 		}
 	}
@@ -482,4 +482,52 @@ bool FAnchorpointCheckInWorker::UpdateStates() const
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::UpdateStates);
 
 	return true;
+}
+
+FName FAnchorpointDownloadFileWorker::GetName() const
+{
+	return "DownloadFile";
+}
+
+bool FAnchorpointDownloadFileWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDownloadFileWorker::Execute);
+
+	TSharedRef<FDownloadFile> Operation = StaticCastSharedRef<FDownloadFile>(InCommand.Operation);
+	const FString TargetDirectory = Operation->GetTargetDirectory();
+
+	if (TargetDirectory.IsEmpty())
+	{
+		// Download and store the files as blobs in memory that the caller can access as they wish
+		checkNoEntry();
+	}
+	else
+	{
+		// Downloading the files directly to a target directory
+		for (const FString& TargetFilePath : InCommand.Files)
+		{
+			const FString BaseFilename = FPaths::GetBaseFilename(TargetFilePath);
+			const FString TempFilePath = FPaths::CreateTempFilename(*FPaths::ProjectSavedDir(), *BaseFilename.Left(32));
+
+			FString FilePath;
+			FString Commit;
+			TargetFilePath.Split(TEXT("#"), &FilePath, &Commit);
+			AnchorpointCliOperations::DownloadFile(Commit, FilePath, TempFilePath);
+
+			const FString FinalTargetPath = TargetDirectory / FPaths::GetCleanFilename(TargetFilePath);
+			IFileManager::Get().Move(*FinalTargetPath, *TempFilePath);
+		}
+	}
+
+	// TODO: Replace the 'true' here
+	InCommand.bCommandSuccessful = true;
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointDownloadFileWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDownloadFileWorker::UpdateStates);
+
+	// Downloading a file from the server will never affect the cached file states.
+	return false;
 }

@@ -391,7 +391,7 @@ TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::Get
 	TArray<FString> ConflictParams;
 	ConflictParams.Add(TEXT("ls-files"));
 	ConflictParams.Add(TEXT("--unmerged"));
-	ConflictParams.Add(PathToFile);
+	ConflictParams.Add(ConvertFullPathToApInternal(PathToFile));
 
 	FString ConflictCommand = FString::Join(ConflictParams, TEXT(" "));
 
@@ -404,12 +404,22 @@ TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::Get
 
 	TArray<FString> OutputLines;
 	ProcessOutput.StdOutOutput.ParseIntoArray(OutputLines, TEXT("\n"), true);
+
+	if (OutputLines.Num() != 3)
+	{
+		FPlatformProcess::Sleep(0.1f);
+		return GetConflictStatus(InFile);
+	}
+	
 	if (!ensureMsgf(OutputLines.Num() == 3, TEXT("git ls-files for a single file should produce exactly 3 lines")))
 	{
 		return MakeError(TEXT("Failed to parse conflict status"));
 	}
 
 	FAnchorpointConflictStatus Result = {OutputLines};
+	Result.RemoteFilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / Result.RemoteFilename);
+	Result.CommonAncestorFilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / Result.CommonAncestorFilename);
+
 	return MakeValue(Result);
 }
 
@@ -417,8 +427,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 {
 	TArray<FString> DownloadParameters;
 	DownloadParameters.Add(TEXT("cat-file"));
-	DownloadParameters.Add(TEXT("--filters"));
-	DownloadParameters.Add(FString::Printf(TEXT("%s:%s"), *InCommitId, *ConvertFullPathToApInternal(InFile)));
+	DownloadParameters.Add(FString::Printf(TEXT("--filters %s"), *InCommitId));
+	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToApInternal(InFile)));
 
 	FString DownloadCommand = FString::Join(DownloadParameters, TEXT(" "));
 

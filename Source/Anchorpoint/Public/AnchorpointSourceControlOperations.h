@@ -95,3 +95,12 @@ class FAnchorpointCheckInWorker final : public IAnchorpointSourceControlWorker
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
 };
+
+class FAnchorpointDownloadFileWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+};

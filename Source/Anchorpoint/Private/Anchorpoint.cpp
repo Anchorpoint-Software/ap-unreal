@@ -41,6 +41,7 @@ void FAnchorpointModule::StartupModule()
 	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointDeleteWorker>("Delete");
 	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCopyWorker>("Copy");
 	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointCheckInWorker>("CheckIn");
+	AnchorpointSourceControlProvider.RegisterWorker<FAnchorpointDownloadFileWorker>("DownloadFile");
 
 	IModularFeatures::Get().RegisterModularFeature("SourceControl", &AnchorpointSourceControlProvider);
 
