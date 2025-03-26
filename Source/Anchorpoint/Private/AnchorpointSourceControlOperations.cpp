@@ -340,7 +340,7 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 		}
 	}
 
-	for (auto State : States)
+	for (const FAnchorpointSourceControlState& State : States)
 	{
 		if (State.State == EAnchorpointState::Conflicted)
 		{
@@ -366,7 +366,7 @@ bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 		bUpdated = true;
 	}
 
-	for (const auto& Conflict : Conflicts)
+	for (const TTuple<FString, FAnchorpointConflictStatus>& Conflict : Conflicts)
 	{
 		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(Conflict.Key);
 		State->PendingResolveInfo.BaseFile = Conflict.Value.CommonAncestorFilename;
@@ -496,10 +496,12 @@ bool FAnchorpointDownloadFileWorker::Execute(FAnchorpointSourceControlCommand& I
 	TSharedRef<FDownloadFile> Operation = StaticCastSharedRef<FDownloadFile>(InCommand.Operation);
 	const FString TargetDirectory = Operation->GetTargetDirectory();
 
+	InCommand.bCommandSuccessful = true;
+
 	if (TargetDirectory.IsEmpty())
 	{
-		// Download and store the files as blobs in memory that the caller can access as they wish
-		checkNoEntry();
+		UE_LOG(LogAnchorpoint, Error, TEXT("In memory storage not yet supported."));
+		return false;
 	}
 	else
 	{
@@ -512,15 +514,16 @@ bool FAnchorpointDownloadFileWorker::Execute(FAnchorpointSourceControlCommand& I
 			FString FilePath;
 			FString Commit;
 			TargetFilePath.Split(TEXT("#"), &FilePath, &Commit);
-			AnchorpointCliOperations::DownloadFile(Commit, FilePath, TempFilePath);
+
+			TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFile(Commit, FilePath, TempFilePath);
+			InCommand.bCommandSuccessful &= DownloadResult.HasValue();
 
 			const FString FinalTargetPath = TargetDirectory / FPaths::GetCleanFilename(TargetFilePath);
-			IFileManager::Get().Move(*FinalTargetPath, *TempFilePath);
+			const bool bMoveSuccess = IFileManager::Get().Move(*FinalTargetPath, *TempFilePath);
+			InCommand.bCommandSuccessful &= bMoveSuccess;
 		}
 	}
 
-	// TODO: Replace the 'true' here
-	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
 }
 

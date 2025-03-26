@@ -209,11 +209,6 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	Command->Files = AbsoluteFiles;
 	Command->OperationCompleteDelegate = InOperationCompleteDelegate;
 
-	if (InOperation->GetName() == TEXT("DownloadFile"))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Test"));
-	}
-
 	// fire off operation
 	if (InConcurrency == EConcurrency::Synchronous)
 	{
