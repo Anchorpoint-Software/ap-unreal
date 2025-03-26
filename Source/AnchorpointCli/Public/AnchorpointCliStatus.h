@@ -80,3 +80,45 @@ struct ANCHORPOINTCLI_API FAnchorpointHistoryEntry
 };
 
 using FAnchorpointHistory = TArray<FAnchorpointHistoryEntry>;
+
+/**
+ * Copy of FGitConflictStatusParser for Anchorpoint
+ * 
+ * Extract the status of a unmerged (conflict) file
+ *
+ * Example output of git ls-files --unmerged Content/Blueprints/BP_Test.uasset
+100644 d9b33098273547b57c0af314136f35b494e16dcb 1	Content/Blueprints/BP_Test.uasset
+100644 a14347dc3b589b78fb19ba62a7e3982f343718bc 2	Content/Blueprints/BP_Test.uasset
+100644 f3137a7167c840847cd7bd2bf07eefbfb2d9bcd2 3	Content/Blueprints/BP_Test.uasset
+ *
+ * 1: The "common ancestor" of the file (the version of the file that both the current and other branch originated from).
+ * 2: The version from the current branch (the master branch in this case).
+ * 3: The version from the other branch (the test branch)
+ */
+class ANCHORPOINTCLI_API FAnchorpointConflictStatus
+{
+public:
+	FAnchorpointConflictStatus() = default;
+	
+	FAnchorpointConflictStatus(const TArray<FString>& InResults)
+	{
+		ParseLine(InResults[0], CommonAncestorFilename, CommonAncestorFileId);
+		ParseLine(InResults[2], RemoteFilename, RemoteFileId);
+	}
+
+	void ParseLine(FString Line, FString& OutFilename, FString& OutFileId)
+	{
+		Line.ReplaceInline(TEXT("\t"), TEXT(" "));
+
+		TArray<FString> Elements;
+		Line.ParseIntoArray(Elements, TEXT(" "), true);
+		OutFileId = Elements[1];
+		OutFilename = Elements[3];
+	}
+
+	FString CommonAncestorFileId;
+	FString CommonAncestorFilename;
+
+	FString RemoteFilename;
+	FString RemoteFileId;
+};

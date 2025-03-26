@@ -340,6 +340,15 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 		}
 	}
 
+	for (const FAnchorpointSourceControlState& State : States)
+	{
+		if (State.State == EAnchorpointState::Conflicted)
+		{
+			TValueOrError<FAnchorpointConflictStatus, FString> ConflictResult = AnchorpointCliOperations::GetConflictStatus(State.LocalFilename);
+			Conflicts.Add(State.LocalFilename, MoveTemp(ConflictResult.GetValue()));
+		}
+	}
+
 	return InCommand.bCommandSuccessful;
 }
 
@@ -354,6 +363,16 @@ bool FAnchorpointUpdateStatusWorker::UpdateStates() const
 		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(History.Key);
 		State->History = History.Value;
 		State->TimeStamp = FDateTime::Now();
+		bUpdated = true;
+	}
+
+	for (const TTuple<FString, FAnchorpointConflictStatus>& Conflict : Conflicts)
+	{
+		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(Conflict.Key);
+		State->PendingResolveInfo.BaseFile = Conflict.Value.CommonAncestorFilename;
+		State->PendingResolveInfo.BaseRevision = Conflict.Value.CommonAncestorFileId;
+		State->PendingResolveInfo.RemoteFile = Conflict.Value.RemoteFilename;
+		State->PendingResolveInfo.RemoteRevision = Conflict.Value.RemoteFileId;
 		bUpdated = true;
 	}
 
@@ -463,4 +482,88 @@ bool FAnchorpointCheckInWorker::UpdateStates() const
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::UpdateStates);
 
 	return true;
+}
+
+FName FAnchorpointDownloadFileWorker::GetName() const
+{
+	return "DownloadFile";
+}
+
+bool FAnchorpointDownloadFileWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDownloadFileWorker::Execute);
+
+	TSharedRef<FDownloadFile> Operation = StaticCastSharedRef<FDownloadFile>(InCommand.Operation);
+	const FString TargetDirectory = Operation->GetTargetDirectory();
+
+	InCommand.bCommandSuccessful = true;
+
+	if (TargetDirectory.IsEmpty())
+	{
+		UE_LOG(LogAnchorpoint, Error, TEXT("In memory storage not yet supported."));
+		return false;
+	}
+	else
+	{
+		// Downloading the files directly to a target directory
+		for (const FString& TargetFilePath : InCommand.Files)
+		{
+			const FString BaseFilename = FPaths::GetBaseFilename(TargetFilePath);
+			const FString TempFilePath = FPaths::CreateTempFilename(*FPaths::ProjectSavedDir(), *BaseFilename.Left(32));
+
+			FString FilePath;
+			FString Commit;
+			TargetFilePath.Split(TEXT("#"), &FilePath, &Commit);
+
+			TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFile(Commit, FilePath, TempFilePath);
+			InCommand.bCommandSuccessful &= DownloadResult.HasValue();
+
+			const FString FinalTargetPath = TargetDirectory / FPaths::GetCleanFilename(TargetFilePath);
+			const bool bMoveSuccess = IFileManager::Get().Move(*FinalTargetPath, *TempFilePath);
+			InCommand.bCommandSuccessful &= bMoveSuccess;
+		}
+	}
+
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointDownloadFileWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointDownloadFileWorker::UpdateStates);
+
+	// Downloading a file from the server will never affect the cached file states.
+	return false;
+}
+
+FName FAnchorpointResolveWorker::GetName() const
+{
+	return "Resolve";
+}
+
+bool FAnchorpointResolveWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointResolveWorker::Execute);
+
+	TValueOrError<FString, FString> ResolveResult = AnchorpointCliOperations::MarkConflictSolved(InCommand.Files);
+
+	if (ResolveResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(ResolveResult.GetError());
+	}
+
+	InCommand.bCommandSuccessful = ResolveResult.HasValue();
+	return InCommand.bCommandSuccessful;
+}
+
+bool FAnchorpointResolveWorker::UpdateStates() const
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointResolveWorker::UpdateStates);
+
+	for (const FString& Filename : UpdatedFiles)
+	{
+		TSharedRef<FAnchorpointSourceControlState> State = FAnchorpointModule::Get().GetProvider().GetStateInternal(Filename);
+		State->PendingResolveInfo = {};
+	}
+
+	return UpdatedFiles.Num() > 0;
 }

@@ -57,6 +57,7 @@ public:
 	TArray<FAnchorpointSourceControlState> States;
 
 	TMap<FString, TAnchorpointSourceControlHistory> Histories;
+	TMap<FString, FAnchorpointConflictStatus> Conflicts;
 };
 
 class FAnchorpointAddWorker final : public IAnchorpointSourceControlWorker
@@ -93,4 +94,24 @@ class FAnchorpointCheckInWorker final : public IAnchorpointSourceControlWorker
 	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
 	virtual bool UpdateStates() const override;
 	//~ End IAnchorpointSourceControlWorker Interface
+};
+
+class FAnchorpointDownloadFileWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+};
+
+class FAnchorpointResolveWorker final : public IAnchorpointSourceControlWorker
+{
+	//~ Begin IAnchorpointSourceControlWorker Interface
+	virtual FName GetName() const override;
+	virtual bool Execute(FAnchorpointSourceControlCommand& InCommand) override;
+	virtual bool UpdateStates() const override;
+	//~ End IAnchorpointSourceControlWorker Interface
+
+	TArray< FString > UpdatedFiles;
 };

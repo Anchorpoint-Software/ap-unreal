@@ -89,6 +89,13 @@ FString AnchorpointCliOperations::ConvertApInternalToFull(const FString& InRelat
 	return Path;
 }
 
+FString AnchorpointCliOperations::ConvertFullPathToProjectRelative(const FString& InPath)
+{
+	FString Result = InPath;
+	FPaths::MakePathRelativeTo(Result, *FPaths::ProjectDir());
+	return Result;
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
@@ -279,10 +286,8 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 
 	for (const FString& File : InFiles)
 	{
-		//Note: Deleting files is handled via git commands directly, therefore we need the files to be relative to the cwd not git root
-		FString PathToFile = File;
-		FPaths::MakePathRelativeTo(PathToFile, *FPaths::ProjectDir());
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *PathToFile);
+		//Note: This will run as a git command so we need project relative paths 
+		CheckoutCommand.Appendf(TEXT(" '%s'"), *ConvertFullPathToProjectRelative(File));
 	}
 
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(CheckoutCommand);
@@ -382,12 +387,49 @@ TValueOrError<FAnchorpointHistory, FString> AnchorpointCliOperations::GetHistory
 	return MakeValue(History);
 }
 
+TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::GetConflictStatus(const FString& InFile)
+{
+	TArray<FString> ConflictParams;
+	ConflictParams.Add(TEXT("ls-files"));
+	ConflictParams.Add(TEXT("--unmerged"));
+
+	//Note: This will run as a git command so we need project relative paths 
+	ConflictParams.Add(ConvertFullPathToProjectRelative(InFile));
+
+	FString ConflictCommand = FString::Join(ConflictParams, TEXT(" "));
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(ConflictCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
+	}
+
+	TArray<FString> OutputLines;
+	ProcessOutput.StdOutOutput.ParseIntoArray(OutputLines, TEXT("\n"), true);
+
+	if (OutputLines.Num() != 3)
+	{
+		// Not output reported means no conflict
+		FAnchorpointConflictStatus Result = {};
+		return MakeValue(Result);
+	}
+
+	FAnchorpointConflictStatus Result = {OutputLines};
+	Result.RemoteFilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / Result.RemoteFilename);
+	Result.CommonAncestorFilename = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / Result.CommonAncestorFilename);
+
+	return MakeValue(Result);
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination)
 {
 	TArray<FString> DownloadParameters;
 	DownloadParameters.Add(TEXT("cat-file"));
-	DownloadParameters.Add(TEXT("--filters"));
-	DownloadParameters.Add(FString::Printf(TEXT("%s:%s"), *InCommitId, *ConvertFullPathToApInternal(InFile)));
+	DownloadParameters.Add(FString::Printf(TEXT("--filters %s"), *InCommitId));
+
+	//Note: This will run as a git command so we need project relative paths 
+	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToProjectRelative(InFile)));
 
 	FString DownloadCommand = FString::Join(DownloadParameters, TEXT(" "));
 
@@ -408,6 +450,26 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 	if (!bWriteSuccess)
 	{
 		return MakeError(FString::Printf(TEXT("Failed to write file to %s"), *Destination));
+	}
+
+	return MakeValue(TEXT("Success"));
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::MarkConflictSolved(const TArray<FString>& InFiles)
+{
+	FString ResolveCommand = TEXT("add");
+
+	for (const FString& File : InFiles)
+	{
+		//Note: This will run as a git command so we need project relative paths 
+		ResolveCommand.Appendf(TEXT(" '%s'"), *ConvertFullPathToProjectRelative(File));
+	}
+
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(ResolveCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.Error.GetValue());
 	}
 
 	return MakeValue(TEXT("Success"));
