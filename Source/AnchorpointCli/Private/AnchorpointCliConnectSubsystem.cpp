@@ -417,6 +417,7 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 		// otherwise we might lose important information when longer messages are split into multiple parts
 		Process->ClearStdOutData();
 
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Anchorpoint Source Control Provider parsed %s messages"), *LexToString(ParsedMessages->Num()));
 		for (const FAnchorpointConnectMessage& Message : ParsedMessages.GetValue())
 		{
 			HandleMessage(Message);
