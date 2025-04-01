@@ -409,20 +409,18 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 		return;
 	}
 
-	FAnchorpointConnectMessage Message;
-	if (FJsonObjectConverter::JsonObjectStringToUStruct(StringOutput, &Message))
+	TOptional<TArray<FAnchorpointConnectMessage>> ParsedMessages = FAnchorpointConnectMessage::ParseStringToMessages(StringOutput);
+
+	if (ParsedMessages.IsSet())
 	{
-		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
-		for (FString& File : Message.Files)
-		{
-			File = AnchorpointCliOperations::ConvertApInternalToFull(File);
-		}
-
-		HandleMessage(Message);
-
 		// We only clear the stderr data if we successfully parsed the message,
 		// otherwise we might lose important information when longer messages are split into multiple parts
 		Process->ClearStdOutData();
+
+		for (const FAnchorpointConnectMessage& Message : ParsedMessages.GetValue())
+		{
+			HandleMessage(Message);
+		}
 	}
 	else
 	{
