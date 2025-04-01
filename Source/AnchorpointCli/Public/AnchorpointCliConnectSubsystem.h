@@ -25,6 +25,8 @@ struct FAnchorpointConnectMessage
 
 	UPROPERTY()
 	TArray<FString> Files;
+
+	static TOptional<TArray<FAnchorpointConnectMessage>> ParseStringToMessages(const FString& InString);
 };
 
 /**
