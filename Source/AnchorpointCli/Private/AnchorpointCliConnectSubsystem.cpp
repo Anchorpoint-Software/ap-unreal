@@ -13,11 +13,40 @@
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>
 #include <Widgets/Notifications/SNotificationList.h>
+#include <Kismet/KismetStringLibrary.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointCliProcess.h"
+
+TOptional<TArray<FAnchorpointConnectMessage>> FAnchorpointConnectMessage::ParseStringToMessages(const FString& InString)
+{
+	TArray<FAnchorpointConnectMessage> Messages;
+	TArray<FString> StringMessages = UKismetStringLibrary::ParseIntoArray(InString, TEXT("\n"), true);
+	for (const FString& StringMessage : StringMessages)
+	{
+		FAnchorpointConnectMessage Message;
+		if (FJsonObjectConverter::JsonObjectStringToUStruct(StringMessage, &Message))
+		{
+			// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
+			for (FString& File : Message.Files)
+			{
+				File = AnchorpointCliOperations::ConvertApInternalToFull(File);
+			}
+
+			Messages.Add(Message);
+		}
+		else
+		{
+			// NOTE: If any of the messages fails to parse, we abort the whole operation.
+			// This is done to prevent deletion of the output data when it contains invalid data.
+			return {};
+		}
+	}
+
+	return Messages;
+}
 
 TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus() const
 {
@@ -380,20 +409,19 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 		return;
 	}
 
-	FAnchorpointConnectMessage Message;
-	if (FJsonObjectConverter::JsonObjectStringToUStruct(StringOutput, &Message))
+	TOptional<TArray<FAnchorpointConnectMessage>> ParsedMessages = FAnchorpointConnectMessage::ParseStringToMessages(StringOutput);
+
+	if (ParsedMessages.IsSet())
 	{
-		// Anchorpoint CLI sends relative paths, so we need to convert them to full paths
-		for (FString& File : Message.Files)
-		{
-			File = AnchorpointCliOperations::ConvertApInternalToFull(File);
-		}
-
-		HandleMessage(Message);
-
 		// We only clear the stderr data if we successfully parsed the message,
 		// otherwise we might lose important information when longer messages are split into multiple parts
 		Process->ClearStdOutData();
+
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Anchorpoint Source Control Provider parsed %s messages"), *LexToString(ParsedMessages->Num()));
+		for (const FAnchorpointConnectMessage& Message : ParsedMessages.GetValue())
+		{
+			HandleMessage(Message);
+		}
 	}
 	else
 	{

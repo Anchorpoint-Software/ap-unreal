@@ -6,7 +6,7 @@
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(AnchorpointCliOperationsTests, "Anchorpoint.CliOperations", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
-bool AnchorpointCliOperationsTests::RunTest(const FString& Parameters)
+bool AnchorpointCliOperationsTests::RunTest(const FString& InParameters)
 {
 	auto CompareCommands = [this](const FString& InCommand)
 	{
