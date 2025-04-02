@@ -308,8 +308,8 @@ bool IsSubmitFinished(const TSharedRef<FAnchorpointCliProcess>& InProcess, const
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Special log messages found. Marking submit as finished early."));
 
-		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Background push started.");
-		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed.");
+		const FText ProgressText = NSLOCTEXT("Anchorpoint", "CheckInSuccess", "Background push started");
+		const FText FinishText = NSLOCTEXT("Anchorpoint", "CheckInFinish", "Background push completed");
 		AnchorpointCliOperations::MonitorProcessWithNotification(InProcess, ProgressText, FinishText);
 
 		// Note: In case we detach the process early, we will queue a status update at the end of the push.
