@@ -111,7 +111,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(UserCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
@@ -160,7 +160,7 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(StatusCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	TSharedPtr<FJsonObject> Object = ProcessOutput.OutputAsJsonObject();
@@ -198,7 +198,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 
 	if (!AutoLockSetOutput.DidSucceed())
 	{
-		return MakeError(AutoLockSetOutput.Error.GetValue());
+		return MakeError(AutoLockSetOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -224,7 +224,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -248,7 +248,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::UnlockFiles(const TArr
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -272,7 +272,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Revert(const TArray<FS
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -294,7 +294,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -356,7 +356,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));
@@ -379,7 +379,7 @@ TValueOrError<FAnchorpointHistory, FString> AnchorpointCliOperations::GetHistory
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	TArray<TSharedPtr<FJsonValue>> HistoryEntries = ProcessOutput.OutputAsJsonArray();
@@ -403,7 +403,7 @@ TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::Get
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	TArray<FString> OutputLines;
@@ -438,7 +438,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FSt
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	TArray<uint8> BinaryResult = ProcessOutput.StdOutBinary;
@@ -470,7 +470,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::MarkConflictSolved(con
 
 	if (!ProcessOutput.DidSucceed())
 	{
-		return MakeError(ProcessOutput.Error.GetValue());
+		return MakeError(ProcessOutput.GetBestError());
 	}
 
 	return MakeValue(TEXT("Success"));

@@ -30,10 +30,6 @@ struct FCliResult
 	 */
 	TOptional<int> ReturnCode;
 	/**
-	 * Error encountered while running the command, if any
-	 */
-	TOptional<FString> Error;
-	/**
 	 * Helper function to determine if the command was successfully run
 	 * Note: This does not mean the command itself was successful, only that the process completed successfully
 	 */
@@ -46,6 +42,14 @@ struct FCliResult
 	 * Helper function to retrieve the parsed output as an array of JSON objects
 	 */
 	TArray<TSharedPtr<FJsonValue>> OutputAsJsonArray() const;
+	/**
+	 * Gets the most relevant error message possible, in order:
+	 * 1. If the CLI printed a message with "error" -> returns the value
+	 * 2. If the CLI exited with a non-0 code -> returns error for exit code
+	 *
+	 * Otherwise, empty string
+	 */
+	FString GetBestError() const;
 };
 
 /**
