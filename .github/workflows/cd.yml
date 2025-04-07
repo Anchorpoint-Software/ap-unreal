@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - 'v*'
-    branches:
-      - '*' # Trigger on any branch
 
 jobs:
   plugin-cd:
