@@ -8,4 +8,6 @@ on:
 jobs:
   plugin-cd:
     uses:  outoftheboxplugins/BuildMachines/.github/workflows/release-to-github.yml@master
+    with:
+      plugin_name: "Anchorpoint"
     secrets: inherit
