@@ -126,14 +126,10 @@ FCliResult FAnchorpointCliProcess::GetResult()
 {
 	FCliResult Result;
 	Result.ReturnCode = ReturnCode;
-	
+
 	GetStdOutData(Result.StdOutOutput, Result.StdOutBinary);
 	GetStdErrData(Result.StdErrOutput, Result.StdErrBinary);
 
-	if (ReturnCode.IsSet() && ReturnCode.GetValue() != 0)
-	{
-		Result.Error = FString::Printf(TEXT("Process failed with code %d"), ReturnCode.GetValue());
-	}
 	return Result;
 }
 

@@ -10,7 +10,7 @@
 
 bool FCliResult::DidSucceed() const
 {
-	return !Error.IsSet();
+	return ReturnCode.IsSet() && ReturnCode.GetValue() == 0;
 }
 
 TSharedPtr<FJsonObject> FCliResult::OutputAsJsonObject() const
@@ -29,6 +29,29 @@ TArray<TSharedPtr<FJsonValue>> FCliResult::OutputAsJsonArray() const
 	FJsonSerializer::Deserialize(Reader, JsonArray);
 
 	return JsonArray;
+}
+
+FString FCliResult::GetBestError() const
+{
+	TSharedPtr<FJsonObject> JsonOutput = OutputAsJsonObject();
+
+	if (JsonOutput.IsValid())
+	{
+		FString LastError;
+		bool bHasErrorField = JsonOutput->TryGetStringField(TEXT("error"), LastError);
+
+		if (bHasErrorField)
+		{
+			return LastError;
+		}
+	}
+
+	if (ReturnCode.IsSet())
+	{
+		return FString::Printf(TEXT("Process failed with code %d"), ReturnCode.GetValue());
+	}
+
+	return {};
 }
 
 FCliParameters::FCliParameters(const FString& InCommand)

@@ -205,6 +205,17 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 
 	if (LockResult.HasError())
 	{
+		FString LockError = LockResult.GetError();
+
+		AsyncTask(ENamedThreads::GameThread,
+		          [LockError]()
+		          {
+			          FText Title = NSLOCTEXT("Anchorpoint", "CheckoutError", "Unable to Check Out From Revision Control!");
+			          FText Message = FText::FromString(LockError);
+
+			          FMessageDialog::Open(EAppMsgType::Ok, Message, Title);
+		          });
+
 		InCommand.ErrorMessages.Add(LockResult.GetError());
 	}
 
