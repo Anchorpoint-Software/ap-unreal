@@ -1,0 +1,15 @@
+name: Plugin Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - '*' # Trigger on any branch
+
+jobs:
+  plugin-cd:
+    uses:  outoftheboxplugins/BuildMachines/.github/workflows/release-to-github.yml@master
+    with:
+      plugin_name: "Anchorpoint"
+    secrets: inherit
