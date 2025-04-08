@@ -36,7 +36,7 @@ To build the plugin from source in your project:
 2. Run in your terminal:
 ```
 cd `Plugins`
-git clone https://github.com/configcat/unreal-engine-sdk.git
+git clone git@github.com:Anchorpoint-Software/ap-unreal.git
 ```
 
 3. Right-click the `.uproject` file and select `Generate Visual Studio project files`.
