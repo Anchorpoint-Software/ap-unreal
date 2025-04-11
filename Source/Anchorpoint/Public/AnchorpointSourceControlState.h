@@ -48,7 +48,7 @@ public:
 	FString OtherUserCheckedOut;
 	EAnchorpointState State = EAnchorpointState::Unknown;
 
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 	FResolveInfo PendingResolveInfo;
 #endif
 
@@ -62,7 +62,7 @@ private:
 #if UE_VERSION_OLDER_THAN(5, 3, 0)
 	virtual TSharedPtr<ISourceControlRevision> GetBaseRevForMerge() const override;
 #endif
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 	virtual FResolveInfo GetResolveInfo() const override;
 #endif
 #if SOURCE_CONTROL_WITH_SLATE

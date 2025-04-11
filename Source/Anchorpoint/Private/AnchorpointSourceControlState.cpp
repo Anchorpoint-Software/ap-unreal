@@ -65,7 +65,7 @@ TSharedPtr<ISourceControlRevision> FAnchorpointSourceControlState::GetBaseRevFor
 }
 #endif
 
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 
 ISourceControlState::FResolveInfo FAnchorpointSourceControlState::GetResolveInfo() const
 {

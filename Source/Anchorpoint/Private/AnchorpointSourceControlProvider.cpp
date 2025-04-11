@@ -67,7 +67,7 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 }
 
 
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 TMap<ISourceControlProvider::EStatus, FString> FAnchorpointSourceControlProvider::GetStatus() const
 {
 	// ToImplement: Here we should fill out as many information points as we can
@@ -237,7 +237,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	return IssueCommand(*Command);
 }
 
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 
 bool FAnchorpointSourceControlProvider::CanExecuteOperation(const FSourceControlOperationRef& InOperation) const
 {

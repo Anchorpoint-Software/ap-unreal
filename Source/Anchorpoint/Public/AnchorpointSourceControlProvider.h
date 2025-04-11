@@ -27,7 +27,7 @@ public:
 	virtual void Close() override;
 	virtual const FName& GetName() const override;
 	virtual FText GetStatusText() const override;
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 	virtual TMap<EStatus, FString> GetStatus() const override;
 #endif
 	virtual bool IsEnabled() const override;
@@ -41,7 +41,7 @@ public:
 	virtual FDelegateHandle RegisterSourceControlStateChanged_Handle(const FSourceControlStateChanged::FDelegate& SourceControlStateChanged) override;
 	virtual void UnregisterSourceControlStateChanged_Handle(FDelegateHandle Handle) override;
 	virtual ECommandResult::Type Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency = EConcurrency::Synchronous, const FSourceControlOperationComplete& InOperationCompleteDelegate = FSourceControlOperationComplete()) override;
-#if UE_VERSION_NEWER_THAN(5, 3, 0)
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 	virtual bool CanExecuteOperation(const FSourceControlOperationRef& InOperation) const override;
 #endif
 	virtual bool CanCancelOperation(const FSourceControlOperationRef& InOperation) const override;
