@@ -29,5 +29,11 @@
 			"LoadingPhase": "Default",
 			"PlatformAllowList": [ "Win64", "Mac" ]
 		}
+	],
+	"Plugins": [
+		{
+			"Name": "EditorScriptingUtilities",
+			"Enabled": true
+		}
 	]
 }
