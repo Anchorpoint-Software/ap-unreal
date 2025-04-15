@@ -526,7 +526,7 @@ bool FAnchorpointDownloadFileWorker::Execute(FAnchorpointSourceControlCommand& I
 			FString Commit;
 			TargetFilePath.Split(TEXT("#"), &FilePath, &Commit);
 
-			TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFile(Commit, FilePath, TempFilePath);
+			TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFileViaCommitId(Commit, FilePath, TempFilePath);
 			InCommand.bCommandSuccessful &= DownloadResult.HasValue();
 
 			const FString FinalTargetPath = TargetDirectory / FPaths::GetCleanFilename(TargetFilePath);

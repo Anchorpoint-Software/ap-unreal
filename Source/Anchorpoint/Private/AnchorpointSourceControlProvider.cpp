@@ -9,6 +9,7 @@
 #include <UObject/ObjectSaveContext.h>
 #include <Logging/MessageLog.h>
 #include <FileHelpers.h>
+#include <Interfaces/IPluginManager.h>
 
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
@@ -62,6 +63,9 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 	{
 		StatusMessages.Add(TEXT("Never synced"));
 	}
+
+	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("Anchorpoint"));
+	StatusMessages.Add(FString::Printf(TEXT("Plugin version: %s"), *Plugin->GetDescriptor().VersionName));
 
 	return FText::FromString(FString::Join(StatusMessages, TEXT("\n")));
 }

@@ -46,7 +46,7 @@ FString FCliResult::GetBestError() const
 		}
 	}
 
-	if (ReturnCode.IsSet())
+	if (ReturnCode.IsSet() && ReturnCode.GetValue() != 0)
 	{
 		return FString::Printf(TEXT("Process failed with code %d"), ReturnCode.GetValue());
 	}
