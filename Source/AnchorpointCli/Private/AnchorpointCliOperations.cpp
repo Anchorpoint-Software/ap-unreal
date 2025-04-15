@@ -426,14 +426,36 @@ TValueOrError<FAnchorpointConflictStatus, FString> AnchorpointCliOperations::Get
 	return MakeValue(Result);
 }
 
-TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination)
+
+TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFileViaCommitId(const FString& InCommitId, const FString& InFile, const FString& Destination)
+{
+	TArray<FString> RevisionParserParameters;
+	RevisionParserParameters.Add(TEXT("rev-parse"));
+	RevisionParserParameters.Add(FString::Printf(TEXT("%s:%s"), *InCommitId, *ConvertFullPathToApInternal(InFile)));
+
+	const FString RevisionParserCommand = FString::Join(RevisionParserParameters, TEXT(" "));
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(RevisionParserCommand);
+
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	const FString OID = ProcessOutput.StdOutOutput;
+	if (OID.IsEmpty())
+	{
+		return MakeError(TEXT("No OID received"));
+	}
+
+	return DownloadFileViaOID(OID, InFile, Destination);
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::DownloadFileViaOID(const FString& InOID, const FString& InFile, const FString& Destination)
 {
 	TArray<FString> DownloadParameters;
 	DownloadParameters.Add(TEXT("cat-file"));
-	DownloadParameters.Add(FString::Printf(TEXT("--filters %s"), *InCommitId));
-
-	//Note: This will run as a git command so we need project relative paths 
-	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToProjectRelative(InFile)));
+	DownloadParameters.Add(FString::Printf(TEXT("--filters %s"), *InOID));
+	DownloadParameters.Add(FString::Printf(TEXT("--path %s"), *ConvertFullPathToApInternal(InFile)));
 
 	FString DownloadCommand = FString::Join(DownloadParameters, TEXT(" "));
 

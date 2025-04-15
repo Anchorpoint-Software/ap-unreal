@@ -36,7 +36,7 @@ bool FAnchorpointSourceControlRevision::Get(FString& InOutFilename, EConcurrency
 		return true;
 	}
 
-	TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFile(CommitId, Filename, InOutFilename);
+	TValueOrError<FString, FString> DownloadResult = AnchorpointCliOperations::DownloadFileViaCommitId(CommitId, Filename, InOutFilename);
 	return DownloadResult.HasValue();
 }
 

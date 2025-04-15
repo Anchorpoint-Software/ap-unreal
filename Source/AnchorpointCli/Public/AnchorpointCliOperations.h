@@ -29,7 +29,8 @@ namespace AnchorpointCliOperations
 
 	ANCHORPOINTCLI_API TValueOrError<FAnchorpointConflictStatus, FString> GetConflictStatus(const FString& InFile);
 	ANCHORPOINTCLI_API TValueOrError<FAnchorpointHistory, FString> GetHistoryInfo(const FString& InFile);
-	ANCHORPOINTCLI_API TValueOrError<FString, FString> DownloadFile(const FString& InCommitId, const FString& InFile, const FString& Destination);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> DownloadFileViaCommitId(const FString& InCommitId, const FString& InFile, const FString& Destination);
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> DownloadFileViaOID(const FString& InOID, const FString& InFile, const FString& Destination);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> MarkConflictSolved(const TArray<FString>& InFiles);
 
 	ANCHORPOINTCLI_API void MonitorProcessWithNotification(const TSharedRef<FAnchorpointCliProcess>& InProcess, const FText& ProgressText, const FText& FinishText);
