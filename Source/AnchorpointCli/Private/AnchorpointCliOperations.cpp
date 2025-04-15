@@ -354,9 +354,12 @@ TValueOrError<FString, FString> AnchorpointCliOperations::SubmitFiles(TArray<FSt
 
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(Parameters);
 
-	if (!ProcessOutput.DidSucceed())
+	// NOTE: for the submit command, we can't rely on the DidSucceed() as the process will be deatched while LFS uploads,
+	// Therefore no exit code will be available so we will check the output for errors instead.
+	const FString PotentialError = ProcessOutput.GetBestError();
+	if (!PotentialError.IsEmpty())
 	{
-		return MakeError(ProcessOutput.GetBestError());
+		return MakeError(PotentialError);
 	}
 
 	return MakeValue(TEXT("Success"));
