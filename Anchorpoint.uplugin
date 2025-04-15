@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 1,
-	"VersionName": "0.31",
+	"VersionName": "0.0",
 	"FriendlyName": "Anchorpoint",
 	"Description": "Git-based revision control. Connects the Unreal Editor to Anchorpoint's desktop application.",
 	"Category": "Source Control",
