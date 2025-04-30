@@ -10,6 +10,6 @@ jobs:
     uses:  outoftheboxplugins/BuildMachines/.github/workflows/release-to-github.yml@master
     with:
       plugin_name: "Anchorpoint"
-      exclude_pattners: "-x \".github/*\" -x \".git/*\" -x \".gitignore\" -x \".gitattributes\""
+      exclude_patterns: "-x \".github/*\" -x \".git/*\" -x \".gitignore\" -x \".gitattributes\""
 
     secrets: inherit
