@@ -31,11 +31,11 @@ bool UpdateCachedStates(const TArray<FAnchorpointSourceControlState>& InStates)
 	return !InStates.IsEmpty();
 }
 
-bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourceControlState>& OutState)
+bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourceControlState>& OutState, bool bForced)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunUpdateStatus);
 
-	const auto StatusResult = AnchorpointCliOperations::GetStatus(InputPaths);
+	const auto StatusResult = AnchorpointCliOperations::GetStatus(InputPaths, bForced);
 	if (StatusResult.HasError())
 	{
 		return false;
@@ -319,9 +319,10 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointUpdateStatusWorker::Execute);
 
-	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States);
-
 	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
+
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States, Operation->ShouldForceUpdate());
+
 	if (Operation->ShouldUpdateHistory())
 	{
 		for (int32 Index = 0; Index < InCommand.Files.Num(); Index++)

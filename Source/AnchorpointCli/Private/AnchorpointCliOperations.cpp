@@ -128,16 +128,25 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 	return MakeError(TEXT("Could not find current user"));
 }
 
-TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(const TArray<FString>& InFiles)
+TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(const TArray<FString>& InFiles, bool bForced)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+
+	// Any non-forced status update can access the cached status for a faster response if available (even if an update is in progress)
+	if (TOptional<FAnchorpointStatus> CachedStatus = !bForced ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>())
+	{
+		return MakeValue(CachedStatus.GetValue());
+	}
+
+	// NOTE: Lock is needed to prevent multiple threads from updating the status at the same time
 	static FCriticalSection StatusUpdateLock;
 	FScopeLock ScopeLock(&StatusUpdateLock);
 
-	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	if (TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem->GetCachedStatus())
+	if (TOptional<FAnchorpointStatus> CachedStatus = !bForced ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>())
 	{
+		//NOTE: After the lock was acquired, the status may have changed, so it's worth checking again
 		return MakeValue(CachedStatus.GetValue());
 	}
 

@@ -168,11 +168,12 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 
 void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
 {
+	TSharedRef<FUpdateStatus> UpdateRequest = ISourceControlOperation::Create<FUpdateStatus>();
 	TArray<FString> FilesToUpdate;
 	if (bCanUseStatusCache)
 	{
-		// When using status caching, we always want to run the status command for the whole project (no specific files) and clear our cache
-		StatusCache.Reset();
+		// When using status caching, we always want to run a force status command for the whole project (no specific files) and clear our cache
+		UpdateRequest->SetForceUpdate(true);
 	}
 	else
 	{
@@ -180,10 +181,10 @@ void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMes
 	}
 
 	AsyncTask(ENamedThreads::GameThread,
-	          [this, FilesToUpdate]()
+	          [this, UpdateRequest, FilesToUpdate]()
 	          {
 		          UE_LOG(LogAnchorpointCli, Display, TEXT("Update Status requested by Cli Connect"));
-		          ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>(), FilesToUpdate, EConcurrency::Asynchronous);
+		          ISourceControlModule::Get().GetProvider().Execute(UpdateRequest, FilesToUpdate, EConcurrency::Asynchronous);
 	          });
 }
 
