@@ -26,6 +26,8 @@ TOptional<TArray<FAnchorpointConnectMessage>> FAnchorpointConnectMessage::ParseS
 	TArray<FString> StringMessages = UKismetStringLibrary::ParseIntoArray(InString, TEXT("\n"), true);
 	for (const FString& StringMessage : StringMessages)
 	{
+		FScopedCategoryAndVerbosityOverride LogOverride(TEXT("LogJson"), ELogVerbosity::Error);
+
 		FAnchorpointConnectMessage Message;
 		if (FJsonObjectConverter::JsonObjectStringToUStruct(StringMessage, &Message))
 		{
@@ -425,7 +427,7 @@ void UAnchorpointCliConnectSubsystem::OnProcessUpdated()
 	}
 	else
 	{
-		UE_LOG(LogAnchorpointCli, Error, TEXT("Failed to parse message: %s"), *StringOutput);
+		UE_LOG(LogAnchorpointCli, VeryVerbose, TEXT("Failed to parse message: %s"), *StringOutput);
 	}
 }
 
