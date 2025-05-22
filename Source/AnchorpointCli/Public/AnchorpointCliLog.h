@@ -4,4 +4,4 @@
 
 #include <Logging/LogMacros.h>
 
-DECLARE_LOG_CATEGORY_EXTERN(LogAnchorpointCli, VeryVerbose, All)
+DECLARE_LOG_CATEGORY_EXTERN(LogAnchorpointCli, Log, All)
