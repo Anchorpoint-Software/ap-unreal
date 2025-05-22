@@ -10,6 +10,19 @@
 #include "Windows/WindowsHWrapper.h"
 #endif
 
+FString ParseOutputDirect(const TArray<uint8>& RawOutput)
+{
+	FString TestOutput;
+	for (int i = 0; i < RawOutput.Num(); i++)
+	{
+		const TCHAR CurrentChar = RawOutput[i];
+		TestOutput.AppendChar(CurrentChar);
+	}
+	TestOutput.TrimEndInline();
+
+	return TestOutput;
+}
+
 void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 {
 	if (bUseBinaryData)
@@ -21,8 +34,9 @@ void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 	}
 	else
 	{
-		FString NewOutput = FPlatformProcess::ReadPipe(InReadPipe);
-		NewOutput.TrimEndInline();
+		TArray<uint8> RawOutput;
+		FPlatformProcess::ReadPipeToArray(InReadPipe, RawOutput);
+		const FString NewOutput = ParseOutputDirect(RawOutput);
 
 		if (NewOutput.IsEmpty())
 		{
