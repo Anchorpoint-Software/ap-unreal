@@ -359,8 +359,6 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("project dirty"))
 	{
-		StatusCache.Reset();
-
 		RefreshStatus(Message);
 	}
 	else
