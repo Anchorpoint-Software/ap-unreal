@@ -77,7 +77,7 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 	{
 		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
 		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
-		FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
+		FFileHelper::SaveStringToFile(IniConfigContent, *IniConfigFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
 		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
