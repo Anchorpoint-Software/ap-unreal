@@ -70,7 +70,14 @@ FAnchorpointCliProcess::~FAnchorpointCliProcess()
 
 bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 {
-	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
+	const FAnchorpointCliModule* Module = FAnchorpointCliModule::GetPtr();
+	if (!Module)
+	{
+		UE_LOG(LogAnchorpointCli, Error, TEXT("AnchorpointCli module is unavailable. Cannot launch CLI process."));
+		return false;
+	}
+
+	const FString CommandLineExecutable = Module->GetCliPath();
 	FString CommandLineArgs;
 
 	if (InParameters.bUseIniFile)

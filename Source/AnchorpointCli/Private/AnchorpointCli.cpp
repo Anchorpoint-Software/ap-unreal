@@ -31,6 +31,11 @@ FAnchorpointCliModule& FAnchorpointCliModule::Get()
 	return FModuleManager::LoadModuleChecked<FAnchorpointCliModule>("AnchorpointCli");
 }
 
+FAnchorpointCliModule* FAnchorpointCliModule::GetPtr()
+{
+	return FModuleManager::GetModulePtr<FAnchorpointCliModule>("AnchorpointCli");
+}
+
 FString FAnchorpointCliModule::GetInstallFolder() const
 {
 	static FString InstallDirectory;
