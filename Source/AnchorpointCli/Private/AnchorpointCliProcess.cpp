@@ -10,6 +10,19 @@
 #include "Windows/WindowsHWrapper.h"
 #endif
 
+FString ParseOutputDirect(const TArray<uint8>& RawOutput)
+{
+	FString TestOutput;
+	for (int i = 0; i < RawOutput.Num(); i++)
+	{
+		const TCHAR CurrentChar = RawOutput[i];
+		TestOutput.AppendChar(CurrentChar);
+	}
+	TestOutput.TrimEndInline();
+
+	return TestOutput;
+}
+
 void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 {
 	if (bUseBinaryData)
@@ -21,8 +34,9 @@ void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 	}
 	else
 	{
-		FString NewOutput = FPlatformProcess::ReadPipe(InReadPipe);
-		NewOutput.TrimEndInline();
+		TArray<uint8> RawOutput;
+		FPlatformProcess::ReadPipeToArray(InReadPipe, RawOutput);
+		const FString NewOutput = ParseOutputDirect(RawOutput);
 
 		if (NewOutput.IsEmpty())
 		{
@@ -56,14 +70,21 @@ FAnchorpointCliProcess::~FAnchorpointCliProcess()
 
 bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 {
-	FString CommandLineExecutable = FAnchorpointCliModule::Get().GetCliPath();
+	const FAnchorpointCliModule* Module = FAnchorpointCliModule::GetPtr();
+	if (!Module)
+	{
+		UE_LOG(LogAnchorpointCli, Error, TEXT("AnchorpointCli module is unavailable. Cannot launch CLI process."));
+		return false;
+	}
+
+	const FString CommandLineExecutable = Module->GetCliPath();
 	FString CommandLineArgs;
 
 	if (InParameters.bUseIniFile)
 	{
 		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
 		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
-		FFileHelper::SaveStringToFile(IniConfigContent, *(IniConfigFile));
+		FFileHelper::SaveStringToFile(IniConfigContent, *IniConfigFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
 		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);

@@ -10,6 +10,7 @@ class ANCHORPOINTCLI_API FAnchorpointCliModule final : public IModuleInterface
 {
 public:
 	static FAnchorpointCliModule& Get();
+	static FAnchorpointCliModule* GetPtr();
 
 	FString GetInstallFolder() const;
 	FString GetCliPath() const;
