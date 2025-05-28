@@ -13,6 +13,7 @@
 
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointSourceControlState.h"
@@ -34,6 +35,23 @@ void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 
 void FAnchorpointSourceControlProvider::Close()
 {
+	UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint close command received - waiting for all commands to finish"));
+
+	for (const FAnchorpointSourceControlCommand* Command : CommandQueue)
+	{
+		if (Command)
+		{
+			const FString CommandName = Command->Operation->GetName().ToString();
+			UE_LOG(LogAnchorpoint, Display, TEXT("Waiting command: %s"), *CommandName);
+
+			while (!Command->bExecuteProcessed)
+			{
+				FPlatformProcess::Sleep(0.01f);
+			}
+		}
+	}
+
+	UE_LOG(LogAnchorpoint, Warning, TEXT("Anchorpoint close command finished"));
 }
 
 const FName& FAnchorpointSourceControlProvider::GetName() const
