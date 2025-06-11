@@ -61,8 +61,10 @@ FAnchorpointCliProcess::~FAnchorpointCliProcess()
 		Cancel();
 	}
 
-	if (Thread != nullptr)
+	if (Thread && IsRunning())
 	{
+		// Similar to FInteractiveProcess::~FInteractiveProcess,
+		// we only wait for completion if the underlying process is running
 		Thread->WaitForCompletion();
 		delete Thread;
 	}
