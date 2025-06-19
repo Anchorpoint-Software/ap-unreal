@@ -291,19 +291,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::DeleteFiles(const TArr
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DeleteFiles);
 
-	FString CheckoutCommand = TEXT("rm --");
-
 	for (const FString& File : InFiles)
 	{
-		//Note: This will run as a git command so we need project relative paths 
-		CheckoutCommand.Appendf(TEXT(" '%s'"), *ConvertFullPathToProjectRelative(File));
-	}
-
-	FCliResult ProcessOutput = AnchorpointCliCommands::RunGitCommand(CheckoutCommand);
-
-	if (!ProcessOutput.DidSucceed())
-	{
-		return MakeError(ProcessOutput.GetBestError());
+		IFileManager::Get().Delete(*File, false, true, true);
 	}
 
 	return MakeValue(TEXT("Success"));
