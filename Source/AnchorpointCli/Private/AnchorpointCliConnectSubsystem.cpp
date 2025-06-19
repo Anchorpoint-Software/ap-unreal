@@ -20,10 +20,48 @@
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointCliProcess.h"
 
+TArray<FString> ParseMessagesIntoArray(const FString& InString)
+{
+	TArray<FString> Messages;
+
+	FString RemainingString = InString;
+
+	while (!RemainingString.IsEmpty())
+	{
+		int32 BracketStart = INDEX_NONE;
+		const bool bValidStart = RemainingString.FindChar(TEXT('{'), BracketStart);
+		int32 BracketEnd = INDEX_NONE;
+		const bool bValidEnd = RemainingString.FindChar(TEXT('}'), BracketEnd);
+
+		if (bValidStart && bValidEnd)
+		{
+			const int32 BracketLen = BracketEnd - BracketStart + 1;
+
+			FString Message = RemainingString.Mid(BracketStart, BracketLen);
+			Message.ReplaceInline(TEXT("\t"), TEXT(""));
+			Message.ReplaceInline(TEXT("\r"), TEXT(""));
+			Message.ReplaceInline(TEXT("\n"), TEXT(""));
+
+			Messages.Add(Message);
+			RemainingString.RemoveAt(BracketStart, BracketLen);
+			RemainingString.TrimStartAndEndInline();
+		}
+		else
+		{
+			// The remaining string has no valid structure, so we just add whatever is left as a message
+			// so JSON parsing can handle the failure later.
+			Messages.Add(RemainingString);
+			RemainingString.Empty();
+		}
+	}
+
+	return Messages;
+}
+
 TOptional<TArray<FAnchorpointConnectMessage>> FAnchorpointConnectMessage::ParseStringToMessages(const FString& InString)
 {
 	TArray<FAnchorpointConnectMessage> Messages;
-	TArray<FString> StringMessages = UKismetStringLibrary::ParseIntoArray(InString, TEXT("\n"), true);
+	TArray<FString> StringMessages = ParseMessagesIntoArray(InString);
 	for (const FString& StringMessage : StringMessages)
 	{
 		FScopedCategoryAndVerbosityOverride LogOverride(TEXT("LogJson"), ELogVerbosity::Error);
