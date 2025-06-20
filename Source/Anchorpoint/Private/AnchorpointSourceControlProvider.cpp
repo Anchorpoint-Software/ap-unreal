@@ -37,12 +37,16 @@ void FAnchorpointSourceControlProvider::Close()
 {
 	UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint close command received - waiting for all commands to finish"));
 
+	int32 NumCommand = 0;
+
 	for (const FAnchorpointSourceControlCommand* Command : CommandQueue)
 	{
 		if (Command)
 		{
+			NumCommand++;
+
 			const FString CommandName = Command->Operation->GetName().ToString();
-			UE_LOG(LogAnchorpoint, Display, TEXT("Waiting command: %s"), *CommandName);
+			UE_LOG(LogAnchorpoint, Display, TEXT("Waiting command: %s[%s/%s]"), *CommandName, *LexToString(NumCommand), *LexToString(CommandQueue.Num()));
 
 			while (!Command->bExecuteProcessed)
 			{

@@ -31,5 +31,15 @@ bool AnchorpointCliConnectSubsystemTests::RunTest(const FString& InParameters)
 	TOptional<TArray<FAnchorpointConnectMessage>> HalfParsedMessage = FAnchorpointConnectMessage::ParseStringToMessages(HalfRawMessage);
 	TestFalse(TEXT("Passing message is NOT parsed"), HalfParsedMessage.IsSet());
 
+	const FString ComplexRawMessage = TEXT(R"({"files":["Game/Content/__ExternalActors__/Secret/OFPA-Level/D/JD/ZCPS3KOVH1X3N2GEBFLBJF.uasset"],"id":"508e8b36-1399-4589-9632-be6c601e95b5","type":"files locked"}
+											{"files":["Game/Content/__ExternalActors__/Secret/OFPA-Level/5/YL/EON3VAINAF1FMQK6N3A9TV.uasset",
+												"Game/Content/__ExternalActors__/Secret/OFPA-Level/8/UE/MXN2L5G6T77DQNH5MLG1X0.uasset"],"id":"5a5930cb-53cb-4880-bed4-1d67c26ef6bc","type":"files unlocked"}
+											{"files":["Game/Content/__ExternalActors__/Secret/OFPA-Level/0/NQ/HQQDWD3GM72M4DZ2NF0P65.uasset"],"id":"45f99b1d-d2d1-4130-959c-1a1943df8578","type":"files locked"}
+											{"files":["Game/Content/__ExternalActors__/Secret/OFPA-Level/A/Z3/10JXJNQ3BGISCD2X8I98FS.uasset"],"id":"baa93f94-f3ed-4c4d-b70e-027b994080db","type":"files locked"})");
+
+	TOptional<TArray<FAnchorpointConnectMessage>> ComplexParsedMessages = FAnchorpointConnectMessage::ParseStringToMessages(ComplexRawMessage);
+	TestTrue(TEXT("Complex message parsing should succeed"), ComplexParsedMessages.IsSet());
+	TestTrue(TEXT("Complex message should contain 4 messages"), ComplexParsedMessages->Num() == 4);
+
 	return true;
 }
