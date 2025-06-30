@@ -19,6 +19,7 @@ public class AnchorpointCli : ModuleRules
 			"SlateCore",
 			"SourceControl", 
 			"UnrealEd",
+			"ToolMenus",
 			"UnsavedAssetsTracker",
 		});
 	}

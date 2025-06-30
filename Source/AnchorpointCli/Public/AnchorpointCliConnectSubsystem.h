@@ -8,6 +8,7 @@
 
 #include "AnchorpointCliConnectSubsystem.generated.h"
 
+class ILevelEditor;
 class FAnchorpointCliProcess;
 /**
  * Structure of the JSON messages received from the Anchorpoint CLI connect
@@ -137,6 +138,18 @@ private:
 	 * Displays a toast message indicating the connection state
 	 */
 	void ToastConnectionState(bool bConnected);
+	/**
+	 * Callback executed when the level editor creation is finished
+	 */
+	void OnLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor);
+	/**
+	 * Callback executed to determine what icon should be shown next to the revision control status bar
+	 */
+	const FSlateBrush* GetDrawerIcon() const;
+	/**
+	 * Callback executed to determine what tooltip text should be shown for the icon next to the revision control status bar 
+	 */
+	FText GetDrawerText() const;
 	/**
 	 * The process that is running the Anchorpoint CLI connect command
 	 */
