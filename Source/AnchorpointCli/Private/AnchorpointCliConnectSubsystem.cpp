@@ -570,8 +570,8 @@ FText UAnchorpointCliConnectSubsystem::GetDrawerText() const
 {
 	if (!IsConnected())
 	{
-		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Anchorpoint CLI is not connected. To make Source Control commands faster, open the desktop app.");
+		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Keep the Anchorpoint project open (or minimized) to maintain better connectivity.");
 	}
 
-	return NSLOCTEXT("Anchorpoint", "DrawerConnected", "Anchorpoint CLI is connected. Source Control commands will run faster.");
+	return FText::GetEmpty();
 }
