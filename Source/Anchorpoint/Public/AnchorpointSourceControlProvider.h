@@ -61,6 +61,7 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
+	void TickDuringModal(float DeltaTime);
 	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
 	void RefreshStatus();
 
@@ -81,6 +82,7 @@ public:
 
 	FTimerHandle RefreshTimerHandle;
 	float RefreshDelay = 1.0f;
+	bool bSubmitModalActive = false;
 };
 
 template <typename Type>

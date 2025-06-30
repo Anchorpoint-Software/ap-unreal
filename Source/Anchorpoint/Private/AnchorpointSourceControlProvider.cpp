@@ -22,11 +22,18 @@
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 {
 	UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAnchorpointSourceControlProvider::HandlePackageSaved);
+	
+	FSlateApplication::Get().GetOnModalLoopTickEvent().AddRaw(this, &FAnchorpointSourceControlProvider::TickDuringModal);
 }
 
 FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 {
 	UPackage::PackageSavedWithContextEvent.RemoveAll(this);
+
+	if(FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().GetOnModalLoopTickEvent().RemoveAll(this);
+	}
 }
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
@@ -308,7 +315,7 @@ bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 	// However, after reverting a writeable file, we need to make sure that the file is not added to the PackagesNotToPromptAnyMore
 	// Otherwise, the user will not be prompted to checkout/make writable the file again
 	// More info and context on the problem in the following link: point 3. of https://discord.com/channels/764147942298484737/1272849248005787718/1308842855317377085
-	
+
 	// In order to avoid this, we need `UncontrolledChangelistModule.OnMakeWritable(Filename)` to return true
 	// To achieve this, use an empty call to PromptForCheckoutAndSave, if bIsPromptingForCheckoutAndSave is true, we will get a PR_Cancelled
 	// This way, we can ensure we only return true when the user is actively saving a writeable file
@@ -320,6 +327,20 @@ bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 
 bool FAnchorpointSourceControlProvider::UsesCheckout() const
 {
+	// Another hack because the SSourceControlSubmitWidget has no API to disable the "Keep files checked out"
+	// Even the GitSourceControlModule lists at the top:
+	// '''
+	// ### Known issues:
+	// standard Editor commit dialog ask if user wants to "Keep Files Checked Out" => no use for Git or Mercurial CanCheckOut()==false
+	// '''
+	//	
+	// The Tick & TickDuringModal are actively scanning to check if the user is actively submitting
+	// During such times the Anchorpoint Source Control Provider has the Checkout capabilities disabled to disable the "Keep Files Checked Out" button
+	if (bSubmitModalActive)
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -352,8 +373,9 @@ TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 
 void FAnchorpointSourceControlProvider::Tick()
 {
-	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
+	bSubmitModalActive = false;
 
+	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
 	bool bStatesUpdated = false;
 	for (int32 CommandIndex = 0; CommandIndex < CommandQueue.Num(); ++CommandIndex)
 	{
@@ -395,6 +417,18 @@ void FAnchorpointSourceControlProvider::Tick()
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
 	return SNew(SAnchorpointSourceControlSettingsWidget);
+}
+
+void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
+{
+	if (const TSharedPtr<SWindow> ActiveModalWindow = FSlateApplication::Get().GetActiveModalWindow())
+	{
+		TSharedRef<SWidget> ModalContent = ActiveModalWindow->GetContent();
+		if (ModalContent->GetType() == TEXT("SSourceControlSubmitWidget"))
+		{
+			bSubmitModalActive = true;
+		}
+	}
 }
 
 void FAnchorpointSourceControlProvider::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
