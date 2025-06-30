@@ -206,7 +206,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	// ToImplement: Everything in this function needs to be checked 
 
 	// Only Connect operation allowed while not Enabled (Connected)
-	if (!IsEnabled() && !(InOperation->GetName() == "Connect"))
+	if (!IsEnabled() && InOperation->GetName() != "Connect")
 	{
 		(void)InOperationCompleteDelegate.ExecuteIfBound(InOperation, ECommandResult::Failed);
 		return ECommandResult::Failed;
