@@ -79,6 +79,8 @@ public:
 
 	FSourceControlStateChanged OnSourceControlStateChanged;
 	TArray<FAnchorpointSourceControlCommand*> CommandQueue;
+	
+	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
 	FTimerHandle RefreshTimerHandle;
 	float RefreshDelay = 1.0f;

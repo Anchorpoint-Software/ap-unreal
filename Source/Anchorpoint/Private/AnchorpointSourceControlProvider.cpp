@@ -247,22 +247,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	{
 		Command->bAutoDelete = false;
 
-		FText PromptText = FText::GetEmpty();
-
-		if (InOperation->GetName() == TEXT("CheckIn") || InOperation->GetName() == TEXT("Revert"))
-		{
-			PromptText = InOperation->GetInProgressString();
-		}
-
-		if (InOperation->GetName() == TEXT("UpdateStatus"))
-		{
-			TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InOperation);
-			if (Operation->ShouldUpdateHistory())
-			{
-				PromptText = NSLOCTEXT("Anchorpoint", "UpdateStatusWithHistory", "Updating file(s) Revision Control history...");
-			}
-		}
-
+		const FText PromptText = GetPromptTextForOperation(InOperation);
 		return ExecuteSynchronousCommand(*Command, PromptText);
 	}
 
@@ -561,4 +546,30 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 
 		return InCommand.ReturnResults();
 	}
+}
+
+FText FAnchorpointSourceControlProvider::GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const
+{
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	if (!ConnectSubsystem->IsConnected())
+	{
+		// NOTE: While the CLI is not connected, we want to display every pop-up so the user can understand why things are slower.
+		return InOperation->GetInProgressString();
+	}
+	
+	if (InOperation->GetName() == TEXT("CheckIn") || InOperation->GetName() == TEXT("Revert"))
+	{
+		return InOperation->GetInProgressString();
+	}
+
+	if (InOperation->GetName() == TEXT("UpdateStatus"))
+	{
+		TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InOperation);
+		if (Operation->ShouldUpdateHistory())
+		{
+			return NSLOCTEXT("Anchorpoint", "UpdateStatusWithHistory", "Updating file(s) Revision Control history...");
+		}
+	}
+
+	return FText::GetEmpty();
 }
