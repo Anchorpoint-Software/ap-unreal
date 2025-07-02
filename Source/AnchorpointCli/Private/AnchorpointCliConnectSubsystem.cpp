@@ -13,7 +13,7 @@
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>
 #include <Widgets/Notifications/SNotificationList.h>
-#include <Kismet/KismetStringLibrary.h>
+#include <LevelEditor.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
@@ -108,9 +108,14 @@ void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorp
 	StatusCache = Status;
 }
 
-bool UAnchorpointCliConnectSubsystem::IsConnected() const
+bool UAnchorpointCliConnectSubsystem::IsCliConnected() const
 {
 	return Process && Process->IsRunning();
+}
+
+bool UAnchorpointCliConnectSubsystem::IsProjectConnected() const
+{
+	return IsCliConnected() && bCanUseStatusCache;
 }
 
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -127,6 +132,9 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 		FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::OnFakeAnchorpointCliMessage),
 		ECVF_Default
 	);
+
+	FLevelEditorModule& LevelEditorModule = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
+	LevelEditorModule.OnLevelEditorCreated().AddUObject(this, &UAnchorpointCliConnectSubsystem::OnLevelEditorCreated);
 }
 
 void UAnchorpointCliConnectSubsystem::Deinitialize()
@@ -533,4 +541,42 @@ void UAnchorpointCliConnectSubsystem::ToastConnectionState(bool bConnected)
 	Info->Image = bConnected ? ConnectBrush : DisconnectBrush;
 
 	FSlateNotificationManager::Get().QueueNotification(Info);
+}
+
+void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor)
+{
+	UToolMenu* LevelEditorStatusBar = UToolMenus::Get()->ExtendMenu("LevelEditor.StatusBar.ToolBar");
+	FToolMenuSection& Section = LevelEditorStatusBar->FindOrAddSection("SourceControl");
+
+	TSharedRef<SBox> StatusImage = SNew(SBox)
+		.HAlign(HAlign_Center)
+		[
+			SNew(SImage)
+			.DesiredSizeOverride(CoreStyleConstants::Icon16x16)
+			.Image_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerIcon)
+			.ToolTipText_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerText)
+		];
+
+	FToolMenuEntry StatusIconEntry = FToolMenuEntry::InitWidget("AnchorpointStatus", StatusImage, FText::GetEmpty(), true, false);
+	Section.AddEntry(StatusIconEntry);
+}
+
+const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
+{
+	if (!IsProjectConnected())
+	{
+		return FAppStyle::GetBrush(TEXT("MessageLog.Warning"));
+	}
+
+	return nullptr;
+}
+
+FText UAnchorpointCliConnectSubsystem::GetDrawerText() const
+{
+	if (!IsProjectConnected())
+	{
+		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Keep the Anchorpoint project open (or minimized) to maintain better connectivity.");
+	}
+
+	return FText::GetEmpty();
 }

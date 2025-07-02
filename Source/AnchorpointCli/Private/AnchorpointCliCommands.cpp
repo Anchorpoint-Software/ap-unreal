@@ -4,6 +4,7 @@
 
 #include <Serialization/JsonSerializer.h>
 #include <Async/Async.h>
+#include <ProfilingDebugging/ScopedTimers.h>
 
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliProcess.h"
@@ -132,6 +133,8 @@ FString AnchorpointCliCommands::ConvertCommandToIni(const FString& InCommand, bo
 FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParameters)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(RunApCli);
+
+	UE_SCOPED_TIMER(TEXT("AnchorpointCliCommands::RunApCommand"), LogAnchorpointCli, Verbose);
 
 	TSharedRef<FAnchorpointCliProcess> Process = MakeShared<FAnchorpointCliProcess>();
 

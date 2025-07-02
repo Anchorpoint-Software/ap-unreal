@@ -22,11 +22,18 @@
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 {
 	UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAnchorpointSourceControlProvider::HandlePackageSaved);
+	
+	FSlateApplication::Get().GetOnModalLoopTickEvent().AddRaw(this, &FAnchorpointSourceControlProvider::TickDuringModal);
 }
 
 FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 {
 	UPackage::PackageSavedWithContextEvent.RemoveAll(this);
+
+	if(FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().GetOnModalLoopTickEvent().RemoveAll(this);
+	}
 }
 
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
@@ -69,10 +76,14 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 	TArray<FString> StatusMessages;
 
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	bool bCliConnected = ConnectSubsystem->IsConnected();
+
+	const bool bCliConnected = ConnectSubsystem->IsCliConnected();
 	StatusMessages.Add(FString::Printf(TEXT("CLI connected: %s"), *LexToString(bCliConnected)));
 
-	bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
+	const bool bProjectConnected = ConnectSubsystem->IsProjectConnected();
+	StatusMessages.Add(FString::Printf(TEXT("Project connected: %s"), *LexToString(bProjectConnected)));
+
+	const bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
 	StatusMessages.Add(FString::Printf(TEXT("Status cache valid: %s"), *LexToString(bValidCache)));
 
 	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
@@ -206,7 +217,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	// ToImplement: Everything in this function needs to be checked 
 
 	// Only Connect operation allowed while not Enabled (Connected)
-	if (!IsEnabled() && !(InOperation->GetName() == "Connect"))
+	if (!IsEnabled() && InOperation->GetName() != "Connect")
 	{
 		(void)InOperationCompleteDelegate.ExecuteIfBound(InOperation, ECommandResult::Failed);
 		return ECommandResult::Failed;
@@ -240,22 +251,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceCon
 	{
 		Command->bAutoDelete = false;
 
-		FText PromptText = FText::GetEmpty();
-
-		if (InOperation->GetName() == TEXT("CheckIn") || InOperation->GetName() == TEXT("Revert"))
-		{
-			PromptText = InOperation->GetInProgressString();
-		}
-
-		if (InOperation->GetName() == TEXT("UpdateStatus"))
-		{
-			TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InOperation);
-			if (Operation->ShouldUpdateHistory())
-			{
-				PromptText = NSLOCTEXT("Anchorpoint", "UpdateStatusWithHistory", "Updating file(s) Revision Control history...");
-			}
-		}
-
+		const FText PromptText = GetPromptTextForOperation(InOperation);
 		return ExecuteSynchronousCommand(*Command, PromptText);
 	}
 
@@ -308,7 +304,7 @@ bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 	// However, after reverting a writeable file, we need to make sure that the file is not added to the PackagesNotToPromptAnyMore
 	// Otherwise, the user will not be prompted to checkout/make writable the file again
 	// More info and context on the problem in the following link: point 3. of https://discord.com/channels/764147942298484737/1272849248005787718/1308842855317377085
-	
+
 	// In order to avoid this, we need `UncontrolledChangelistModule.OnMakeWritable(Filename)` to return true
 	// To achieve this, use an empty call to PromptForCheckoutAndSave, if bIsPromptingForCheckoutAndSave is true, we will get a PR_Cancelled
 	// This way, we can ensure we only return true when the user is actively saving a writeable file
@@ -320,6 +316,20 @@ bool FAnchorpointSourceControlProvider::UsesUncontrolledChangelists() const
 
 bool FAnchorpointSourceControlProvider::UsesCheckout() const
 {
+	// Another hack because the SSourceControlSubmitWidget has no API to disable the "Keep files checked out"
+	// Even the GitSourceControlModule lists at the top:
+	// '''
+	// ### Known issues:
+	// standard Editor commit dialog ask if user wants to "Keep Files Checked Out" => no use for Git or Mercurial CanCheckOut()==false
+	// '''
+	//	
+	// The Tick & TickDuringModal are actively scanning to check if the user is actively submitting
+	// During such times the Anchorpoint Source Control Provider has the Checkout capabilities disabled to disable the "Keep Files Checked Out" button
+	if (bSubmitModalActive)
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -352,8 +362,9 @@ TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 
 void FAnchorpointSourceControlProvider::Tick()
 {
-	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
+	bSubmitModalActive = false;
 
+	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
 	bool bStatesUpdated = false;
 	for (int32 CommandIndex = 0; CommandIndex < CommandQueue.Num(); ++CommandIndex)
 	{
@@ -395,6 +406,18 @@ void FAnchorpointSourceControlProvider::Tick()
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
 	return SNew(SAnchorpointSourceControlSettingsWidget);
+}
+
+void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
+{
+	if (const TSharedPtr<SWindow> ActiveModalWindow = FSlateApplication::Get().GetActiveModalWindow())
+	{
+		TSharedRef<SWidget> ModalContent = ActiveModalWindow->GetContent();
+		if (ModalContent->GetType() == TEXT("SSourceControlSubmitWidget"))
+		{
+			bSubmitModalActive = true;
+		}
+	}
 }
 
 void FAnchorpointSourceControlProvider::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
@@ -527,4 +550,30 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 
 		return InCommand.ReturnResults();
 	}
+}
+
+FText FAnchorpointSourceControlProvider::GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const
+{
+	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	if (!ConnectSubsystem->IsProjectConnected())
+	{
+		// NOTE: While the CLI is not connected, we want to display every pop-up so the user can understand why things are slower.
+		return InOperation->GetInProgressString();
+	}
+	
+	if (InOperation->GetName() == TEXT("CheckIn") || InOperation->GetName() == TEXT("Revert"))
+	{
+		return InOperation->GetInProgressString();
+	}
+
+	if (InOperation->GetName() == TEXT("UpdateStatus"))
+	{
+		TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InOperation);
+		if (Operation->ShouldUpdateHistory())
+		{
+			return NSLOCTEXT("Anchorpoint", "UpdateStatusWithHistory", "Updating file(s) Revision Control history...");
+		}
+	}
+
+	return FText::GetEmpty();
 }
