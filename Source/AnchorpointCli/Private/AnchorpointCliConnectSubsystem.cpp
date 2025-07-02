@@ -108,9 +108,14 @@ void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorp
 	StatusCache = Status;
 }
 
-bool UAnchorpointCliConnectSubsystem::IsConnected() const
+bool UAnchorpointCliConnectSubsystem::IsCliConnected() const
 {
 	return Process && Process->IsRunning();
+}
+
+bool UAnchorpointCliConnectSubsystem::IsProjectConnected() const
+{
+	return IsCliConnected() && bCanUseStatusCache;
 }
 
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -558,7 +563,7 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 {
-	if (!IsConnected())
+	if (!IsProjectConnected())
 	{
 		return FAppStyle::GetBrush(TEXT("MessageLog.Warning"));
 	}
@@ -568,7 +573,7 @@ const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 
 FText UAnchorpointCliConnectSubsystem::GetDrawerText() const
 {
-	if (!IsConnected())
+	if (!IsProjectConnected())
 	{
 		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Keep the Anchorpoint project open (or minimized) to maintain better connectivity.");
 	}

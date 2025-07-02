@@ -76,10 +76,14 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 	TArray<FString> StatusMessages;
 
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	bool bCliConnected = ConnectSubsystem->IsConnected();
+
+	const bool bCliConnected = ConnectSubsystem->IsCliConnected();
 	StatusMessages.Add(FString::Printf(TEXT("CLI connected: %s"), *LexToString(bCliConnected)));
 
-	bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
+	const bool bProjectConnected = ConnectSubsystem->IsProjectConnected();
+	StatusMessages.Add(FString::Printf(TEXT("Project connected: %s"), *LexToString(bProjectConnected)));
+
+	const bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
 	StatusMessages.Add(FString::Printf(TEXT("Status cache valid: %s"), *LexToString(bValidCache)));
 
 	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
@@ -551,7 +555,7 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 FText FAnchorpointSourceControlProvider::GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const
 {
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	if (!ConnectSubsystem->IsConnected())
+	if (!ConnectSubsystem->IsProjectConnected())
 	{
 		// NOTE: While the CLI is not connected, we want to display every pop-up so the user can understand why things are slower.
 		return InOperation->GetInProgressString();

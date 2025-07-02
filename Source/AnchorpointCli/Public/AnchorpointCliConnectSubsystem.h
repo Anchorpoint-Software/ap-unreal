@@ -69,7 +69,11 @@ public:
 	/**
 	 * Checks if the integration is currently connected to the Anchorpoint CLI
 	 */
-	bool IsConnected() const;
+	bool IsCliConnected() const;
+	/**
+	 * Checks if the integration has the project currently connected to the Anchorpoint CLI
+	 */
+	bool IsProjectConnected() const; 
 
 private:
 	//~ Begin UEditorSubsystem Interface
