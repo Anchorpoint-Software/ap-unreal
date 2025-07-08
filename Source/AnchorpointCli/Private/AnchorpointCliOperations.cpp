@@ -121,6 +121,7 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 		if (UserObject->HasField(TEXT("current")) && UserObject->GetBoolField(TEXT("current")))
 		{
 			CurrentUser = UserObject->GetStringField(TEXT("email"));
+			UE_LOG(LogAnchorpointCli, Log, TEXT("Current user found: %s"), *CurrentUser);
 			return MakeValue(CurrentUser);
 		}
 	}
