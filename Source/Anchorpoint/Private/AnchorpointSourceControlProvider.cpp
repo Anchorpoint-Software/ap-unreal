@@ -36,6 +36,20 @@ FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 	}
 }
 
+bool FAnchorpointSourceControlProvider::HasAnyConflicts() const
+{
+	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& CacheItem : StateCache)
+	{
+		FSourceControlStateRef State = CacheItem.Value;
+		if (State->IsConflicted())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void FAnchorpointSourceControlProvider::Init(bool bForceConnection)
 {
 }

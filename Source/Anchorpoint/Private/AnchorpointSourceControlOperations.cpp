@@ -5,6 +5,7 @@
 #include <Async/Async.h>
 #include <ISourceControlModule.h>
 #include <SourceControlOperations.h>
+#include <Dialogs/SOutputLogDialog.h>
 
 #include "Anchorpoint.h"
 #include "AnchorpointCli.h"
@@ -465,9 +466,42 @@ FName FAnchorpointCheckInWorker::GetName() const
 	return "CheckIn";
 }
 
+void ShowConflictStatePopup()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(Anchorpoint::ShowConflictStatePopup);
+
+	AsyncTask(ENamedThreads::GameThread,
+	          []()
+	          {
+		          TArray<FText> CompileFailedButtons;
+		          const int OpenAp = CompileFailedButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
+		          const int Ok = CompileFailedButtons.Add(INVTEXT("Cancel"));
+
+		          const FText Title = INVTEXT("Repository is in conflict state");
+		          const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
+		          int32 Choice = SOutputLogDialog::Open(Title, FText::GetEmpty(), Message, FText::GetEmpty(), CompileFailedButtons);
+
+		          if (Choice == OpenAp)
+		          {
+			          const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+			          AnchorpointCliOperations::ShowInAnchorpoint(ProjectDir);
+		          }
+	          });
+}
+
 bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::Execute);
+
+	FAnchorpointSourceControlProvider& AnchorpointProvider = FAnchorpointModule::Get().GetProvider();
+	if (AnchorpointProvider.HasAnyConflicts())
+	{
+		ShowConflictStatePopup();
+
+		InCommand.ErrorMessages.Add(TEXT("Repository is in conflict state"));
+		InCommand.bCommandSuccessful = false;
+		return false;
+	}
 
 	//TODO: Since we are running the lock with --git & --keep should we unlock the files automatically?
 
