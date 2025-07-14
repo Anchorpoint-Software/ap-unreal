@@ -21,6 +21,7 @@ public:
 	template <typename Type>
 	void RegisterWorker(const FName& InName);
 
+	bool HasAnyConflicts() const;
 
 	//~ Begin ISourceControlProvider Interface
 	virtual void Init(bool bForceConnection) override;

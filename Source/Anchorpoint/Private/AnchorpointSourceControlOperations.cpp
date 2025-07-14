@@ -11,6 +11,7 @@
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
+#include "AnchorpointPopup.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlProvider.h"
@@ -54,50 +55,64 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		FAnchorpointSourceControlState& NewState = OutState.Emplace_GetRef(File);
 
 		const FString* LockedBy = Status.Locked.Find(File);
+		const bool bIsOutdated = Status.Outdated.Contains(File);
 		const bool bLockedByMe = LockedBy && *LockedBy == CurrentUserResult.GetValue();
 
-		//TODO: Discuss what the priorities should be here - can I have a file in Add/Modified while else has it locked?
 		if (auto StagedState = Status.Staged.Find(File))
 		{
-			switch (*StagedState)
+			if (*StagedState == EAnchorpointFileOperation::Conflicted)
 			{
-			case EAnchorpointFileOperation::Conflicted:
 				NewState.State = EAnchorpointState::Conflicted;
-				break;
-			case EAnchorpointFileOperation::Added:
+			}
+			else if (bIsOutdated)
+			{
+				NewState.State = EAnchorpointState::OutDated;
+			}
+			else if (*StagedState == EAnchorpointFileOperation::Added)
+			{
 				NewState.State = EAnchorpointState::Added;
-				break;
-			case EAnchorpointFileOperation::Modified:
+			}
+			else if (*StagedState == EAnchorpointFileOperation::Modified)
+			{
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
-				break;
-			case EAnchorpointFileOperation::Deleted:
+			}
+			else if (*StagedState == EAnchorpointFileOperation::Deleted)
+			{
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedDeleted : EAnchorpointState::UnlockedDeleted;
-				break;
-			default:
+			}
+			else
+			{
 				NewState.State = EAnchorpointState::Unknown;
 			}
 		}
 		else if (auto NotStagedState = Status.NotStaged.Find(File))
 		{
-			switch (*NotStagedState)
+			if (*NotStagedState == EAnchorpointFileOperation::Conflicted)
 			{
-			case EAnchorpointFileOperation::Conflicted:
 				NewState.State = EAnchorpointState::Conflicted;
-				break;
-			case EAnchorpointFileOperation::Added:
+			}
+			else if (bIsOutdated)
+			{
+				NewState.State = EAnchorpointState::OutDated;
+			}
+			else if (*NotStagedState == EAnchorpointFileOperation::Added)
+			{
 				NewState.State = EAnchorpointState::Added;
-				break;
-			case EAnchorpointFileOperation::Modified:
+			}
+			else if (*NotStagedState == EAnchorpointFileOperation::Modified)
+			{
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
-				break;
-			case EAnchorpointFileOperation::Deleted:
+			}
+			else if (*NotStagedState == EAnchorpointFileOperation::Deleted)
+			{
 				NewState.State = bLockedByMe ? EAnchorpointState::LockedDeleted : EAnchorpointState::UnlockedDeleted;
-				break;
-			default:
+			}
+			else
+			{
 				NewState.State = EAnchorpointState::Unknown;
 			}
 		}
-		else if (Status.Outdated.Contains(File))
+		else if (bIsOutdated)
 		{
 			NewState.State = EAnchorpointState::OutDated;
 		}
@@ -465,9 +480,42 @@ FName FAnchorpointCheckInWorker::GetName() const
 	return "CheckIn";
 }
 
+void ShowConflictStatePopup()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(Anchorpoint::ShowConflictStatePopup);
+
+	AsyncTask(ENamedThreads::GameThread,
+	          []()
+	          {
+		          TArray<FText> ActionButtons;
+		          const int OpenAp = ActionButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
+		          const int Ok = ActionButtons.Add(INVTEXT("Cancel"));
+
+		          const FText Title = INVTEXT("Repository is in conflict state");
+		          const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
+		          int32 Choice = SAnchorpointPopup::Open(Title, Message, ActionButtons);
+
+		          if (Choice == OpenAp)
+		          {
+			          const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+			          AnchorpointCliOperations::ShowInAnchorpoint(ProjectDir);
+		          }
+	          });
+}
+
 bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointCheckInWorker::Execute);
+
+	FAnchorpointSourceControlProvider& AnchorpointProvider = FAnchorpointModule::Get().GetProvider();
+	if (AnchorpointProvider.HasAnyConflicts())
+	{
+		ShowConflictStatePopup();
+
+		InCommand.ErrorMessages.Add(TEXT("Repository is in conflict state"));
+		InCommand.bCommandSuccessful = false;
+		return false;
+	}
 
 	//TODO: Since we are running the lock with --git & --keep should we unlock the files automatically?
 
