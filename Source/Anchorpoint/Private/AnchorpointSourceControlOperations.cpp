@@ -5,13 +5,13 @@
 #include <Async/Async.h>
 #include <ISourceControlModule.h>
 #include <SourceControlOperations.h>
-#include <Dialogs/SOutputLogDialog.h>
 
 #include "Anchorpoint.h"
 #include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
+#include "AnchorpointPopup.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlProvider.h"
@@ -473,13 +473,13 @@ void ShowConflictStatePopup()
 	AsyncTask(ENamedThreads::GameThread,
 	          []()
 	          {
-		          TArray<FText> CompileFailedButtons;
-		          const int OpenAp = CompileFailedButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
-		          const int Ok = CompileFailedButtons.Add(INVTEXT("Cancel"));
+		          TArray<FText> ActionButtons;
+		          const int OpenAp = ActionButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
+		          const int Ok = ActionButtons.Add(INVTEXT("Cancel"));
 
 		          const FText Title = INVTEXT("Repository is in conflict state");
 		          const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
-		          int32 Choice = SOutputLogDialog::Open(Title, FText::GetEmpty(), Message, FText::GetEmpty(), CompileFailedButtons);
+		          int32 Choice = SAnchorpointPopup::Open(Title, Message, ActionButtons);
 
 		          if (Choice == OpenAp)
 		          {
