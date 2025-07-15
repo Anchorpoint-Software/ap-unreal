@@ -268,6 +268,11 @@ TValueOrError<FString, FString> AnchorpointCliOperations::Revert(const TArray<FS
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::Revert);
 
+	if (InFiles.IsEmpty())
+	{
+		return MakeValue(TEXT("No files to revert"));
+	}
+
 	TArray<FString> RevertParams;
 	RevertParams.Add(TEXT("revert"));
 	RevertParams.Add(TEXT("--files"));
