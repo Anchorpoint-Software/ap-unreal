@@ -307,14 +307,37 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 	// TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
 	// RevertOperation->IsSoftRevert()
 
-	TValueOrError<FString, FString> RevertResult = AnchorpointCliOperations::Revert(InCommand.Files);
+	TArray<FString> FilesToDelete;
+	TArray<FString> FilesToRevert;
 
+	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
+
+	for (const FString& File : InCommand.Files)
+	{
+		TSharedRef<FAnchorpointSourceControlState> CurrentState = Provider.GetStateInternal(File);
+		if (CurrentState->State == EAnchorpointState::Added)
+		{
+			FilesToDelete.Add(File);
+		}
+		else
+		{
+			FilesToRevert.Add(File);
+		}
+	}
+
+	TValueOrError<FString, FString> DeleteResult = AnchorpointCliOperations::DeleteFiles(FilesToDelete);
+	if (DeleteResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(DeleteResult.GetError());
+	}
+
+	TValueOrError<FString, FString> RevertResult = AnchorpointCliOperations::Revert(FilesToRevert);
 	if (RevertResult.HasError())
 	{
 		InCommand.ErrorMessages.Add(RevertResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful = RevertResult.HasValue();
+	InCommand.bCommandSuccessful = DeleteResult.HasValue() && RevertResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
