@@ -554,6 +554,12 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 			SNew(SImage)
 			.DesiredSizeOverride(CoreStyleConstants::Icon16x16)
 			.Image_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerIcon)
+			.OnMouseButtonDown_Lambda([](const FGeometry&, const FPointerEvent& PointerEvent)
+			{
+				AnchorpointCliOperations::ShowInAnchorpoint();
+
+				return FReply::Handled();
+			})
 			.ToolTipText_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerText)
 		];
 
