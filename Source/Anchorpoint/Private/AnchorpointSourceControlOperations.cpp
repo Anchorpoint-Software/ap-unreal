@@ -503,27 +503,6 @@ FName FAnchorpointCheckInWorker::GetName() const
 	return "CheckIn";
 }
 
-void ShowConflictStatePopup()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(Anchorpoint::ShowConflictStatePopup);
-
-	AsyncTask(ENamedThreads::GameThread,
-	          []()
-	          {
-		          TArray<FText> ActionButtons;
-		          const int OpenAp = ActionButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
-		          const int Ok = ActionButtons.Add(INVTEXT("Cancel"));
-
-		          const FText Title = INVTEXT("Repository is in conflict state");
-		          const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
-		          int32 Choice = SAnchorpointPopup::Open(Title, Message, ActionButtons);
-
-		          if (Choice == OpenAp)
-		          {
-			          AnchorpointCliOperations::ShowInAnchorpoint();
-		          }
-	          });
-}
 
 bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
@@ -532,7 +511,7 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	FAnchorpointSourceControlProvider& AnchorpointProvider = FAnchorpointModule::Get().GetProvider();
 	if (AnchorpointProvider.HasAnyConflicts())
 	{
-		ShowConflictStatePopup();
+		AnchorpointPopups::ShowConflictPopupAnyThread();
 
 		InCommand.ErrorMessages.Add(TEXT("Repository is in conflict state"));
 		InCommand.bCommandSuccessful = false;

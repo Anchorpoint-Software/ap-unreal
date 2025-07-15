@@ -27,3 +27,9 @@ public:
 	int32 Response = INDEX_NONE;
 	TSharedPtr<SWindow> ParentWindow;
 };
+
+namespace AnchorpointPopups
+{
+void ShowConflictPopup();
+void ShowConflictPopupAnyThread();
+}
