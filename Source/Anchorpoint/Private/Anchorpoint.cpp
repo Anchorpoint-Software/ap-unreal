@@ -171,8 +171,7 @@ void FAnchorpointModule::RegisterMergeWithAnchorpoint(FToolMenuSection& InSectio
 				}
 				else
 				{
-					const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-					AnchorpointCliOperations::ShowInAnchorpoint(ProjectPath);
+					AnchorpointCliOperations::ShowInAnchorpoint();
 				}
 			})
 		));

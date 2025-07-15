@@ -9,7 +9,7 @@ class FAnchorpointCliProcess;
 namespace AnchorpointCliOperations
 {
 	ANCHORPOINTCLI_API bool IsInstalled();
-	ANCHORPOINTCLI_API void ShowInAnchorpoint(const FString& InPath);
+	ANCHORPOINTCLI_API void ShowInAnchorpoint(FString InPath = TEXT(""));
 
 	ANCHORPOINTCLI_API FString GetRepositoryRootPath();
 	ANCHORPOINTCLI_API bool IsUnderRepositoryPath(const FString& InPath);

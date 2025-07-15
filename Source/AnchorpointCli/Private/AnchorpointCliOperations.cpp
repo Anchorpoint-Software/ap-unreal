@@ -25,10 +25,17 @@ bool AnchorpointCliOperations::IsInstalled()
 	return !CliPath.IsEmpty() && FPaths::FileExists(CliPath);
 }
 
-void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
+void AnchorpointCliOperations::ShowInAnchorpoint(FString InPath)
 {
+	if (InPath.IsEmpty())
+	{
+		const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		InPath = ProjectDir;
+	}
+
 	const FString ApplicationPath = FAnchorpointCliModule::Get().GetApplicationPath();
-	FPlatformProcess::CreateProc(*ApplicationPath, *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
+	const FString QuotedPath = FString::Printf(TEXT("\"%s\""), *InPath);
+	FPlatformProcess::CreateProc(*ApplicationPath, *QuotedPath, true, true, false, nullptr, 0, nullptr, nullptr);
 }
 
 FString AnchorpointCliOperations::GetRepositoryRootPath()

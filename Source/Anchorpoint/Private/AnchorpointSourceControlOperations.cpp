@@ -520,8 +520,7 @@ void ShowConflictStatePopup()
 
 		          if (Choice == OpenAp)
 		          {
-			          const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-			          AnchorpointCliOperations::ShowInAnchorpoint(ProjectDir);
+			          AnchorpointCliOperations::ShowInAnchorpoint();
 		          }
 	          });
 }
