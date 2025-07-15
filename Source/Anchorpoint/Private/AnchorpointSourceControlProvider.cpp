@@ -14,6 +14,7 @@
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
+#include "AnchorpointPopup.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointSourceControlState.h"
@@ -413,6 +414,8 @@ void FAnchorpointSourceControlProvider::Tick()
 
 	if (bStatesUpdated)
 	{
+		OnStatesChanged();
+
 		OnSourceControlStateChanged.Broadcast();
 	}
 }
@@ -420,6 +423,17 @@ void FAnchorpointSourceControlProvider::Tick()
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
 	return SNew(SAnchorpointSourceControlSettingsWidget);
+}
+
+void FAnchorpointSourceControlProvider::OnStatesChanged()
+{
+	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& Cache : StateCache)
+	{
+		if (Cache.Value->State == EAnchorpointState::Conflicted)
+		{
+			AnchorpointPopups::ShowConflictPopup();
+		}
+	}
 }
 
 void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
