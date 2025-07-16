@@ -431,17 +431,28 @@ void FAnchorpointSourceControlProvider::OnStatesChanged()
 	// it is removed from the list, so we can emit warnings again.
 	static TArray<FString> AlreadyWarnedFiles;
 
+	bool bPopupNeeded = false;
 	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& Cache : StateCache)
 	{
-		if (Cache.Value->State == EAnchorpointState::Conflicted && !AlreadyWarnedFiles.Contains(Cache.Key))
+		if (Cache.Value->State == EAnchorpointState::Conflicted)
 		{
-			AlreadyWarnedFiles.Add(Cache.Key);
-			AnchorpointPopups::ShowConflictPopup();
+			if (!AlreadyWarnedFiles.Contains(Cache.Key))
+			{
+				AlreadyWarnedFiles.Add(Cache.Key);
+
+				// New conflict file detected, we will notify the user!
+				bPopupNeeded = true;
+			}
 		}
 		else
 		{
 			AlreadyWarnedFiles.Remove(Cache.Key);
 		}
+	}
+
+	if(bPopupNeeded)
+	{
+		AnchorpointPopups::ShowConflictPopup();
 	}
 }
 
