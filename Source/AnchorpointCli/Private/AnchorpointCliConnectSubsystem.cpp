@@ -149,8 +149,8 @@ void UAnchorpointCliConnectSubsystem::Deinitialize()
 
 void UAnchorpointCliConnectSubsystem::TickConnection()
 {
-	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	const bool bUsesAnchorpoint = Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
 	if (!bUsesAnchorpoint)
 	{
 		if (Process)
@@ -554,6 +554,12 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 			SNew(SImage)
 			.DesiredSizeOverride(CoreStyleConstants::Icon16x16)
 			.Image_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerIcon)
+			.OnMouseButtonDown_Lambda([](const FGeometry&, const FPointerEvent& PointerEvent)
+			{
+				AnchorpointCliOperations::ShowInAnchorpoint();
+
+				return FReply::Handled();
+			})
 			.ToolTipText_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerText)
 		];
 
@@ -563,7 +569,10 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 {
-	if (!IsProjectConnected())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (bUsesAnchorpoint && !IsProjectConnected())
 	{
 		return FAppStyle::GetBrush(TEXT("MessageLog.Warning"));
 	}
@@ -573,7 +582,10 @@ const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 
 FText UAnchorpointCliConnectSubsystem::GetDrawerText() const
 {
-	if (!IsProjectConnected())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (bUsesAnchorpoint && !IsProjectConnected())
 	{
 		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Keep the Anchorpoint project open (or minimized) to maintain better connectivity.");
 	}

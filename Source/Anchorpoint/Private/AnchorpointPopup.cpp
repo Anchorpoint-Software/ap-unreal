@@ -4,6 +4,8 @@
 
 #include <Widgets/Layout/SUniformGridPanel.h>
 
+#include "AnchorpointCliOperations.h"
+
 int32 SAnchorpointPopup::Open(const FText& InTitle, const FText& InMessage, const TArray<FText>& InButtons)
 {
 	TSharedRef<SWindow> ModalWindow = SNew(SWindow)
@@ -81,4 +83,29 @@ FReply SAnchorpointPopup::HandleButtonClicked(int32 InResponse)
 	Response = InResponse;
 	ParentWindow->RequestDestroyWindow();
 	return FReply::Handled();
+}
+
+void AnchorpointPopups::ShowConflictPopup()
+{
+	TArray<FText> ActionButtons;
+	const int OpenAp = ActionButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
+	const int Ok = ActionButtons.Add(INVTEXT("Cancel"));
+
+	const FText Title = INVTEXT("Repository is in conflict state");
+	const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
+	int32 Choice = SAnchorpointPopup::Open(Title, Message, ActionButtons);
+
+	if (Choice == OpenAp)
+	{
+		AnchorpointCliOperations::ShowInAnchorpoint();
+	}
+}
+
+void AnchorpointPopups::ShowConflictPopupAnyThread()
+{
+	AsyncTask(ENamedThreads::GameThread,
+	          []()
+	          {
+	          	ShowConflictPopup();
+	          });
 }

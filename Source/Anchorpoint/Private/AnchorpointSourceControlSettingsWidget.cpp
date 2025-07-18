@@ -88,8 +88,7 @@ void SAnchorpointSourceControlSettingsWidget::Construct(const FArguments& InArgs
 					.Visibility_Lambda([this]() { return GetInstallationState() == EAnchorpointInstallationState::NotInstalledInProject ? EVisibility::Visible : EVisibility::Collapsed; })
 					.OnClicked_Lambda([]()
 					{
-						const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-						AnchorpointCliOperations::ShowInAnchorpoint(ProjectDir);
+						AnchorpointCliOperations::ShowInAnchorpoint();
 						return FReply::Handled();
 					})
 				]
