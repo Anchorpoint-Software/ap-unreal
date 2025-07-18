@@ -2,6 +2,9 @@
 
 #include "AnchorpointCli.h"
 
+#include <ISourceControlProvider.h>
+#include <ISourceControlModule.h>
+
 bool CompareVersions(const FString& Version1, const FString& Version2)
 {
 	FString AppPrefix = TEXT("app-");
@@ -97,6 +100,12 @@ FString FAnchorpointCliModule::GetApplicationPath() const
 #elif PLATFORM_MAC
 	return InstallFolder / "Anchorpoint";
 #endif
+}
+
+bool FAnchorpointCliModule::IsCurrentProvider() const
+{
+	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
+	return Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
 }
 
 IMPLEMENT_MODULE(FAnchorpointCliModule, AnchorpointCli)

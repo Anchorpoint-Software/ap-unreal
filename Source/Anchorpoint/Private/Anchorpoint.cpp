@@ -8,6 +8,7 @@
 #include <ISourceControlModule.h>
 #include <SourceControlHelpers.h>
 
+#include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlOperations.h"
 
@@ -84,8 +85,10 @@ void FAnchorpointModule::ShutdownModule()
 
 void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 {
-	ISourceControlProvider& CurrentProvider = ISourceControlModule::Get().GetProvider();
-	if (CurrentProvider.GetName() != AnchorpointSourceControlProvider.GetName())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (!bUsesAnchorpoint)
 	{
 		return;
 	}
