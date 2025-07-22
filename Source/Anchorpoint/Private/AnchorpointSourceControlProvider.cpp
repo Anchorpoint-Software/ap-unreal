@@ -22,8 +22,11 @@
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 {
 	UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAnchorpointSourceControlProvider::HandlePackageSaved);
-	
-	FSlateApplication::Get().GetOnModalLoopTickEvent().AddRaw(this, &FAnchorpointSourceControlProvider::TickDuringModal);
+
+	if(FSlateApplication::IsInitialized())
+	{
+		FSlateApplication::Get().GetOnModalLoopTickEvent().AddRaw(this, &FAnchorpointSourceControlProvider::TickDuringModal);
+	}
 }
 
 FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
