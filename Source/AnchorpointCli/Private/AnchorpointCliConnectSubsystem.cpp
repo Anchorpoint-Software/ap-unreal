@@ -342,7 +342,7 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 {
 	if (!bSyncInProgress)
 	{
-		RespondToMessage(Message.Id, FString(TEXT("Sync was not started")));
+		UE_LOG(LogAnchorpointCli, Warning, TEXT("StopSync receieved without having a sync in progress"))
 		return;
 	}
 
