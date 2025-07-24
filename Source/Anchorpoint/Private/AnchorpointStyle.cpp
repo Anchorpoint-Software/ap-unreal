@@ -26,6 +26,8 @@ FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle")
 #define IMAGE_BRUSH_SVG(RelativePath, ...) FSlateVectorImageBrush(RootToContentDir(RelativePath, TEXT(".svg")), __VA_ARGS__)
 
 	Set("Icons.Lock", new IMAGE_BRUSH_SVG("Icons/lock", CoreStyleConstants::Icon16x16, IconColor));
+	Set("Icons.OutdatedModifiedLocked", new IMAGE_BRUSH_SVG("Icons/outdated_modified_locked", CoreStyleConstants::Icon16x16, IconColor));
+	Set("Icons.OutdatedModifiedUnlocked", new IMAGE_BRUSH_SVG("Icons/outdated_modified_unlocked", CoreStyleConstants::Icon16x16, IconColor));
 
 #undef IMAGE_BRUSH_SVG
 

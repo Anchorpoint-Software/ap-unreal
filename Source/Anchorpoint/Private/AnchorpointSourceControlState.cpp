@@ -84,8 +84,6 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 		return FSlateIcon();
 	case EAnchorpointState::Added:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.OpenForAdd");
-	case EAnchorpointState::Ignored:
-		return FSlateIcon();
 	case EAnchorpointState::OutDated:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotAtHeadRevision");
 	case EAnchorpointState::LockedBySomeone:
@@ -102,6 +100,10 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.ModifiedLocally");
 	case EAnchorpointState::UnlockedUnchanged:
 		return FSlateIcon();
+	case EAnchorpointState::OutDatedLockedModified:
+		return FSlateIcon(FAnchorpointStyle::Get().GetStyleSetName(), "Icons.OutdatedModifiedLocked");
+	case EAnchorpointState::OutDatedUnlockedModified:
+		return FSlateIcon(FAnchorpointStyle::Get().GetStyleSetName(), "Icons.OutdatedModifiedUnlocked");
 	case EAnchorpointState::Conflicted:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.Conflicted");
 
@@ -122,8 +124,6 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 		return LOCTEXT("Unknown", "Unknown");
 	case EAnchorpointState::Added:
 		return LOCTEXT("Added", "Added");
-	case EAnchorpointState::Ignored:
-		return LOCTEXT("Ignored", "Ignored");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("OutDated", "Outdated");
 	case EAnchorpointState::LockedBySomeone:
@@ -140,6 +140,10 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 		return LOCTEXT("UnlockedDeleted", "Deleted (not locked)");
 	case EAnchorpointState::UnlockedUnchanged:
 		return LOCTEXT("UnlockedUnchanged", "Unchanged (not locked)");
+	case EAnchorpointState::OutDatedLockedModified:
+		return LOCTEXT("OutdatedLockedModified", "Outdated - Modified (locked)");
+	case EAnchorpointState::OutDatedUnlockedModified:
+		return LOCTEXT("OutdatedUnlockedModified", "Outdated - Modified (not locked)");
 	case EAnchorpointState::Conflicted:
 		return LOCTEXT("ContentsConflict", "Contents Conflict");
 
@@ -156,8 +160,6 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 	{
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown_Tooltip", "Unknown");
-	case EAnchorpointState::Ignored:
-		return LOCTEXT("Ignored_Tooltip", "Ignored");
 	case EAnchorpointState::Added:
 		return LOCTEXT("Added_Tooltip", "Added");
 	case EAnchorpointState::OutDated:
@@ -176,6 +178,10 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 		return LOCTEXT("UnlockedDeleted_Tooltip", "Deleted (not locked)");
 	case EAnchorpointState::UnlockedUnchanged:
 		return LOCTEXT("UnlockedUnchanged_Tooltip", "Unchanged (not locked)");
+	case EAnchorpointState::OutDatedLockedModified:
+		return LOCTEXT("OutdatedLockedModified_Tooltip", "Outdated - Modified (locked)");
+	case EAnchorpointState::OutDatedUnlockedModified:
+		return LOCTEXT("OutdatedUnlockedModified_Tooltip", "Outdated - Modified (not locked)");
 	case EAnchorpointState::Conflicted:
 		return LOCTEXT("ContentsConflict_Tooltip", "Contents Conflict");
 
@@ -213,14 +219,17 @@ bool FAnchorpointSourceControlState::CanCheckIn() const
 {
 	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
-		|| State == EAnchorpointState::LockedDeleted;
+		|| State == EAnchorpointState::LockedDeleted
+		|| State == EAnchorpointState::OutDatedLockedModified;
 }
 
 bool FAnchorpointSourceControlState::CanCheckout() const
 {
 	return State == EAnchorpointState::UnlockedUnchanged
 		|| State == EAnchorpointState::UnlockedModified
-		|| State == EAnchorpointState::UnlockedDeleted;
+		|| State == EAnchorpointState::UnlockedDeleted
+		|| State == EAnchorpointState::OutDated
+		|| State == EAnchorpointState::OutDatedUnlockedModified;
 }
 
 bool FAnchorpointSourceControlState::IsCheckedOut() const
@@ -228,7 +237,8 @@ bool FAnchorpointSourceControlState::IsCheckedOut() const
 	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
-		|| State == EAnchorpointState::LockedUnchanged;
+		|| State == EAnchorpointState::LockedUnchanged
+		|| State == EAnchorpointState::OutDatedLockedModified;
 }
 
 bool FAnchorpointSourceControlState::IsCheckedOutOther(FString* Who) const
@@ -280,7 +290,7 @@ bool FAnchorpointSourceControlState::IsDeleted() const
 
 bool FAnchorpointSourceControlState::IsIgnored() const
 {
-	return State == EAnchorpointState::Ignored;
+	return false;
 }
 
 bool FAnchorpointSourceControlState::CanEdit() const
@@ -305,7 +315,9 @@ bool FAnchorpointSourceControlState::IsModified() const
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::UnlockedModified
-		|| State == EAnchorpointState::UnlockedDeleted;
+		|| State == EAnchorpointState::UnlockedDeleted
+		|| State == EAnchorpointState::OutDatedLockedModified
+		|| State == EAnchorpointState::OutDatedUnlockedModified;
 }
 
 bool FAnchorpointSourceControlState::CanAdd() const
@@ -327,7 +339,9 @@ bool FAnchorpointSourceControlState::CanRevert() const
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::LockedUnchanged
 		|| State == EAnchorpointState::UnlockedModified
-		|| State == EAnchorpointState::UnlockedDeleted;
+		|| State == EAnchorpointState::UnlockedDeleted
+		|| State == EAnchorpointState::OutDatedLockedModified
+		|| State == EAnchorpointState::OutDatedUnlockedModified;
 }
 
 #undef LOCTEXT_NAMESPACE

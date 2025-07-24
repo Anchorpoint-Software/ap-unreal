@@ -64,17 +64,20 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			{
 				NewState.State = EAnchorpointState::Conflicted;
 			}
-			else if (bIsOutdated)
-			{
-				NewState.State = EAnchorpointState::OutDated;
-			}
 			else if (*StagedState == EAnchorpointFileOperation::Added)
 			{
 				NewState.State = EAnchorpointState::Added;
 			}
 			else if (*StagedState == EAnchorpointFileOperation::Modified)
 			{
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				if (!bIsOutdated)
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				}
+				else
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::OutDatedLockedModified : EAnchorpointState::OutDatedUnlockedModified;
+				}
 			}
 			else if (*StagedState == EAnchorpointFileOperation::Deleted)
 			{
@@ -91,17 +94,20 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			{
 				NewState.State = EAnchorpointState::Conflicted;
 			}
-			else if (bIsOutdated)
-			{
-				NewState.State = EAnchorpointState::OutDated;
-			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Added)
 			{
 				NewState.State = EAnchorpointState::Added;
 			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Modified)
 			{
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				if (!bIsOutdated)
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				}
+				else
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::OutDatedLockedModified : EAnchorpointState::OutDatedUnlockedModified;
+				}
 			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Deleted)
 			{
@@ -255,6 +261,12 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 			{
 				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
 				State.State = EAnchorpointState::LockedUnchanged;
+			}
+			else if (CurrentState->State == EAnchorpointState::OutDated
+				  || CurrentState->State == EAnchorpointState::OutDatedUnlockedModified)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::OutDatedLockedModified;
 			}
 		}
 	}
