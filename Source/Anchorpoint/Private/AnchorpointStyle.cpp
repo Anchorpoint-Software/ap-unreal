@@ -39,8 +39,45 @@ FAnchorpointStyle::~FAnchorpointStyle()
 	FSlateStyleRegistry::UnRegisterSlateStyle(*this);
 }
 
+const FSlateBrush* FAnchorpointStyle::GetBrush(const FName PropertyName, const ANSICHAR* Specifier, const ISlateStyle* RequestingStyle) const
+{
+	const FSlateBrush* Result = FSlateStyleSet::GetBrush(PropertyName, Specifier, RequestingStyle);
+	if (Result && Result != GetDefaultBrush())
+	{
+		return Result;
+	}
+
+	if (const ISlateStyle* FallbackStyle = FSlateStyleRegistry::FindSlateStyle(FallbackStyleName))
+	{
+		return FallbackStyle->GetBrush(PropertyName, Specifier, RequestingStyle);
+	}
+
+	return nullptr;
+}
+
+const FSlateBrush* FAnchorpointStyle::GetOptionalBrush(const FName PropertyName, const ANSICHAR* Specifier, const FSlateBrush* const InDefaultBrush) const
+{
+	const FSlateBrush* Result = FSlateStyleSet::GetOptionalBrush(PropertyName, Specifier, InDefaultBrush);
+	if (Result)
+	{
+		return Result;
+	}
+
+	if (const ISlateStyle* FallbackStyle = FSlateStyleRegistry::FindSlateStyle(FallbackStyleName))
+	{
+		return FallbackStyle->GetOptionalBrush(PropertyName, Specifier, InDefaultBrush);
+	}
+
+	return nullptr;
+}
+
 FAnchorpointStyle& FAnchorpointStyle::Get()
 {
 	static FAnchorpointStyle Inst;
 	return Inst;
+}
+
+void FAnchorpointStyle::SetFallbackStyleName(const FName& InName)
+{
+	FallbackStyleName = InName;
 }
