@@ -330,6 +330,13 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		FSlateApplication::Get().OnPostTick().AddLambda(
 			[WeakWindow = PopupWindow.ToWeakPtr()](float DeltaTime)
 			{
+				TSharedPtr<SWindow> CurrentModal = FSlateApplication::Get().GetActiveModalWindow();
+				if (CurrentModal.IsValid())
+				{
+					// We have an actual modal in front of us don't hack the focus
+					return;
+				}
+
 				if (TSharedPtr<SWindow> Window = WeakWindow.Pin())
 				{
 					Window->HACK_ForceToFront();
