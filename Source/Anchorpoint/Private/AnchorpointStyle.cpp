@@ -58,7 +58,7 @@ const FSlateBrush* FAnchorpointStyle::GetBrush(const FName PropertyName, const A
 const FSlateBrush* FAnchorpointStyle::GetOptionalBrush(const FName PropertyName, const ANSICHAR* Specifier, const FSlateBrush* const InDefaultBrush) const
 {
 	const FSlateBrush* Result = FSlateStyleSet::GetOptionalBrush(PropertyName, Specifier, InDefaultBrush);
-	if (Result)
+	if (Result && Result != InDefaultBrush)
 	{
 		return Result;
 	}
