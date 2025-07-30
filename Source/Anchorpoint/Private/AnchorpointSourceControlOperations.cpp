@@ -130,8 +130,11 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			}
 			else
 			{
+				TValueOrError<FString, FString> LockerInfoResult = AnchorpointCliOperations::GetUserDisplayName(*LockedBy);
+				const FString LockerDisplayName = LockerInfoResult.HasValue() ? LockerInfoResult.GetValue() : *LockedBy;
+
 				NewState.State = EAnchorpointState::LockedBySomeone;
-				NewState.OtherUserCheckedOut = *LockedBy;
+				NewState.OtherUserCheckedOut = LockerDisplayName;
 			}
 		}
 		else

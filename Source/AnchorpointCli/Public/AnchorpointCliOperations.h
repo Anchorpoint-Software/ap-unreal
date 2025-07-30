@@ -18,6 +18,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API FString ConvertFullPathToProjectRelative(const FString& InPath);
 
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetUserDisplayName(const FString& InUserEmail);
 
 	ANCHORPOINTCLI_API TValueOrError<FAnchorpointStatus, FString> GetStatus(const TArray<FString>& InFiles, bool bForced = false);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> DisableAutoLock();
