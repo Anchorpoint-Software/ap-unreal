@@ -7,9 +7,12 @@
 #include <ContentBrowserDataMenuContexts.h>
 #include <ISourceControlModule.h>
 #include <SourceControlHelpers.h>
+#include <RevisionControlStyle/RevisionControlStyle.h>
 
+#include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointSourceControlOperations.h"
+#include "AnchorpointStyle.h"
 
 FAnchorpointModule& FAnchorpointModule::Get()
 {
@@ -29,6 +32,21 @@ FAnchorpointSourceControlSettings& FAnchorpointModule::GetSettings()
 
 void FAnchorpointModule::StartupModule()
 {
+	// Style setup
+
+	// NOTE: Unreal's recommended way to style/customize RevisionControl Styles is to inherit from FDefaultRevisionControlStyle
+	// However, someone forgot to DLL export it, so using it leads to linking errors.
+	//
+	// As a workaround, Anchorpoint will replace the Active Revision Control Style but keep a reference to the default one.
+	// When an icon is requested, Anchorpoint will try to serve it, if failed, it will use the default revision control style as a fallback.
+	FAnchorpointStyle& AnchorpointStyle = FAnchorpointStyle::Get();
+
+	const FName Default = FRevisionControlStyleManager::GetStyleSetName();
+	AnchorpointStyle.SetFallbackStyleName(Default);
+
+	const FName AnchorpointStyleName = AnchorpointStyle.GetStyleSetName();
+	FRevisionControlStyleManager::SetActiveRevisionControlStyle(AnchorpointStyleName);
+
 	// Load settings for config
 	AnchorpointSourceControlSettings.LoadSettings();
 
@@ -84,8 +102,10 @@ void FAnchorpointModule::ShutdownModule()
 
 void FAnchorpointModule::ExtendFileContextMenu(UToolMenu* InMenu)
 {
-	ISourceControlProvider& CurrentProvider = ISourceControlModule::Get().GetProvider();
-	if (CurrentProvider.GetName() != AnchorpointSourceControlProvider.GetName())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (!bUsesAnchorpoint)
 	{
 		return;
 	}
@@ -171,8 +191,7 @@ void FAnchorpointModule::RegisterMergeWithAnchorpoint(FToolMenuSection& InSectio
 				}
 				else
 				{
-					const FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-					AnchorpointCliOperations::ShowInAnchorpoint(ProjectPath);
+					AnchorpointCliOperations::ShowInAnchorpoint();
 				}
 			})
 		));

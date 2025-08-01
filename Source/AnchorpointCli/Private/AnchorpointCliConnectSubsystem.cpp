@@ -149,8 +149,8 @@ void UAnchorpointCliConnectSubsystem::Deinitialize()
 
 void UAnchorpointCliConnectSubsystem::TickConnection()
 {
-	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	const bool bUsesAnchorpoint = Provider.IsEnabled() && Provider.GetName().ToString().Contains(TEXT("Anchorpoint"));
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
 	if (!bUsesAnchorpoint)
 	{
 		if (Process)
@@ -330,6 +330,13 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		FSlateApplication::Get().OnPostTick().AddLambda(
 			[WeakWindow = PopupWindow.ToWeakPtr()](float DeltaTime)
 			{
+				TSharedPtr<SWindow> CurrentModal = FSlateApplication::Get().GetActiveModalWindow();
+				if (CurrentModal.IsValid())
+				{
+					// We have an actual modal in front of us don't hack the focus
+					return;
+				}
+
 				if (TSharedPtr<SWindow> Window = WeakWindow.Pin())
 				{
 					Window->HACK_ForceToFront();
@@ -342,7 +349,7 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 {
 	if (!bSyncInProgress)
 	{
-		RespondToMessage(Message.Id, FString(TEXT("Sync was not started")));
+		UE_LOG(LogAnchorpointCli, Warning, TEXT("StopSync receieved without having a sync in progress"))
 		return;
 	}
 
@@ -554,6 +561,12 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 			SNew(SImage)
 			.DesiredSizeOverride(CoreStyleConstants::Icon16x16)
 			.Image_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerIcon)
+			.OnMouseButtonDown_Lambda([](const FGeometry&, const FPointerEvent& PointerEvent)
+			{
+				AnchorpointCliOperations::ShowInAnchorpoint();
+
+				return FReply::Handled();
+			})
 			.ToolTipText_UObject(this, &UAnchorpointCliConnectSubsystem::GetDrawerText)
 		];
 
@@ -563,7 +576,10 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 {
-	if (!IsProjectConnected())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (bUsesAnchorpoint && !IsProjectConnected())
 	{
 		return FAppStyle::GetBrush(TEXT("MessageLog.Warning"));
 	}
@@ -573,7 +589,10 @@ const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
 
 FText UAnchorpointCliConnectSubsystem::GetDrawerText() const
 {
-	if (!IsProjectConnected())
+	FAnchorpointCliModule& CliModule = FAnchorpointCliModule::Get();
+	const bool bUsesAnchorpoint = CliModule.IsCurrentProvider();
+
+	if (bUsesAnchorpoint && !IsProjectConnected())
 	{
 		return NSLOCTEXT("Anchorpoint", "DrawerDisconnected", "Keep the Anchorpoint project open (or minimized) to maintain better connectivity.");
 	}

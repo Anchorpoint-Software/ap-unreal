@@ -14,6 +14,7 @@
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
 #include "AnchorpointLog.h"
+#include "AnchorpointPopup.h"
 #include "AnchorpointSourceControlCommand.h"
 #include "AnchorpointSourceControlWorker.h"
 #include "AnchorpointSourceControlState.h"
@@ -416,6 +417,8 @@ void FAnchorpointSourceControlProvider::Tick()
 
 	if (bStatesUpdated)
 	{
+		OnStatesChanged();
+
 		OnSourceControlStateChanged.Broadcast();
 	}
 }
@@ -423,6 +426,37 @@ void FAnchorpointSourceControlProvider::Tick()
 TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() const
 {
 	return SNew(SAnchorpointSourceControlSettingsWidget);
+}
+
+void FAnchorpointSourceControlProvider::OnStatesChanged()
+{
+	// List of files we already warned the user about - once this file is spotted with a non-conflicting state,
+	// it is removed from the list, so we can emit warnings again.
+	static TArray<FString> AlreadyWarnedFiles;
+
+	bool bPopupNeeded = false;
+	for (const TTuple<FString, TSharedRef<FAnchorpointSourceControlState>>& Cache : StateCache)
+	{
+		if (Cache.Value->State == EAnchorpointState::Conflicted)
+		{
+			if (!AlreadyWarnedFiles.Contains(Cache.Key))
+			{
+				AlreadyWarnedFiles.Add(Cache.Key);
+
+				// New conflict file detected, we will notify the user!
+				bPopupNeeded = true;
+			}
+		}
+		else
+		{
+			AlreadyWarnedFiles.Remove(Cache.Key);
+		}
+	}
+
+	if(bPopupNeeded)
+	{
+		AnchorpointPopups::ShowConflictPopup();
+	}
 }
 
 void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)

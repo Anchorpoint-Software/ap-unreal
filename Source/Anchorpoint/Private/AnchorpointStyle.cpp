@@ -26,6 +26,8 @@ FAnchorpointStyle::FAnchorpointStyle() : FSlateStyleSet(TEXT("AnchorpointStyle")
 #define IMAGE_BRUSH_SVG(RelativePath, ...) FSlateVectorImageBrush(RootToContentDir(RelativePath, TEXT(".svg")), __VA_ARGS__)
 
 	Set("Icons.Lock", new IMAGE_BRUSH_SVG("Icons/lock", CoreStyleConstants::Icon16x16, IconColor));
+	Set("Icons.OutdatedModifiedLocked", new IMAGE_BRUSH_SVG("Icons/outdated_modified_locked", CoreStyleConstants::Icon16x16, IconColor));
+	Set("Icons.OutdatedModifiedUnlocked", new IMAGE_BRUSH_SVG("Icons/outdated_modified_unlocked", CoreStyleConstants::Icon16x16, IconColor));
 
 #undef IMAGE_BRUSH_SVG
 
@@ -37,8 +39,45 @@ FAnchorpointStyle::~FAnchorpointStyle()
 	FSlateStyleRegistry::UnRegisterSlateStyle(*this);
 }
 
+const FSlateBrush* FAnchorpointStyle::GetBrush(const FName PropertyName, const ANSICHAR* Specifier, const ISlateStyle* RequestingStyle) const
+{
+	const FSlateBrush* Result = FSlateStyleSet::GetBrush(PropertyName, Specifier, RequestingStyle);
+	if (Result && Result != GetDefaultBrush())
+	{
+		return Result;
+	}
+
+	if (const ISlateStyle* FallbackStyle = FSlateStyleRegistry::FindSlateStyle(FallbackStyleName))
+	{
+		return FallbackStyle->GetBrush(PropertyName, Specifier, RequestingStyle);
+	}
+
+	return nullptr;
+}
+
+const FSlateBrush* FAnchorpointStyle::GetOptionalBrush(const FName PropertyName, const ANSICHAR* Specifier, const FSlateBrush* const InDefaultBrush) const
+{
+	const FSlateBrush* Result = FSlateStyleSet::GetOptionalBrush(PropertyName, Specifier, InDefaultBrush);
+	if (Result && Result != InDefaultBrush)
+	{
+		return Result;
+	}
+
+	if (const ISlateStyle* FallbackStyle = FSlateStyleRegistry::FindSlateStyle(FallbackStyleName))
+	{
+		return FallbackStyle->GetOptionalBrush(PropertyName, Specifier, InDefaultBrush);
+	}
+
+	return nullptr;
+}
+
 FAnchorpointStyle& FAnchorpointStyle::Get()
 {
 	static FAnchorpointStyle Inst;
 	return Inst;
+}
+
+void FAnchorpointStyle::SetFallbackStyleName(const FName& InName)
+{
+	FallbackStyleName = InName;
 }

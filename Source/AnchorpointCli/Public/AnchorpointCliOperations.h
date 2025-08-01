@@ -9,7 +9,7 @@ class FAnchorpointCliProcess;
 namespace AnchorpointCliOperations
 {
 	ANCHORPOINTCLI_API bool IsInstalled();
-	ANCHORPOINTCLI_API void ShowInAnchorpoint(const FString& InPath);
+	ANCHORPOINTCLI_API void ShowInAnchorpoint(FString InPath = TEXT(""));
 
 	ANCHORPOINTCLI_API FString GetRepositoryRootPath();
 	ANCHORPOINTCLI_API bool IsUnderRepositoryPath(const FString& InPath);
@@ -18,6 +18,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API FString ConvertFullPathToProjectRelative(const FString& InPath);
 
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
+	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetUserDisplayName(const FString& InUserEmail);
 
 	ANCHORPOINTCLI_API TValueOrError<FAnchorpointStatus, FString> GetStatus(const TArray<FString>& InFiles, bool bForced = false);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> DisableAutoLock();

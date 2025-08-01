@@ -19,13 +19,10 @@ enum class EAnchorpointState
 	UnlockedDeleted,
 	UnlockedModified,
 	UnlockedUnchanged,
-
-	//TODO: Icons
-	OutDated, // if you modify this file, you will cause a conflict
-	Conflicted, // you already caused a conflict
-
-	// TODO: Do later
-	Ignored,
+	OutDated,
+	OutDatedLockedModified,
+	OutDatedUnlockedModified,
+	Conflicted,
 };
 
 /**

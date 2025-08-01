@@ -62,6 +62,7 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
+	void OnStatesChanged();
 	void TickDuringModal(float DeltaTime);
 	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
 	void RefreshStatus();

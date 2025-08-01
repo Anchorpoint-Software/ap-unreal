@@ -64,17 +64,20 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			{
 				NewState.State = EAnchorpointState::Conflicted;
 			}
-			else if (bIsOutdated)
-			{
-				NewState.State = EAnchorpointState::OutDated;
-			}
 			else if (*StagedState == EAnchorpointFileOperation::Added)
 			{
 				NewState.State = EAnchorpointState::Added;
 			}
 			else if (*StagedState == EAnchorpointFileOperation::Modified)
 			{
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				if (!bIsOutdated)
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				}
+				else
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::OutDatedLockedModified : EAnchorpointState::OutDatedUnlockedModified;
+				}
 			}
 			else if (*StagedState == EAnchorpointFileOperation::Deleted)
 			{
@@ -91,17 +94,20 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			{
 				NewState.State = EAnchorpointState::Conflicted;
 			}
-			else if (bIsOutdated)
-			{
-				NewState.State = EAnchorpointState::OutDated;
-			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Added)
 			{
 				NewState.State = EAnchorpointState::Added;
 			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Modified)
 			{
-				NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				if (!bIsOutdated)
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::LockedModified : EAnchorpointState::UnlockedModified;
+				}
+				else
+				{
+					NewState.State = bLockedByMe ? EAnchorpointState::OutDatedLockedModified : EAnchorpointState::OutDatedUnlockedModified;
+				}
 			}
 			else if (*NotStagedState == EAnchorpointFileOperation::Deleted)
 			{
@@ -124,8 +130,11 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			}
 			else
 			{
+				TValueOrError<FString, FString> LockerInfoResult = AnchorpointCliOperations::GetUserDisplayName(*LockedBy);
+				const FString LockerDisplayName = LockerInfoResult.HasValue() ? LockerInfoResult.GetValue() : *LockedBy;
+
 				NewState.State = EAnchorpointState::LockedBySomeone;
-				NewState.OtherUserCheckedOut = *LockedBy;
+				NewState.OtherUserCheckedOut = LockerDisplayName;
 			}
 		}
 		else
@@ -255,6 +264,12 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 			{
 				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
 				State.State = EAnchorpointState::LockedUnchanged;
+			}
+			else if (CurrentState->State == EAnchorpointState::OutDated
+				  || CurrentState->State == EAnchorpointState::OutDatedUnlockedModified)
+			{
+				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
+				State.State = EAnchorpointState::OutDatedLockedModified;
 			}
 		}
 	}
@@ -503,28 +518,6 @@ FName FAnchorpointCheckInWorker::GetName() const
 	return "CheckIn";
 }
 
-void ShowConflictStatePopup()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(Anchorpoint::ShowConflictStatePopup);
-
-	AsyncTask(ENamedThreads::GameThread,
-	          []()
-	          {
-		          TArray<FText> ActionButtons;
-		          const int OpenAp = ActionButtons.Add(INVTEXT("Open Anchorpoint Desktop"));
-		          const int Ok = ActionButtons.Add(INVTEXT("Cancel"));
-
-		          const FText Title = INVTEXT("Repository is in conflict state");
-		          const FText Message = INVTEXT("Please open the Anchorpoint desktop application to resolve all file conflicts, before submitting new changes.");
-		          int32 Choice = SAnchorpointPopup::Open(Title, Message, ActionButtons);
-
-		          if (Choice == OpenAp)
-		          {
-			          const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
-			          AnchorpointCliOperations::ShowInAnchorpoint(ProjectDir);
-		          }
-	          });
-}
 
 bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InCommand)
 {
@@ -533,7 +526,7 @@ bool FAnchorpointCheckInWorker::Execute(FAnchorpointSourceControlCommand& InComm
 	FAnchorpointSourceControlProvider& AnchorpointProvider = FAnchorpointModule::Get().GetProvider();
 	if (AnchorpointProvider.HasAnyConflicts())
 	{
-		ShowConflictStatePopup();
+		AnchorpointPopups::ShowConflictPopupAnyThread();
 
 		InCommand.ErrorMessages.Add(TEXT("Repository is in conflict state"));
 		InCommand.bCommandSuccessful = false;

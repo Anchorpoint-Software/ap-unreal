@@ -25,10 +25,17 @@ bool AnchorpointCliOperations::IsInstalled()
 	return !CliPath.IsEmpty() && FPaths::FileExists(CliPath);
 }
 
-void AnchorpointCliOperations::ShowInAnchorpoint(const FString& InPath)
+void AnchorpointCliOperations::ShowInAnchorpoint(FString InPath)
 {
+	if (InPath.IsEmpty())
+	{
+		const FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+		InPath = ProjectDir;
+	}
+
 	const FString ApplicationPath = FAnchorpointCliModule::Get().GetApplicationPath();
-	FPlatformProcess::CreateProc(*ApplicationPath, *InPath, true, true, false, nullptr, 0, nullptr, nullptr);
+	const FString QuotedPath = FString::Printf(TEXT("\"%s\""), *InPath);
+	FPlatformProcess::CreateProc(*ApplicationPath, *QuotedPath, true, true, false, nullptr, 0, nullptr, nullptr);
 }
 
 FString AnchorpointCliOperations::GetRepositoryRootPath()
@@ -127,6 +134,44 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 	}
 
 	return MakeError(TEXT("Could not find current user"));
+}
+
+TValueOrError<FString, FString> AnchorpointCliOperations::GetUserDisplayName(const FString& InUserEmail)
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetUserDisplayName);
+
+	static TMap<FString, FString> CachedUsers;
+	if (FString* CachedDisplayName = CachedUsers.Find(InUserEmail))
+	{
+		return MakeValue(*CachedDisplayName);
+	}
+
+	FString UserCommand = TEXT("user list");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(UserCommand);
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
+	CachedUsers.Empty();
+
+	for (const TSharedPtr<FJsonValue> User : Users)
+	{
+		TSharedPtr<FJsonObject> UserObject = User->AsObject();
+
+		const FString Email = UserObject->GetStringField(TEXT("email"));
+		const FString Name = UserObject->GetStringField(TEXT("name"));
+
+		CachedUsers.Add(Email, Name);
+	}
+
+	if (FString* CachedDisplayName = CachedUsers.Find(InUserEmail))
+	{
+		return MakeValue(*CachedDisplayName);
+	}
+
+	return MakeError(TEXT("User not found"));
 }
 
 TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(const TArray<FString>& InFiles, bool bForced)
