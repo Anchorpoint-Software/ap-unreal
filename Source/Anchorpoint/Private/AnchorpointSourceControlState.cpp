@@ -80,6 +80,8 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 {
 	switch (State)
 	{
+	case EAnchorpointState::None:
+		return FSlateIcon();
 	case EAnchorpointState::Unknown:
 		return FSlateIcon();
 	case EAnchorpointState::Added:
@@ -120,6 +122,8 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 {
 	switch (State)
 	{
+	case EAnchorpointState::None:
+		return LOCTEXT("None", "None");
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown", "Unknown");
 	case EAnchorpointState::Added:
@@ -158,6 +162,8 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 {
 	switch (State)
 	{
+	case EAnchorpointState::None:
+		return LOCTEXT("None_Tooltip", "None");
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown_Tooltip", "Unknown");
 	case EAnchorpointState::Added:
@@ -225,6 +231,20 @@ bool FAnchorpointSourceControlState::CanCheckIn() const
 
 bool FAnchorpointSourceControlState::CanCheckout() const
 {
+	if (IsConfigFile())
+	{
+		//NOTE: Currently the SSettingsEditorCheckoutNotice supports only 2 states for version controlled files:
+		// 1. Needs to be checked out -> CanCheckout returns true.
+		// 2. Already is checked out -> CanCheckout return false.
+		
+		// You might wonder, does this mean the ini file shows up as 'already checked out' if the file is locked by someone else?
+		// Yes. In this case CanCheckout would return false (with the intention of saying: "You cannot check out this file, it is locked"),
+		// it will be interpreted as "This file doesn't need checkout, you are good to change it". (SSettingsEditorCheckoutNotice::Tick)
+
+		// Therefore we can just return the current checkout state:
+		return !IsCheckedOut();
+	}
+	
 	return State == EAnchorpointState::UnlockedUnchanged
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted
@@ -342,6 +362,11 @@ bool FAnchorpointSourceControlState::CanRevert() const
 		|| State == EAnchorpointState::UnlockedDeleted
 		|| State == EAnchorpointState::OutDatedLockedModified
 		|| State == EAnchorpointState::OutDatedUnlockedModified;
+}
+
+bool FAnchorpointSourceControlState::IsConfigFile() const
+{
+	return LocalFilename.EndsWith(TEXT(".ini"));
 }
 
 #undef LOCTEXT_NAMESPACE
