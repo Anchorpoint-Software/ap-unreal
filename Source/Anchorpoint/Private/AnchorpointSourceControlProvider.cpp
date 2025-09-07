@@ -85,7 +85,33 @@ void FAnchorpointSourceControlProvider::Close()
 
 const FName& FAnchorpointSourceControlProvider::GetName() const
 {
-	static FName ProviderName("Anchorpoint (Git)");
+	// Another hack because FEditorBuildUtils::WorldPartitionBuildNavigation doesn't wrap the SCCProvider argument in quotes.
+	// Therefore, with our standard implementation it will get -SCCProvider=Anchorpoint (Git) on the command line.
+	// This means, during initialization the Provider will be "Anchorpoint" and "(Git)" will be a secondary ignored argument.
+	// To avoid this, while the modal is running, we will be using a SCCProvider friendly name - "Anchorpoint".
+	if (ActiveModalState == EActiveModalState::WorldPartitionBuildNavigation)
+	{
+		static FName SCCProviderName = FName("Anchorpoint");
+		return SCCProviderName;
+	}
+	
+	static FName ProviderName = []()
+	{
+		// NOTE: Related to comment above, when passed via commandline, the SCCProvider might look slightly different.
+		// To gracefully handle these cases, we are going to use the name provided for the provider, as long as it's Anchorpoint related.
+		FString ParamProvider;
+		if (FParse::Value(FCommandLine::Get(), TEXT("SCCProvider="), ParamProvider))
+		{
+			if (ParamProvider.Contains("Anchorpoint"))
+			{
+				return FName(ParamProvider);
+			}
+		}
+
+		// If not SCCProvider was listed, we default to our user-friendly facing name.
+		return FName("Anchorpoint (Git)");
+	}();
+
 	return ProviderName;
 }
 
