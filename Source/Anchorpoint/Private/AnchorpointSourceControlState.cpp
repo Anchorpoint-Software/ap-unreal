@@ -80,8 +80,6 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 {
 	switch (State)
 	{
-	case EAnchorpointState::None:
-		return FSlateIcon();
 	case EAnchorpointState::Unknown:
 		return FSlateIcon();
 	case EAnchorpointState::Added:
@@ -122,8 +120,6 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 {
 	switch (State)
 	{
-	case EAnchorpointState::None:
-		return LOCTEXT("None", "None");
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown", "Unknown");
 	case EAnchorpointState::Added:
@@ -162,8 +158,6 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 {
 	switch (State)
 	{
-	case EAnchorpointState::None:
-		return LOCTEXT("None_Tooltip", "None");
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown_Tooltip", "Unknown");
 	case EAnchorpointState::Added:
