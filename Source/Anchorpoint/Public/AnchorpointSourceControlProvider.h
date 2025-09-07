@@ -86,7 +86,13 @@ public:
 
 	FTimerHandle RefreshTimerHandle;
 	float RefreshDelay = 1.0f;
-	bool bSubmitModalActive = false;
+
+	enum class EActiveModalState
+	{
+		None,
+		Submit,
+		WorldPartitionBuildNavigation,
+	} ActiveModalState = EActiveModalState::None;
 };
 
 template <typename Type>

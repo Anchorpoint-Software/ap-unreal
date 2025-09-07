@@ -343,7 +343,7 @@ bool FAnchorpointSourceControlProvider::UsesCheckout() const
 	//	
 	// The Tick & TickDuringModal are actively scanning to check if the user is actively submitting
 	// During such times the Anchorpoint Source Control Provider has the Checkout capabilities disabled to disable the "Keep Files Checked Out" button
-	if (bSubmitModalActive)
+	if (ActiveModalState == EActiveModalState::Submit)
 	{
 		return false;
 	}
@@ -380,7 +380,7 @@ TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 
 void FAnchorpointSourceControlProvider::Tick()
 {
-	bSubmitModalActive = false;
+	ActiveModalState = EActiveModalState::None;
 
 	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
 	bool bStatesUpdated = false;
@@ -466,7 +466,11 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 		TSharedRef<SWidget> ModalContent = ActiveModalWindow->GetContent();
 		if (ModalContent->GetType() == TEXT("SSourceControlSubmitWidget"))
 		{
-			bSubmitModalActive = true;
+			ActiveModalState = EActiveModalState::Submit;
+		}
+		else if (ModalContent->GetType() == TEXT("SWorldPartitionBuildNavigationDialog"))
+		{
+			ActiveModalState = EActiveModalState::WorldPartitionBuildNavigation;
 		}
 	}
 }
