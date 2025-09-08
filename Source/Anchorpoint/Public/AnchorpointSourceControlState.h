@@ -43,7 +43,7 @@ public:
 	FString LocalFilename;
 	FDateTime TimeStamp = 0;
 	FString OtherUserCheckedOut;
-	EAnchorpointState State = EAnchorpointState::Unknown;
+	EAnchorpointState State = EAnchorpointState::UnlockedUnchanged;
 
 #if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 3)
 	FResolveInfo PendingResolveInfo;
@@ -93,4 +93,6 @@ private:
 	virtual bool IsConflicted() const override;
 	virtual bool CanRevert() const override;
 	/** End ISourceControlState interface */
+
+	bool IsConfigFile() const;
 };
