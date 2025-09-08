@@ -155,7 +155,9 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 	// In case we have files that are not in the status, we add them as UnlockedUnchanged
 	for (const FString& Path : AllRelevantFiles)
 	{
-		if (FPaths::FileExists(Path))
+		const FString Extension = FPaths::GetExtension(Path);
+		const bool bIsFile = !Extension.IsEmpty();
+		if (bIsFile)
 		{
 			bool bEntryExists = OutState.ContainsByPredicate([&Path](const FAnchorpointSourceControlState& State) { return State.LocalFilename == Path; });
 			if (!bEntryExists)

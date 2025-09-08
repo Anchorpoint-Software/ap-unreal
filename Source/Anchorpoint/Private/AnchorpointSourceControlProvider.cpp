@@ -85,7 +85,33 @@ void FAnchorpointSourceControlProvider::Close()
 
 const FName& FAnchorpointSourceControlProvider::GetName() const
 {
-	static FName ProviderName("Anchorpoint (Git)");
+	// Another hack because FEditorBuildUtils::WorldPartitionBuildNavigation doesn't wrap the SCCProvider argument in quotes.
+	// Therefore, with our standard implementation it will get -SCCProvider=Anchorpoint (Git) on the command line.
+	// This means, during initialization the Provider will be "Anchorpoint" and "(Git)" will be a secondary ignored argument.
+	// To avoid this, while the modal is running, we will be using a SCCProvider friendly name - "Anchorpoint".
+	if (ActiveModalState == EActiveModalState::WorldPartitionBuildNavigation)
+	{
+		static FName SCCProviderName = FName("Anchorpoint");
+		return SCCProviderName;
+	}
+	
+	static FName ProviderName = []()
+	{
+		// NOTE: Related to comment above, when passed via commandline, the SCCProvider might look slightly different.
+		// To gracefully handle these cases, we are going to use the name provided for the provider, as long as it's Anchorpoint related.
+		FString ParamProvider;
+		if (FParse::Value(FCommandLine::Get(), TEXT("SCCProvider="), ParamProvider))
+		{
+			if (ParamProvider.Contains("Anchorpoint"))
+			{
+				return FName(ParamProvider);
+			}
+		}
+
+		// If not SCCProvider was listed, we default to our user-friendly facing name.
+		return FName("Anchorpoint (Git)");
+	}();
+
 	return ProviderName;
 }
 
@@ -343,7 +369,7 @@ bool FAnchorpointSourceControlProvider::UsesCheckout() const
 	//	
 	// The Tick & TickDuringModal are actively scanning to check if the user is actively submitting
 	// During such times the Anchorpoint Source Control Provider has the Checkout capabilities disabled to disable the "Keep Files Checked Out" button
-	if (bSubmitModalActive)
+	if (ActiveModalState == EActiveModalState::Submit)
 	{
 		return false;
 	}
@@ -380,7 +406,7 @@ TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 
 void FAnchorpointSourceControlProvider::Tick()
 {
-	bSubmitModalActive = false;
+	ActiveModalState = EActiveModalState::None;
 
 	// ToImplement: I am unhappy with the current async execution, maybe we can find something better 
 	bool bStatesUpdated = false;
@@ -466,7 +492,11 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 		TSharedRef<SWidget> ModalContent = ActiveModalWindow->GetContent();
 		if (ModalContent->GetType() == TEXT("SSourceControlSubmitWidget"))
 		{
-			bSubmitModalActive = true;
+			ActiveModalState = EActiveModalState::Submit;
+		}
+		else if (ModalContent->GetType() == TEXT("SWorldPartitionBuildNavigationDialog"))
+		{
+			ActiveModalState = EActiveModalState::WorldPartitionBuildNavigation;
 		}
 	}
 }
