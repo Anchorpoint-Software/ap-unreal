@@ -171,6 +171,30 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 	return true;
 }
 
+void ShowPopupWhenPossible(const FText& Title, const FText& Message)
+{
+	auto CallSelf = [Title, Message]()
+	{
+		ShowPopupWhenPossible(Title, Message);
+	};
+
+	if (!IsInGameThread())
+	{
+		AsyncTask(ENamedThreads::GameThread, CallSelf);
+		return;
+	}
+
+	const TSharedPtr<SWindow> ActiveModal = FSlateApplication::Get().GetActiveModalWindow();
+	if (!ActiveModal)
+	{
+		FMessageDialog::Open(EAppMsgType::Ok, Message, Title);
+	}
+	else
+	{
+		GEditor->GetTimerManager()->SetTimerForNextTick(CallSelf);
+	}
+}
+
 FName FAnchorpointConnectWorker::GetName() const
 {
 	return "Connect";
@@ -231,18 +255,12 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 
 	if (LockResult.HasError())
 	{
-		FString LockError = LockResult.GetError();
-
-		AsyncTask(ENamedThreads::GameThread,
-		          [LockError]()
-		          {
-			          FText Title = NSLOCTEXT("Anchorpoint", "CheckoutError", "Unable to Check Out From Revision Control!");
-			          FText Message = FText::FromString(LockError);
-
-			          FMessageDialog::Open(EAppMsgType::Ok, Message, Title);
-		          });
-
-		InCommand.ErrorMessages.Add(LockResult.GetError());
+		const FString LockError = LockResult.GetError();
+		InCommand.ErrorMessages.Add(LockError);
+		
+		const FText Title = NSLOCTEXT("Anchorpoint", "CheckoutError", "Unable to Check Out From Revision Control!");
+		const FText Message = FText::FromString(LockError);
+		ShowPopupWhenPossible(Title, Message);
 	}
 
 	if (LockResult.HasValue())
