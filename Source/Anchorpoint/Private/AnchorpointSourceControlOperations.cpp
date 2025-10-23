@@ -2,8 +2,10 @@
 
 #include "AnchorpointSourceControlOperations.h"
 
+#include <Algo/Compare.h>
 #include <Async/Async.h>
 #include <ISourceControlModule.h>
+#include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 
 #include "Anchorpoint.h"
@@ -286,7 +288,7 @@ bool FAnchorpointCheckOutWorker::Execute(FAnchorpointSourceControlCommand& InCom
 				State.State = EAnchorpointState::LockedUnchanged;
 			}
 			else if (CurrentState->State == EAnchorpointState::OutDated
-				  || CurrentState->State == EAnchorpointState::OutDatedUnlockedModified)
+				|| CurrentState->State == EAnchorpointState::OutDatedUnlockedModified)
 			{
 				FAnchorpointSourceControlState& State = States.Emplace_GetRef(File);
 				State.State = EAnchorpointState::OutDatedLockedModified;
@@ -394,7 +396,19 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 
 	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
 
-	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States, Operation->ShouldForceUpdate());
+	bool bForcedUpdate = false;
+	if (Operation->ShouldForceUpdate())
+	{
+		bForcedUpdate = true;
+	}
+	if (Algo::Compare(InCommand.Files, SourceControlHelpers::GetSourceControlLocations()))
+	{
+		// NOTE: The "Submit Content" (FSourceControlWindows::ChoosePackagesToCheckIn) button doesn’t force a source control refresh,  
+		// so recently checked-out assets may have stale states. We detect this case by verifying the command’s target file.
+		bForcedUpdate = true;
+	}
+
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States, bForcedUpdate);
 
 	if (Operation->ShouldUpdateHistory())
 	{
