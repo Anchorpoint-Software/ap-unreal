@@ -182,7 +182,7 @@ void ShowPopupWhenPossible(const FText& Title, const FText& Message)
 
 	if (!IsInGameThread())
 	{
-		AsyncTask(ENamedThreads::GameThread, CallSelf);
+		AsyncTask(ENamedThreads::GameThread, MoveTemp(CallSelf));
 		return;
 	}
 
@@ -193,7 +193,7 @@ void ShowPopupWhenPossible(const FText& Title, const FText& Message)
 	}
 	else
 	{
-		GEditor->GetTimerManager()->SetTimerForNextTick(CallSelf);
+		GEditor->GetTimerManager()->SetTimerForNextTick(MoveTemp(CallSelf));
 	}
 }
 
