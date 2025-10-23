@@ -2,8 +2,10 @@
 
 #include "AnchorpointSourceControlOperations.h"
 
+#include <Algo/Compare.h>
 #include <Async/Async.h>
 #include <ISourceControlModule.h>
+#include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 
 #include "Anchorpoint.h"
@@ -376,7 +378,19 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 
 	TSharedRef<FUpdateStatus> Operation = StaticCastSharedRef<FUpdateStatus>(InCommand.Operation);
 
-	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States, Operation->ShouldForceUpdate());
+	bool bForcedUpdate = false;
+	if(Operation->ShouldForceUpdate())
+	{
+		bForcedUpdate = true;
+	}
+	if (Algo::Compare(InCommand.Files, SourceControlHelpers::GetSourceControlLocations()))
+	{
+		//NOTE: Certain callers like FSourceControlWindows::ChoosePackagesToCheckIn (triggered by the "Submit Content" button)
+		// Are not sending a "forced" update request, but we can still identify it by large volume of file/folders it requests to refresh.
+		bForcedUpdate = true;
+	}
+	
+	InCommand.bCommandSuccessful = RunUpdateStatus(InCommand.Files, States, bForcedUpdate);
 
 	if (Operation->ShouldUpdateHistory())
 	{
