@@ -204,6 +204,14 @@ int32 FAnchorpointSourceControlProvider::GetStateBranchIndex(const FString& Bran
 	return INDEX_NONE;
 }
 
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 7)
+bool FAnchorpointSourceControlProvider::GetStateBranchAtIndex(int32 BranchIndex, FString& OutBranchName) const
+{
+	// Same as RegisterStateBranches. Need to double-check with the team
+	return false;
+}
+#endif
+
 ECommandResult::Type FAnchorpointSourceControlProvider::GetState(const TArray<FString>& InFiles, TArray<FSourceControlStateRef>& OutState, EStateCacheUsage::Type InStateCacheUsage)
 {
 	if (!IsEnabled())
