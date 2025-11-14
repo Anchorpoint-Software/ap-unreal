@@ -13,6 +13,7 @@
 
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointHacks.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointPopup.h"
 #include "AnchorpointSourceControlCommand.h"
@@ -509,6 +510,11 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 		else if (ModalContent->GetType() == TEXT("SWorldPartitionBuildNavigationDialog"))
 		{
 			ActiveModalState = EActiveModalState::WorldPartitionBuildNavigation;
+		}
+		else if (ModalContent->GetType() == TEXT("SPackagesDialog"))
+		{
+			ActiveModalState = EActiveModalState::PackagesDialog;
+			FAnchorpointHacksModule::RefreshOpenPackagesDialog();
 		}
 	}
 }

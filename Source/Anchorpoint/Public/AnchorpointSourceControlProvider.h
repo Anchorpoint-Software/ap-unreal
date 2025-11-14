@@ -94,6 +94,7 @@ public:
 	{
 		None,
 		Submit,
+		PackagesDialog, // also known as "Check out Assets" dialog
 		WorldPartitionBuildNavigation,
 	} ActiveModalState = EActiveModalState::None;
 };

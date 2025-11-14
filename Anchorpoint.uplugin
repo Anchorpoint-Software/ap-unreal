@@ -28,6 +28,11 @@
 			"Type": "Editor",
 			"LoadingPhase": "Default",
 			"PlatformAllowList": [ "Win64", "Mac" ]
+		},
+		{
+			"Name": "AnchorpointHacks",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
