@@ -31,7 +31,8 @@ public class Anchorpoint : ModuleRules
 				"UnrealEd",
 
 				// Anchorpoint
-				"AnchorpointCli", 
+				"AnchorpointCli",
+				"AnchorpointHacks",
 			});
 	}
 }
