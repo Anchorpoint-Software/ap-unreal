@@ -132,17 +132,18 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 
 	const FTimespan TimeSinceLastSync = FDateTime::Now() - GetLastSyncTime();
 	const int32 TimeSeconds = FMath::FloorToInt(TimeSinceLastSync.GetTotalSeconds());
-	if (TimeSeconds >= 0)
-	{
-		StatusMessages.Add(FString::Printf(TEXT("Last sync %d seconds ago"), TimeSeconds));
-	}
-	else
-	{
-		StatusMessages.Add(TEXT("Never synced"));
-	}
+	StatusMessages.Add(TimeSeconds > 0 ? FString::Printf(TEXT("Last sync %d seconds ago"), TimeSeconds) : TEXT("Not synced yet"));
 
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("Anchorpoint"));
 	StatusMessages.Add(FString::Printf(TEXT("Plugin version: %s"), *Plugin->GetDescriptor().VersionName));
+
+	const UEditorLoadingSavingSettings* Settings = GetDefault<UEditorLoadingSavingSettings>();
+
+	const FString CheckoutOnAssetModification = LexToString(Settings->GetAutomaticallyCheckoutOnAssetModification());
+	StatusMessages.Add(FString::Printf(TEXT("CheckoutOnAssetModification: %s"), *CheckoutOnAssetModification));
+
+	const FString PromptOnAssetModification = LexToString(Settings->bPromptForCheckoutOnAssetModification != 1);
+	StatusMessages.Add(FString::Printf(TEXT("PromptOnAssetModification: %s"), *PromptOnAssetModification));
 
 	return FText::FromString(FString::Join(StatusMessages, TEXT("\n")));
 }
