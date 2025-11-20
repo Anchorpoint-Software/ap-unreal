@@ -206,11 +206,13 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointConnectWorker::Execute);
 
-	TValueOrError<FString, FString> CurrentUserResult = AnchorpointCliOperations::GetCurrentUser();
-
-	if (CurrentUserResult.HasError())
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
+	if (!bLoggedIn)
 	{
-		InCommand.ErrorMessages.Add(CurrentUserResult.GetError());
+		InCommand.ErrorMessages.Add(TEXT("User is not logged in."));
+		InCommand.bCommandSuccessful = false;
+		return InCommand.bCommandSuccessful;
 	}
 
 	UE_LOG(LogAnchorpoint, Display, TEXT("Disabling Anchorpoint's Auto-Lock feature"));
@@ -228,7 +230,7 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 
 	FAnchorpointCliModule::Get().OnAnchorpointConnected.Broadcast();
 
-	InCommand.bCommandSuccessful = CurrentUserResult.HasValue();
+	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;
 }
 

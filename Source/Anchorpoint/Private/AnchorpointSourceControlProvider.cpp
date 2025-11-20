@@ -272,14 +272,6 @@ void FAnchorpointSourceControlProvider::UnregisterSourceControlStateChanged_Hand
 ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency, const FSourceControlOperationComplete& InOperationCompleteDelegate)
 {
 	// ToImplement: Everything in this function needs to be checked 
-
-	// Only Connect operation allowed while not Enabled (Connected)
-	if (!IsEnabled() && InOperation->GetName() != "Connect")
-	{
-		(void)InOperationCompleteDelegate.ExecuteIfBound(InOperation, ECommandResult::Failed);
-		return ECommandResult::Failed;
-	}
-
 	TSharedPtr<IAnchorpointSourceControlWorker> Worker = CreateWorker(InOperation->GetName());
 
 	// Query to see if we allow this operation
