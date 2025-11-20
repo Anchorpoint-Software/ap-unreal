@@ -188,7 +188,11 @@ bool FAnchorpointSourceControlProvider::IsEnabled() const
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
-	return AnchorpointCliOperations::IsInstalled();
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
+	const bool bInstalled = AnchorpointCliOperations::IsInstalled();
+
+	return bLoggedIn && bInstalled;
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)

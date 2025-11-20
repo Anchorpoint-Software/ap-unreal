@@ -206,7 +206,7 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointConnectWorker::Execute);
 
-	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn(true);
 	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
 	if (!bLoggedIn)
 	{
