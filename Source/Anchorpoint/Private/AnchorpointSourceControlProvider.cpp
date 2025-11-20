@@ -118,6 +118,13 @@ const FName& FAnchorpointSourceControlProvider::GetName() const
 
 FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
+	if (!bLoggedIn)
+	{
+		return INVTEXT("User not logged in");
+	}
+
 	TArray<FString> StatusMessages;
 
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("Anchorpoint"));
