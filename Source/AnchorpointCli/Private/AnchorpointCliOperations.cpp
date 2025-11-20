@@ -103,6 +103,28 @@ FString AnchorpointCliOperations::ConvertFullPathToProjectRelative(const FString
 	return Result;
 }
 
+TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::IsLoggedIn);
+
+	UE_LOG(LogTemp, Warning, TEXT("IsLoggedIn checked"));
+	
+	FString InfoCommand = TEXT("info");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(InfoCommand);
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	TSharedPtr<FJsonObject> Info = ProcessOutput.OutputAsJsonObject();
+	if (!Info || !Info->HasField(TEXT("authenticated")))
+	{
+		return MakeError(TEXT("Info command output is missing authenticated field"));
+	}
+
+	return MakeValue(Info->GetBoolField(TEXT("authenticated")));
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCurrentUser);
