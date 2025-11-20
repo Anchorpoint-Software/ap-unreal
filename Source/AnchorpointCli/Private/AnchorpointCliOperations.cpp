@@ -103,12 +103,16 @@ FString AnchorpointCliOperations::ConvertFullPathToProjectRelative(const FString
 	return Result;
 }
 
-TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn()
+TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn(bool bSkipCache)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::IsLoggedIn);
 
-	UE_LOG(LogTemp, Warning, TEXT("IsLoggedIn checked"));
-	
+	static TOptional<bool> bCachedValue;
+	if (bCachedValue.IsSet() && !bSkipCache)
+	{
+		return MakeValue(*bCachedValue);
+	}
+
 	FString InfoCommand = TEXT("info");
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(InfoCommand);
 	if (!ProcessOutput.DidSucceed())
@@ -122,7 +126,8 @@ TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn()
 		return MakeError(TEXT("Info command output is missing authenticated field"));
 	}
 
-	return MakeValue(Info->GetBoolField(TEXT("authenticated")));
+	bCachedValue = Info->GetBoolField(TEXT("authenticated"));
+	return MakeValue(*bCachedValue);
 }
 
 TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
