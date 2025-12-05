@@ -17,6 +17,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API FString ConvertApInternalToFull(const FString& InRelativePath);
 	ANCHORPOINTCLI_API FString ConvertFullPathToProjectRelative(const FString& InPath);
 
+	ANCHORPOINTCLI_API TValueOrError<bool, FString> IsLoggedIn(bool bSkipCache = false);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetUserDisplayName(const FString& InUserEmail);
 

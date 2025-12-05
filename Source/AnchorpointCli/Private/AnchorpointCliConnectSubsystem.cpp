@@ -166,8 +166,8 @@ void UAnchorpointCliConnectSubsystem::TickConnection()
 		return;
 	}
 
-	TValueOrError<FString, FString> CurrentUser = AnchorpointCliOperations::GetCurrentUser();
-	if (CurrentUser.HasError())
+	TValueOrError<bool, FString> UserLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	if (!UserLoggedIn.HasValue() || !UserLoggedIn.GetValue())
 	{
 		// We should not connect until we have a valid user
 		return;

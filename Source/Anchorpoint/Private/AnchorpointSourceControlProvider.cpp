@@ -118,6 +118,13 @@ const FName& FAnchorpointSourceControlProvider::GetName() const
 
 FText FAnchorpointSourceControlProvider::GetStatusText() const
 {
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
+	if (!bLoggedIn)
+	{
+		return INVTEXT("User not logged in");
+	}
+
 	TArray<FString> StatusMessages;
 
 	const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("Anchorpoint"));
@@ -188,7 +195,11 @@ bool FAnchorpointSourceControlProvider::IsEnabled() const
 
 bool FAnchorpointSourceControlProvider::IsAvailable() const
 {
-	return AnchorpointCliOperations::IsInstalled();
+	const TValueOrError<bool, FString> IsLoggedIn = AnchorpointCliOperations::IsLoggedIn();
+	const bool bLoggedIn = IsLoggedIn.HasValue() && IsLoggedIn.GetValue();
+	const bool bInstalled = AnchorpointCliOperations::IsInstalled();
+
+	return bLoggedIn && bInstalled;
 }
 
 bool FAnchorpointSourceControlProvider::QueryStateBranchConfig(const FString& ConfigSrc, const FString& ConfigDest)
@@ -272,14 +283,6 @@ void FAnchorpointSourceControlProvider::UnregisterSourceControlStateChanged_Hand
 ECommandResult::Type FAnchorpointSourceControlProvider::Execute(const FSourceControlOperationRef& InOperation, FSourceControlChangelistPtr InChangelist, const TArray<FString>& InFiles, EConcurrency::Type InConcurrency, const FSourceControlOperationComplete& InOperationCompleteDelegate)
 {
 	// ToImplement: Everything in this function needs to be checked 
-
-	// Only Connect operation allowed while not Enabled (Connected)
-	if (!IsEnabled() && InOperation->GetName() != "Connect")
-	{
-		(void)InOperationCompleteDelegate.ExecuteIfBound(InOperation, ECommandResult::Failed);
-		return ECommandResult::Failed;
-	}
-
 	TSharedPtr<IAnchorpointSourceControlWorker> Worker = CreateWorker(InOperation->GetName());
 
 	// Query to see if we allow this operation
