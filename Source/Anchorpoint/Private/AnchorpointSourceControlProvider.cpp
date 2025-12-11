@@ -510,7 +510,15 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 		else if (ModalContent->GetType() == TEXT("SPackagesDialog"))
 		{
 			ActiveModalState = EActiveModalState::PackagesDialog;
-			FAnchorpointHacksModule::RefreshOpenPackagesDialog();
+
+			//NOTE: The purpose of the RefreshOpenPackagesDialog below is to handle the case where users have the "Automatically checkout on Save"
+			// That is not needed in the usual flow because the CheckOut dialog will perform a forced fresh before showing,
+			// So we only need the updates while doing the ProjectConnect optimizations
+			UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+			if (ConnectSubsystem->IsProjectConnected())
+			{
+				FAnchorpointHacksModule::RefreshOpenPackagesDialog();
+			}
 		}
 	}
 }
