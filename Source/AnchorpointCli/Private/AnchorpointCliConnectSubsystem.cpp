@@ -95,6 +95,7 @@ TOptional<FAnchorpointStatus> UAnchorpointCliConnectSubsystem::GetCachedStatus()
 		return {};
 	}
 
+	FScopeLock ScopeLock(&StatusCacheLock);
 	return StatusCache;
 }
 
@@ -105,6 +106,7 @@ void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorp
 		return;
 	}
 
+	FScopeLock ScopeLock(&StatusCacheLock);
 	StatusCache = Status;
 }
 
