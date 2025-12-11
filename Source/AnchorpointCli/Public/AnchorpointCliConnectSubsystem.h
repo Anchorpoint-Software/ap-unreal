@@ -170,6 +170,10 @@ private:
 	 * Result of the last "status" command. This should contain all the files in the project not just the ones in the message
 	 */
 	TOptional<FAnchorpointStatus> StatusCache;
+	/*
+	 * Mutex used to ensure the status cache is not accessed or modified concurrently.
+	 */
+	mutable FCriticalSection StatusCacheLock;
 	/**
 	 * Command line console object used to handle the fake Anchorpoint CLI messages
 	 */
