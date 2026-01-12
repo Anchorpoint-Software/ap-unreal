@@ -46,6 +46,9 @@ FString AnchorpointCliOperations::GetRepositoryRootPath()
 		return RepositoryRootPath;
 	}
 
+	static FCriticalSection RepositoryRootMutex;
+	FScopeLock RepositoryRootUpdateLock(&RepositoryRootMutex);
+
 	// Searching for the .approject file in the project directory and all its parent directories
 	FString SearchPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
 
@@ -126,6 +129,9 @@ TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn(bool bSkipCach
 		return MakeError(TEXT("Info command output is missing authenticated field"));
 	}
 
+	static FCriticalSection LoggedInMutex;
+	FScopeLock LoggedInUpdateLock(&LoggedInMutex);
+
 	bCachedValue = Info->GetBoolField(TEXT("authenticated"));
 	return MakeValue(*bCachedValue);
 }
@@ -147,6 +153,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 	{
 		return MakeError(ProcessOutput.GetBestError());
 	}
+
+	static FCriticalSection CurrentUserMutex;
+	FScopeLock CurrentUserUpdateLock(&CurrentUserMutex);
 
 	TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
 	for (const TSharedPtr<FJsonValue>& User : Users)
@@ -179,6 +188,9 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetUserDisplayName(con
 	{
 		return MakeError(ProcessOutput.GetBestError());
 	}
+
+	static FCriticalSection CachedUsersMutex;
+	FScopeLock CachedUsersUpdateLock(&CachedUsersMutex);
 
 	TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
 	CachedUsers.Empty();
