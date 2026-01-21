@@ -218,9 +218,10 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetStatus);
 
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	TOptional<FAnchorpointStatus> CachedStatus = ConnectSubsystem ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>();
 
 	// Any non-forced status update can access the cached status for a faster response if available (even if an update is in progress)
-	if (TOptional<FAnchorpointStatus> CachedStatus = !bForced ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>())
+	if (!bForced && CachedStatus.IsSet())
 	{
 		return MakeValue(CachedStatus.GetValue());
 	}
@@ -229,7 +230,8 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	static FCriticalSection StatusUpdateLock;
 	FScopeLock ScopeLock(&StatusUpdateLock);
 
-	if (TOptional<FAnchorpointStatus> CachedStatus = !bForced ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>())
+	CachedStatus = ConnectSubsystem ? ConnectSubsystem->GetCachedStatus() : TOptional<FAnchorpointStatus>();
+	if (!bForced && CachedStatus.IsSet())
 	{
 		//NOTE: After the lock was acquired, the status may have changed, so it's worth checking again
 		return MakeValue(CachedStatus.GetValue());
@@ -273,8 +275,11 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 
 	if (InFiles.IsEmpty())
 	{
-		// Only a project-wide (no specific files provided) status update should be cached
-		ConnectSubsystem->UpdateStatusCacheIfPossible(Status);
+		if (ConnectSubsystem)
+		{
+			// Only a project-wide (no specific files provided) status update should be cached
+			ConnectSubsystem->UpdateStatusCacheIfPossible(Status);
+		}
 	}
 
 	return MakeValue(Status);

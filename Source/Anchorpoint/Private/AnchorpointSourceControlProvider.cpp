@@ -138,13 +138,13 @@ FText FAnchorpointSourceControlProvider::GetStatusText() const
 
 	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
 
-	const bool bCliConnected = ConnectSubsystem->IsCliConnected();
+	const bool bCliConnected = ConnectSubsystem && ConnectSubsystem->IsCliConnected();
 	StatusMessages.Add(FString::Printf(TEXT("CLI connected: %s"), *LexToString(bCliConnected)));
 
-	const bool bProjectConnected = ConnectSubsystem->IsProjectConnected();
+	const bool bProjectConnected = ConnectSubsystem && ConnectSubsystem->IsProjectConnected();
 	StatusMessages.Add(FString::Printf(TEXT("Project connected: %s"), *LexToString(bProjectConnected)));
 
-	const bool bValidCache = ConnectSubsystem->GetCachedStatus().IsSet();
+	const bool bValidCache = ConnectSubsystem && ConnectSubsystem->GetCachedStatus().IsSet();
 	StatusMessages.Add(FString::Printf(TEXT("Status cache valid: %s"), *LexToString(bValidCache)));
 	StatusMessages.Add(TEXT(""));
 
@@ -522,7 +522,7 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 			// That is not needed in the usual flow because the CheckOut dialog will perform a forced fresh before showing,
 			// So we only need the updates while doing the ProjectConnect optimizations
 			UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-			if (ConnectSubsystem->IsProjectConnected())
+			if (ConnectSubsystem && ConnectSubsystem->IsProjectConnected())
 			{
 				FAnchorpointHacksModule::RefreshOpenPackagesDialog();
 			}
@@ -664,8 +664,8 @@ ECommandResult::Type FAnchorpointSourceControlProvider::IssueCommand(FAnchorpoin
 
 FText FAnchorpointSourceControlProvider::GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const
 {
-	UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-	if (!ConnectSubsystem->IsProjectConnected())
+	const UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
+	if (!ConnectSubsystem || !ConnectSubsystem->IsProjectConnected())
 	{
 		// NOTE: While the CLI is not connected, we want to display every pop-up so the user can understand why things are slower.
 		return InOperation->GetInProgressString();
