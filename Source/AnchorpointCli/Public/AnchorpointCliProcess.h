@@ -141,7 +141,7 @@ public:
 	void ClearStdOutData();
 	void ClearStdErrData();
 
-	using FOnProcessEvent = TTSMulticastDelegate<void()>;
+	using FOnProcessEvent = TMulticastDelegate<void()>;
 	FOnProcessEvent OnProcessStarted;
 	FOnProcessEvent OnProcessUpdated;
 	FOnProcessEvent OnProcessEnded;
