@@ -140,7 +140,7 @@ bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Pa
 
 bool FAnchorpointCliProcess::IsRunning() const
 {
-	return ProcessHandle.IsValid();
+	return !bIsRunFinished;
 }
 
 FCliResult FAnchorpointCliProcess::GetResult()
@@ -223,6 +223,10 @@ void FAnchorpointCliProcess::Stop()
 	Cancel();
 }
 
+void FAnchorpointCliProcess::Exit()
+{
+	bIsRunFinished = true;
+}
 
 void FAnchorpointCliProcess::TickInternal()
 {

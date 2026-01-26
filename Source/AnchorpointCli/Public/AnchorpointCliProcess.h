@@ -150,6 +150,7 @@ private:
 	// ~Begin FRunnable Interface
 	virtual uint32 Run() override;
 	virtual void Stop() override;
+	virtual void Exit() override;
 	// ~End FRunnable Interface
 
 	void TickInternal();
@@ -159,6 +160,7 @@ private:
 	TQueue<FString> MessagesToSend;
 
 	FProcHandle ProcessHandle;
+	bool bIsRunFinished = false;
 	bool bIsCanceling = false;
 
 	/**
