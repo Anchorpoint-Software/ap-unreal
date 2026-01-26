@@ -159,7 +159,6 @@ private:
 	TQueue<FString> MessagesToSend;
 
 	FProcHandle ProcessHandle;
-	TSAN_ATOMIC(bool) bIsRunning = false;
 	bool bIsCanceling = false;
 
 	/**
