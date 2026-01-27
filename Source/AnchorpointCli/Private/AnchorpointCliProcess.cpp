@@ -84,7 +84,7 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 
 	if (InParameters.bUseIniFile)
 	{
-		FString IniConfigFile = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("ap-command.ini"));
+		FString IniConfigFile = FPaths::EngineIntermediateDir() / TEXT("Anchorpoint") / TEXT("ap-command.ini");
 		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
 		FFileHelper::SaveStringToFile(IniConfigContent, *IniConfigFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
