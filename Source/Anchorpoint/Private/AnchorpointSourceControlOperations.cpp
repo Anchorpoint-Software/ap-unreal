@@ -18,6 +18,13 @@
 #include "AnchorpointSourceControlState.h"
 #include "AnchorpointSourceControlProvider.h"
 
+bool IsInMemoryFile(const FString& FilePath)
+{
+	const bool bIsFile = !FPaths::GetExtension(FilePath).IsEmpty();
+	const bool bExistsOnDisk = FPaths::FileExists(FilePath);
+	return bIsFile && !bExistsOnDisk;
+}
+
 bool UpdateCachedStates(const TArray<FAnchorpointSourceControlState>& InStates)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UpdateCachedStates);
@@ -139,6 +146,10 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 				NewState.OtherUserCheckedOut = LockerDisplayName;
 			}
 		}
+		else if (IsInMemoryFile(File))
+		{
+			NewState.State = EAnchorpointState::AddedInMemory;
+		}
 		else
 		{
 			NewState.State = EAnchorpointState::UnlockedUnchanged;
@@ -154,7 +165,7 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 		AnchorpointProvider->StateCache.GenerateKeyArray(AllRelevantFiles);
 	}
 
-	// In case we have files that are not in the status, we add them as UnlockedUnchanged
+	// In case we have files that are not in the status, we add them
 	for (const FString& Path : AllRelevantFiles)
 	{
 		const FString Extension = FPaths::GetExtension(Path);
@@ -165,7 +176,14 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 			if (!bEntryExists)
 			{
 				FAnchorpointSourceControlState& NewState = OutState.Emplace_GetRef(Path);
-				NewState.State = EAnchorpointState::UnlockedUnchanged;
+				if (IsInMemoryFile(Path))
+				{
+					NewState.State = EAnchorpointState::AddedInMemory;
+				}
+				else
+				{
+					NewState.State =  EAnchorpointState::UnlockedUnchanged;
+				}
 			}
 		}
 	}

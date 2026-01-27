@@ -83,6 +83,7 @@ FSlateIcon FAnchorpointSourceControlState::GetIcon() const
 	case EAnchorpointState::Unknown:
 		return FSlateIcon();
 	case EAnchorpointState::Added:
+	case EAnchorpointState::AddedInMemory:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.OpenForAdd");
 	case EAnchorpointState::OutDated:
 		return FSlateIcon(FRevisionControlStyleManager::GetStyleSetName(), "RevisionControl.NotAtHeadRevision");
@@ -123,6 +124,7 @@ FText FAnchorpointSourceControlState::GetDisplayName() const
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown", "Unknown");
 	case EAnchorpointState::Added:
+	case EAnchorpointState::AddedInMemory:
 		return LOCTEXT("Added", "Added");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("OutDated", "Outdated");
@@ -161,6 +163,7 @@ FText FAnchorpointSourceControlState::GetDisplayTooltip() const
 	case EAnchorpointState::Unknown:
 		return LOCTEXT("Unknown_Tooltip", "Unknown");
 	case EAnchorpointState::Added:
+	case EAnchorpointState::AddedInMemory:
 		return LOCTEXT("Added_Tooltip", "Added");
 	case EAnchorpointState::OutDated:
 		return LOCTEXT("OutDated_Tooltip", "Outdated");
@@ -249,6 +252,7 @@ bool FAnchorpointSourceControlState::CanCheckout() const
 bool FAnchorpointSourceControlState::IsCheckedOut() const
 {
 	return State == EAnchorpointState::Added
+		|| State == EAnchorpointState::AddedInMemory
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::LockedUnchanged
@@ -294,7 +298,8 @@ bool FAnchorpointSourceControlState::IsSourceControlled() const
 
 bool FAnchorpointSourceControlState::IsAdded() const
 {
-	return State == EAnchorpointState::Added;
+	return State == EAnchorpointState::Added
+		|| State == EAnchorpointState::AddedInMemory;
 }
 
 bool FAnchorpointSourceControlState::IsDeleted() const
@@ -326,6 +331,7 @@ bool FAnchorpointSourceControlState::IsUnknown() const
 bool FAnchorpointSourceControlState::IsModified() const
 {
 	return State == EAnchorpointState::Added
+		|| State == EAnchorpointState::AddedInMemory
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
 		|| State == EAnchorpointState::UnlockedModified

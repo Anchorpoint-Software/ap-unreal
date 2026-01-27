@@ -12,6 +12,7 @@ enum class EAnchorpointState
 {
 	Unknown,
 	Added,
+	AddedInMemory,
 	LockedBySomeone,
 	LockedDeleted,
 	LockedModified,
