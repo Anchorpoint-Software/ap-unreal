@@ -56,7 +56,7 @@ void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 
 FAnchorpointCliProcess::~FAnchorpointCliProcess()
 {
-	if (bIsRunning)
+	if (ProcessHandle.IsValid())
 	{
 		Cancel();
 	}
@@ -115,7 +115,6 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 
 bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Parameters)
 {
-	checkf(!bIsRunning, TEXT("Process is already running"));
 	checkf(FPlatformProcess::CreatePipe(PipeOutputRead, PipeOutputWrite, false), TEXT("Failed to create pipe for stdout"));
 	checkf(FPlatformProcess::CreatePipe(PipeInputRead, PipeInputWrite, true), TEXT("Failed to create pipe for stdout"));
 	checkf(FPlatformProcess::CreatePipe(PipeOutputReadErr, PipeOutputWriteErr, false), TEXT("Failed to create pipe for stderr"));
@@ -134,7 +133,6 @@ bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Pa
 	static std::atomic<uint32> AnchorpointProcessIndex{0};
 	const FString ProcessName = FString::Printf(TEXT("AnchorpointProcessIndex %d"), AnchorpointProcessIndex.fetch_add(1));
 
-	bIsRunning = true;
 	Thread = FRunnableThread::Create(this, *ProcessName, 128 * 1024, TPri_AboveNormal);
 
 	return true;
@@ -142,7 +140,7 @@ bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Pa
 
 bool FAnchorpointCliProcess::IsRunning() const
 {
-	return bIsRunning;
+	return !bIsRunFinished;
 }
 
 FCliResult FAnchorpointCliProcess::GetResult()
@@ -198,7 +196,7 @@ uint32 FAnchorpointCliProcess::Run()
 {
 	OnProcessStarted.Broadcast();
 
-	while (bIsRunning)
+	while (ProcessHandle.IsValid())
 	{
 		constexpr float SleepInterval = 0.01f;
 		FPlatformProcess::Sleep(SleepInterval);
@@ -225,6 +223,10 @@ void FAnchorpointCliProcess::Stop()
 	Cancel();
 }
 
+void FAnchorpointCliProcess::Exit()
+{
+	bIsRunFinished = true;
+}
 
 void FAnchorpointCliProcess::TickInternal()
 {
@@ -239,7 +241,7 @@ void FAnchorpointCliProcess::TickInternal()
 	if (bIsCanceling)
 	{
 		FPlatformProcess::TerminateProc(ProcessHandle, true);
-		bIsRunning = false;
+		ProcessHandle.Reset();
 	}
 	else if (!FPlatformProcess::IsProcRunning(ProcessHandle))
 	{
@@ -250,7 +252,7 @@ void FAnchorpointCliProcess::TickInternal()
 		}
 
 		ReturnCode = ProcessReturnCode;
-		bIsRunning = false;
+		ProcessHandle.Reset();
 	}
 }
 
