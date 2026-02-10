@@ -329,7 +329,7 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		                                                         }));
 		PopupWindow->ShowWindow();
 
-		FSlateApplication::Get().OnPostTick().AddLambda(
+		FDelegateHandle PostTickHandle = FSlateApplication::Get().OnPostTick().AddLambda(
 			[WeakWindow = PopupWindow.ToWeakPtr()](float DeltaTime)
 			{
 				TSharedPtr<SWindow> CurrentModal = FSlateApplication::Get().GetActiveModalWindow();
@@ -343,6 +343,12 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 				{
 					Window->HACK_ForceToFront();
 				}
+			});
+
+		PopupWindow->GetOnWindowClosedEvent().AddLambda(
+			[PostTickHandle](const TSharedRef<SWindow>&)
+			{
+				FSlateApplication::Get().OnPostTick().Remove(PostTickHandle);
 			});
 	}
 }
