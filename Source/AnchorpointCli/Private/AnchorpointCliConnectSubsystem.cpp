@@ -389,16 +389,7 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
-		// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
-		const TOptional<FString> Error = CheckProjectSaveStatus({});
-		if (Error.IsSet())
-		{
-			RespondToMessage(Message.Id, Error);
-		}
-		else
-		{
-			StartSync(Message);
-		}
+		StartSync(Message);
 	}
 	else if (MessageType == TEXT("files changed"))
 	{
