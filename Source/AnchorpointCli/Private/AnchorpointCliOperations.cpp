@@ -716,24 +716,29 @@ FAnchorpointVersion::FAnchorpointVersion(int InMajor, int InMinor, int InPatch)
 	PatchVersion = InPatch;
 }
 
+bool FAnchorpointVersion::IsCurrent(int InMajor, int InMinor, int InPatch) const
+{
+	return InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+}
+
 bool FAnchorpointVersion::IsAfter(int InMajor, int InMinor, int InPatch) const
 {
-	if (MajorVersion < InMajor)
+	if (MajorVersion != InMajor)
 	{
-		return true;
+		return MajorVersion > InMajor;
 	}
 
-	if (MinorVersion < InMinor)
+	if (MinorVersion != InMinor)
 	{
-		return true;
+		return MinorVersion > InMinor;
 	}
 
-	return PatchVersion < InPatch;
+	return PatchVersion > InPatch;
 }
 
 bool FAnchorpointVersion::IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const
 {
-	return IsAfter(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+	return IsAfter(InMajor, InMinor, InPatch) || IsCurrent(InMajor, InMinor, InPatch);
 }
 
 bool FAnchorpointVersion::IsBefore(int InMajor, int InMinor, int InPatch) const
@@ -743,5 +748,5 @@ bool FAnchorpointVersion::IsBefore(int InMajor, int InMinor, int InPatch) const
 
 bool FAnchorpointVersion::IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const
 {
-	return IsBefore(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+	return IsBefore(InMajor, InMinor, InPatch) || IsCurrent(InMajor, InMinor, InPatch);
 }

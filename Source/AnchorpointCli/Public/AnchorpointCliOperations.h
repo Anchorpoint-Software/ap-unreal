@@ -11,6 +11,7 @@ class FAnchorpointVersion
 public:
 	FAnchorpointVersion(int InMajor, int InMinor, int InPatch);
 
+	bool IsCurrent(int InMajor, int InMinor, int InPatch) const;
 	bool IsAfter(int InMajor, int InMinor, int InPatch) const;
 	bool IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const;
 	bool IsBefore(int InMajor, int InMinor, int InPatch) const;
