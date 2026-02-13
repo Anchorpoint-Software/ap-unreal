@@ -129,9 +129,6 @@ TValueOrError<FAnchorpointVersion, FString> AnchorpointCliOperations::GetCliVers
 		return MakeError(TEXT("Info command output is missing version field"));
 	}
 
-	static FCriticalSection LoggedInMutex;
-	FScopeLock LoggedInUpdateLock(&LoggedInMutex);
-
 	FString RawVersion = Info->GetStringField(TEXT("version"));
 
 	FRegexPattern Pattern(TEXT("(\\d+)\\.(\\d+)\\.(\\d+)"));
@@ -146,6 +143,10 @@ TValueOrError<FAnchorpointVersion, FString> AnchorpointCliOperations::GetCliVers
 	const int32 Major = FCString::Atoi(*Matcher.GetCaptureGroup(1));
 	const int32 Minor = FCString::Atoi(*Matcher.GetCaptureGroup(2));
 	const int32 Patch = FCString::Atoi(*Matcher.GetCaptureGroup(3));
+
+	static FCriticalSection CliVersionMutex;
+	FScopeLock CliVersionUpdateLock(&CliVersionMutex);
+
 	CachedValue = FAnchorpointVersion(Major, Minor, Patch);
 
 	return MakeValue(*CachedValue);
@@ -715,32 +716,32 @@ FAnchorpointVersion::FAnchorpointVersion(int InMajor, int InMinor, int InPatch)
 	PatchVersion = InPatch;
 }
 
-bool FAnchorpointVersion::IsNewer(int InMajor, int InMinor, int InPatch) const
+bool FAnchorpointVersion::IsAfter(int InMajor, int InMinor, int InPatch) const
 {
 	if (MajorVersion < InMajor)
 	{
-		return false;
+		return true;
 	}
 
 	if (MinorVersion < InMinor)
 	{
-		return false;
+		return true;
 	}
 
 	return PatchVersion < InPatch;
 }
 
-bool FAnchorpointVersion::IsNewerOrEqual(int InMajor, int InMinor, int InPatch) const
+bool FAnchorpointVersion::IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const
 {
-	return IsNewer(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+	return IsAfter(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
 }
 
-bool FAnchorpointVersion::IsOlder(int InMajor, int InMinor, int InPatch) const
+bool FAnchorpointVersion::IsBefore(int InMajor, int InMinor, int InPatch) const
 {
-	return !IsNewerOrEqual(InMajor, InMinor, InPatch);
+	return !IsAfterOrCurrent(InMajor, InMinor, InPatch);
 }
 
-bool FAnchorpointVersion::IsOlderOrEqual(int InMajor, int InMinor, int InPatch) const
+bool FAnchorpointVersion::IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const
 {
-	return IsOlder(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+	return IsBefore(InMajor, InMinor, InPatch) || InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
 }

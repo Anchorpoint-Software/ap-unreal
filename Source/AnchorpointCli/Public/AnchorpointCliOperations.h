@@ -11,10 +11,10 @@ class FAnchorpointVersion
 public:
 	FAnchorpointVersion(int InMajor, int InMinor, int InPatch);
 
-	bool IsNewer(int InMajor, int InMinor, int InPatch) const;
-	bool IsNewerOrEqual(int InMajor, int InMinor, int InPatch) const;
-	bool IsOlder(int InMajor, int InMinor, int InPatch) const;
-	bool IsOlderOrEqual(int InMajor, int InMinor, int InPatch) const;
+	bool IsAfter(int InMajor, int InMinor, int InPatch) const;
+	bool IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const;
+	bool IsBefore(int InMajor, int InMinor, int InPatch) const;
+	bool IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const;
 
 private:
 	int MajorVersion = INDEX_NONE;
