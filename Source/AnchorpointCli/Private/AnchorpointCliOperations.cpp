@@ -106,6 +106,52 @@ FString AnchorpointCliOperations::ConvertFullPathToProjectRelative(const FString
 	return Result;
 }
 
+TValueOrError<FAnchorpointVersion, FString> AnchorpointCliOperations::GetCliVersion()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetCliVersion);
+
+	static TOptional<FAnchorpointVersion> CachedValue;
+	if (CachedValue.IsSet())
+	{
+		return MakeValue(*CachedValue);
+	}
+
+	FString InfoCommand = TEXT("info");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(InfoCommand);
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	TSharedPtr<FJsonObject> Info = ProcessOutput.OutputAsJsonObject();
+	if (!Info || !Info->HasField(TEXT("version")))
+	{
+		return MakeError(TEXT("Info command output is missing version field"));
+	}
+
+	FString RawVersion = Info->GetStringField(TEXT("version"));
+
+	FRegexPattern Pattern(TEXT("(\\d+)\\.(\\d+)\\.(\\d+)"));
+	FRegexMatcher Matcher(Pattern, RawVersion);
+
+	if (!Matcher.FindNext())
+	{
+		const FString ParseFailure = FString::Printf(TEXT("Failed to parse version from %s"), *RawVersion);
+		return MakeError(ParseFailure);
+	}
+
+	const int32 Major = FCString::Atoi(*Matcher.GetCaptureGroup(1));
+	const int32 Minor = FCString::Atoi(*Matcher.GetCaptureGroup(2));
+	const int32 Patch = FCString::Atoi(*Matcher.GetCaptureGroup(3));
+
+	static FCriticalSection CliVersionMutex;
+	FScopeLock CliVersionUpdateLock(&CliVersionMutex);
+
+	CachedValue = FAnchorpointVersion(Major, Minor, Patch);
+
+	return MakeValue(*CachedValue);
+}
+
 TValueOrError<bool, FString> AnchorpointCliOperations::IsLoggedIn(bool bSkipCache)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::IsLoggedIn);
@@ -661,4 +707,46 @@ void AnchorpointCliOperations::MonitorProcessWithNotification(const TSharedRef<F
 			                    });
 		          });
 	          });
+}
+
+FAnchorpointVersion::FAnchorpointVersion(int InMajor, int InMinor, int InPatch)
+{
+	MajorVersion = InMajor;
+	MinorVersion = InMinor;
+	PatchVersion = InPatch;
+}
+
+bool FAnchorpointVersion::IsCurrent(int InMajor, int InMinor, int InPatch) const
+{
+	return InMajor == MajorVersion && InMinor == MinorVersion && InPatch == PatchVersion;
+}
+
+bool FAnchorpointVersion::IsAfter(int InMajor, int InMinor, int InPatch) const
+{
+	if (MajorVersion != InMajor)
+	{
+		return MajorVersion > InMajor;
+	}
+
+	if (MinorVersion != InMinor)
+	{
+		return MinorVersion > InMinor;
+	}
+
+	return PatchVersion > InPatch;
+}
+
+bool FAnchorpointVersion::IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const
+{
+	return IsAfter(InMajor, InMinor, InPatch) || IsCurrent(InMajor, InMinor, InPatch);
+}
+
+bool FAnchorpointVersion::IsBefore(int InMajor, int InMinor, int InPatch) const
+{
+	return !IsAfterOrCurrent(InMajor, InMinor, InPatch);
+}
+
+bool FAnchorpointVersion::IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const
+{
+	return IsBefore(InMajor, InMinor, InPatch) || IsCurrent(InMajor, InMinor, InPatch);
 }

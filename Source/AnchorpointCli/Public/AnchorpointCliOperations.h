@@ -6,6 +6,23 @@
 
 class FAnchorpointCliProcess;
 
+class FAnchorpointVersion
+{
+public:
+	FAnchorpointVersion(int InMajor, int InMinor, int InPatch);
+
+	bool IsCurrent(int InMajor, int InMinor, int InPatch) const;
+	bool IsAfter(int InMajor, int InMinor, int InPatch) const;
+	bool IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const;
+	bool IsBefore(int InMajor, int InMinor, int InPatch) const;
+	bool IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const;
+
+private:
+	int MajorVersion = INDEX_NONE;
+	int MinorVersion = INDEX_NONE;
+	int PatchVersion = INDEX_NONE;
+};
+
 namespace AnchorpointCliOperations
 {
 	ANCHORPOINTCLI_API bool IsInstalled();
@@ -17,6 +34,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API FString ConvertApInternalToFull(const FString& InRelativePath);
 	ANCHORPOINTCLI_API FString ConvertFullPathToProjectRelative(const FString& InPath);
 
+	ANCHORPOINTCLI_API TValueOrError<FAnchorpointVersion, FString> GetCliVersion();
 	ANCHORPOINTCLI_API TValueOrError<bool, FString> IsLoggedIn(bool bSkipCache = false);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetCurrentUser();
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetUserDisplayName(const FString& InUserEmail);

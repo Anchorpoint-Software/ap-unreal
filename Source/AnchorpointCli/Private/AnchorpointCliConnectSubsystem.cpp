@@ -389,14 +389,23 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files about to change"))
 	{
-		// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
-		const TOptional<FString> Error = CheckProjectSaveStatus({});
-		if (Error.IsSet())
+		const TValueOrError<FAnchorpointVersion, FString> CliVersion = AnchorpointCliOperations::GetCliVersion();
+		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0))
 		{
-			RespondToMessage(Message.Id, Error);
+			// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
+			const TOptional<FString> Error = CheckProjectSaveStatus({});
+			if (Error.IsSet())
+			{
+				RespondToMessage(Message.Id, Error);
+			}
+			else
+			{
+				StartSync(Message);
+			}
 		}
 		else
 		{
+			//NOTE: In the new workflow, the desktop app will prompt the user for any unsaved work before starting the sync
 			StartSync(Message);
 		}
 	}
