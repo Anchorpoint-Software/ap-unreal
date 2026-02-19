@@ -357,7 +357,10 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 {
 	if (!bSyncInProgress)
 	{
-		UE_LOG(LogAnchorpointCli, Warning, TEXT("StopSync receieved without having a sync in progress"))
+		const FString ErrorMessage = TEXT("StopSync received without having a sync in progress");
+
+		UE_LOG(LogAnchorpointCli, Warning, TEXT("%s"), *ErrorMessage);
+		RespondToMessage(Message.Id, ErrorMessage);
 		return;
 	}
 
@@ -390,7 +393,7 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files about to change"))
 	{
 		const TValueOrError<FAnchorpointVersion, FString> CliVersion = AnchorpointCliOperations::GetCliVersion();
-		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0))
+		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0) && !CliVersion.GetValue().IsDev())
 		{
 			// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
 			const TOptional<FString> Error = CheckProjectSaveStatus({});
