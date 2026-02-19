@@ -750,3 +750,8 @@ bool FAnchorpointVersion::IsBeforeOrCurrent(int InMajor, int InMinor, int InPatc
 {
 	return IsBefore(InMajor, InMinor, InPatch) || IsCurrent(InMajor, InMinor, InPatch);
 }
+
+bool FAnchorpointVersion::IsDev() const
+{
+	return MajorVersion == 0 && MinorVersion == 9 && PatchVersion == 0;
+}
