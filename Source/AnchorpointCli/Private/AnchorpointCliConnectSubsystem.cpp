@@ -280,7 +280,6 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		if (FPackageName::TryConvertFilenameToLongPackageName(File, PackageName, nullptr))
 		{
 			PackageToReload.Add(PackageName);
-
 		}
 	}
 
@@ -304,7 +303,9 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 	if (CurrentWorldAsset.IsValid())
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Switching to a blank world"));
-		GEditor->CreateNewMapForEditing();
+
+		TGuardValue<bool> UnattendedScriptGuard(GIsRunningUnattendedScript, true);
+		GEditor->CreateNewMapForEditing(false);
 	}
 
 	RespondToMessage(Message.Id);
