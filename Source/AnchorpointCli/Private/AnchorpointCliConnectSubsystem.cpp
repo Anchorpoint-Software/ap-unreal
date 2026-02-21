@@ -394,7 +394,7 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files about to change"))
 	{
 		const TValueOrError<FAnchorpointVersion, FString> CliVersion = AnchorpointCliOperations::GetCliVersion();
-		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0) && !CliVersion.GetValue().IsDev())
+		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0))
 		{
 			// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
 			const TOptional<FString> Error = CheckProjectSaveStatus({});

@@ -723,6 +723,12 @@ bool FAnchorpointVersion::IsCurrent(int InMajor, int InMinor, int InPatch) const
 
 bool FAnchorpointVersion::IsAfter(int InMajor, int InMinor, int InPatch) const
 {
+	if (IsDev())
+	{
+		//NOTE: We consider any dev version to be the latest possible, therefore after any version.
+		return true;
+	}
+
 	if (MajorVersion != InMajor)
 	{
 		return MajorVersion > InMajor;
