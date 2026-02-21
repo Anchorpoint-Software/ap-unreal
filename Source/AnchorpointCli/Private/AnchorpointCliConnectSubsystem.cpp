@@ -287,6 +287,11 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 	for (const FString& PackageName : PackageToReload)
 	{
 		UPackage* Package = FindPackage(nullptr, *PackageName);
+		if (Package && Package->IsDirty())
+		{
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Dirty flag unset for %s"), *PackageName);
+			Package->SetDirtyFlag(false);
+		}
 		if (UObject* Asset = Package ? Package->FindAssetInPackage() : nullptr)
 		{
 			if (Asset->IsPackageExternal())
@@ -304,7 +309,6 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Switching to a blank world"));
 
-		TGuardValue<bool> UnattendedScriptGuard(GIsRunningUnattendedScript, true);
 		GEditor->CreateNewMapForEditing(false);
 	}
 
