@@ -287,11 +287,6 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 	for (const FString& PackageName : PackageToReload)
 	{
 		UPackage* Package = FindPackage(nullptr, *PackageName);
-		if (Package && Package->IsDirty())
-		{
-			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Dirty flag unset for %s"), *PackageName);
-			Package->SetDirtyFlag(false);
-		}
 		if (UObject* Asset = Package ? Package->FindAssetInPackage() : nullptr)
 		{
 			if (Asset->IsPackageExternal())
@@ -301,6 +296,20 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 					UE_LOG(LogAnchorpointCli, Verbose, TEXT("Current world will be reloaded because of %s"), *PackageName);
 					CurrentWorldAsset = FAssetData(GWorld);
 				}
+			}
+		}
+	}
+
+	FUnsavedAssetsTrackerModule& UnsavedTracker = FUnsavedAssetsTrackerModule::Get();
+	for (const FString& Filename : UnsavedTracker.GetUnsavedAssets())
+	{
+		FString PackageName;
+		if (FPackageName::TryConvertFilenameToLongPackageName(Filename, PackageName))
+		{
+			if (UPackage* Package = FindPackage(nullptr, *PackageName))
+			{
+				UE_LOG(LogAnchorpointCli, Verbose, TEXT("Dirty flag unset for %s"), *PackageName);
+				Package->SetDirtyFlag(false);
 			}
 		}
 	}
