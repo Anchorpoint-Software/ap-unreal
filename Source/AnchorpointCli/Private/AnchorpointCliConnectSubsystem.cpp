@@ -300,11 +300,24 @@ void UAnchorpointCliConnectSubsystem::PerformSync(const FAnchorpointConnectMessa
 		}
 	}
 
+	FUnsavedAssetsTrackerModule& UnsavedTracker = FUnsavedAssetsTrackerModule::Get();
+	for (const FString& Filename : UnsavedTracker.GetUnsavedAssets())
+	{
+		FString PackageName;
+		if (FPackageName::TryConvertFilenameToLongPackageName(Filename, PackageName))
+		{
+			if (UPackage* Package = FindPackage(nullptr, *PackageName))
+			{
+				UE_LOG(LogAnchorpointCli, Verbose, TEXT("Dirty flag unset for %s"), *PackageName);
+				Package->SetDirtyFlag(false);
+			}
+		}
+	}
+
 	if (CurrentWorldAsset.IsValid())
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Switching to a blank world"));
 
-		TGuardValue<bool> UnattendedScriptGuard(GIsRunningUnattendedScript, true);
 		GEditor->CreateNewMapForEditing(false);
 	}
 
@@ -394,7 +407,7 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	else if (MessageType == TEXT("files about to change"))
 	{
 		const TValueOrError<FAnchorpointVersion, FString> CliVersion = AnchorpointCliOperations::GetCliVersion();
-		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0) && !CliVersion.GetValue().IsDev())
+		if (CliVersion.HasValue() && CliVersion.GetValue().IsBefore(1,34,0))
 		{
 			// Note: Pulling can be dangerous, so any unsaved work should prevent the operation.
 			const TOptional<FString> Error = CheckProjectSaveStatus({});

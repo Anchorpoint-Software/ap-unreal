@@ -16,9 +16,10 @@ public:
 	bool IsAfterOrCurrent(int InMajor, int InMinor, int InPatch) const;
 	bool IsBefore(int InMajor, int InMinor, int InPatch) const;
 	bool IsBeforeOrCurrent(int InMajor, int InMinor, int InPatch) const;
-	bool IsDev() const;
 
 private:
+	bool IsDev() const;
+
 	int MajorVersion = INDEX_NONE;
 	int MinorVersion = INDEX_NONE;
 	int PatchVersion = INDEX_NONE;
