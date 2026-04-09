@@ -82,7 +82,7 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 	const FString CommandLineExecutable = Module->GetCliPath();
 	FString CommandLineArgs;
 
-	if (InParameters.bUseIniFile)
+	if (InParameters.bUseIniFile && !FParse::Param(FCommandLine::Get(), TEXT("AnchorpointUseCliArgs")))
 	{
 		FString IniConfigFile = FPaths::EngineIntermediateDir() / TEXT("Anchorpoint") / TEXT("ap-command.ini");
 		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
