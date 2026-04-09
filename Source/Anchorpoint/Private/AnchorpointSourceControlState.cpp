@@ -233,13 +233,9 @@ bool FAnchorpointSourceControlState::CanCheckout() const
 		//NOTE: Currently the SSettingsEditorCheckoutNotice supports only 2 states for version controlled files:
 		// 1. Needs to be checked out -> CanCheckout returns true.
 		// 2. Already is checked out -> CanCheckout return false.
-		
-		// You might wonder, does this mean the ini file shows up as 'already checked out' if the file is locked by someone else?
-		// Yes. In this case CanCheckout would return false (with the intention of saying: "You cannot check out this file, it is locked"),
-		// it will be interpreted as "This file doesn't need checkout, you are good to change it". (SSettingsEditorCheckoutNotice::Tick)
 
-		// Therefore we can just return the current checkout state:
-		return !IsCheckedOut();
+		// Since we don't require locking of ini files for writting to them, we can safely:
+		return false;
 	}
 	
 	return State == EAnchorpointState::UnlockedUnchanged
