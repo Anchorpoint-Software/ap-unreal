@@ -220,6 +220,15 @@ const FDateTime& FAnchorpointSourceControlState::GetTimeStamp() const
 
 bool FAnchorpointSourceControlState::CanCheckIn() const
 {
+	if (IsConfigFile())
+	{
+		//NOTE: Since config files can be changed without being locked out we also allow submitting when unlocked
+		if (State == EAnchorpointState::UnlockedModified || State == EAnchorpointState::UnlockedDeleted)
+		{
+			return true;
+		}
+	}
+
 	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::LockedModified
 		|| State == EAnchorpointState::LockedDeleted
@@ -237,7 +246,7 @@ bool FAnchorpointSourceControlState::CanCheckout() const
 		// Since we don't require locking of ini files for writting to them, we can safely:
 		return false;
 	}
-	
+
 	return State == EAnchorpointState::UnlockedUnchanged
 		|| State == EAnchorpointState::UnlockedModified
 		|| State == EAnchorpointState::UnlockedDeleted
