@@ -11,4 +11,6 @@ on:
 jobs:
   plugin-ci:
     uses: outoftheboxplugins/BuildMachines/.github/workflows/compile-plugin.yml@master
-    secrets: inherit
+    secrets:
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
