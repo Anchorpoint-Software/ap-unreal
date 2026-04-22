@@ -23,6 +23,20 @@ During the commit process, you will need to wait for Anchorpoint to commit your 
 
 Put the compiled plugin in your project/plugins or in your engine folder. Check the [documentation](https://docs.anchorpoint.app/docs/version-control/first-steps/unreal/) on how to use it with Anchorpoint.
 
+## Troubleshooting
+
+### Enabling verbose logging
+
+Add the following to `<YOUR_PROJECT>/Config/DefaultEngine.ini`:
+
+```
+[Core.Log]
+LogAnchorpoint=VeryVerbose
+LogAnchorpointCli=VeryVerbose
+```
+
+Run Unreal again and the logs will land in `<YOUR_PROJECT>/Saved/Logs`.
+
 ## Contribution
 
 We appreciate any kind of contribution via a pull request. If you have other ideas for features or other improvements, please join our [Discord](https://discord.com/invite/ZPyPzvx) server.
