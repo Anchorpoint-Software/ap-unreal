@@ -522,7 +522,7 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 			// That is not needed in the usual flow because the CheckOut dialog will perform a forced fresh before showing,
 			// So we only need the updates while doing the ProjectConnect optimizations
 			UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>();
-			if (ConnectSubsystem && ConnectSubsystem->IsProjectConnected())
+			if (ConnectSubsystem && ConnectSubsystem->GetCachedStatus().IsSet())
 			{
 				FAnchorpointHacksModule::RefreshOpenPackagesDialog();
 			}
