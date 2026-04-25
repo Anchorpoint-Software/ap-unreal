@@ -67,8 +67,6 @@ public:
 
 	void OnStatesChanged();
 	void TickDuringModal(float DeltaTime);
-	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
-	void RefreshStatus();
 
 	TSharedRef<FAnchorpointSourceControlState> GetStateInternal(const FString& Filename);
 	FDateTime GetLastSyncTime() const;
@@ -87,8 +85,6 @@ public:
 	
 	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
-	FTimerHandle RefreshTimerHandle;
-	float RefreshDelay = 1.0f;
 
 	enum class EActiveModalState
 	{

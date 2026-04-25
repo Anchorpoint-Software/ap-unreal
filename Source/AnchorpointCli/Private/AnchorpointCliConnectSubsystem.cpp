@@ -13,6 +13,7 @@
 #include <SourceControlOperations.h>
 #include <UnsavedAssetsTrackerModule.h>
 #include <Widgets/Notifications/SNotificationList.h>
+#include <UObject/ObjectSaveContext.h>
 #include <LevelEditor.h>
 
 #include "AnchorpointCli.h"
@@ -110,6 +111,12 @@ void UAnchorpointCliConnectSubsystem::UpdateStatusCacheIfPossible(const FAnchorp
 	StatusCache = Status;
 }
 
+void UAnchorpointCliConnectSubsystem::ClearStatusCache()
+{
+	FScopeLock ScopeLock(&StatusCacheLock);
+	StatusCache.Reset();
+}
+
 bool UAnchorpointCliConnectSubsystem::IsCliConnected() const
 {
 	return Process && Process->IsRunning();
@@ -123,6 +130,8 @@ bool UAnchorpointCliConnectSubsystem::IsProjectConnected() const
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	UPackage::PackageSavedWithContextEvent.AddUObject(this, &UAnchorpointCliConnectSubsystem::HandlePackageSaved);
 
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
 
@@ -214,18 +223,14 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 	return true;
 }
 
-void UAnchorpointCliConnectSubsystem::RefreshStatus(const FAnchorpointConnectMessage& Message)
+void UAnchorpointCliConnectSubsystem::RefreshStatus(TArray<FString> FilesToUpdate)
 {
 	TSharedRef<FUpdateStatus> UpdateRequest = ISourceControlOperation::Create<FUpdateStatus>();
-	TArray<FString> FilesToUpdate;
 	if (bCanUseStatusCache)
 	{
 		// When using status caching, we always want to run a force status command for the whole project (no specific files) and clear our cache
 		UpdateRequest->SetForceUpdate(true);
-	}
-	else
-	{
-		FilesToUpdate = Message.Files;
+		FilesToUpdate.Empty();
 	}
 
 	AsyncTask(ENamedThreads::GameThread,
@@ -397,7 +402,8 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 
 	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
-		RefreshStatus(Message);
+		ClearStatusCache();
+		RefreshStatus(Message.Files);
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
@@ -430,23 +436,27 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	{
 		StopSync(Message);
 
-		RefreshStatus(Message);
+		ClearStatusCache();
+		RefreshStatus(Message.Files);
 	}
 	else if (MessageType == TEXT("project opened"))
 	{
 		bCanUseStatusCache = true;
 
-		RefreshStatus(Message);
+		ClearStatusCache();
+		RefreshStatus(Message.Files);
 	}
 	else if (MessageType == TEXT("project closed"))
 	{
 		bCanUseStatusCache = false;
 
-		RefreshStatus(Message);
+		ClearStatusCache();
+		RefreshStatus(Message.Files);
 	}
 	else if (MessageType == TEXT("project dirty"))
 	{
-		RefreshStatus(Message);
+		ClearStatusCache();
+		RefreshStatus(Message.Files);
 	}
 	else
 	{
@@ -606,6 +616,16 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 	FToolMenuEntry StatusIconEntry = FToolMenuEntry::InitWidget("AnchorpointStatus", StatusImage, FText::GetEmpty(), true, false);
 	Section.AddEntry(StatusIconEntry);
+}
+
+void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
+{
+	// Whatever state we had is officially no longer valid.
+	ClearStatusCache();
+
+	// This will automatically clear and re-add if it's already on-going
+	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::RefreshStatus, TArray<FString>());
+	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
 }
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
