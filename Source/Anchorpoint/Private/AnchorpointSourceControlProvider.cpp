@@ -6,7 +6,6 @@
 #include <ScopedSourceControlProgress.h>
 #include <SourceControlOperations.h>
 #include <ISourceControlModule.h>
-#include <UObject/ObjectSaveContext.h>
 #include <Logging/MessageLog.h>
 #include <FileHelpers.h>
 #include <Interfaces/IPluginManager.h>
@@ -23,8 +22,6 @@
 
 FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 {
-	UPackage::PackageSavedWithContextEvent.AddRaw(this, &FAnchorpointSourceControlProvider::HandlePackageSaved);
-
 	if(FSlateApplication::IsInitialized())
 	{
 		FSlateApplication::Get().GetOnModalLoopTickEvent().AddRaw(this, &FAnchorpointSourceControlProvider::TickDuringModal);
@@ -33,8 +30,6 @@ FAnchorpointSourceControlProvider::FAnchorpointSourceControlProvider()
 
 FAnchorpointSourceControlProvider::~FAnchorpointSourceControlProvider()
 {
-	UPackage::PackageSavedWithContextEvent.RemoveAll(this);
-
 	if(FSlateApplication::IsInitialized())
 	{
 		FSlateApplication::Get().GetOnModalLoopTickEvent().RemoveAll(this);
@@ -528,18 +523,6 @@ void FAnchorpointSourceControlProvider::TickDuringModal(float DeltaTime)
 			}
 		}
 	}
-}
-
-void FAnchorpointSourceControlProvider::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
-{
-	// This will automatically clear and re-add if it's already on-going
-	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateRaw(this, &FAnchorpointSourceControlProvider::RefreshStatus);
-	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
-}
-
-void FAnchorpointSourceControlProvider::RefreshStatus()
-{
-	ISourceControlModule::Get().GetProvider().Execute(ISourceControlOperation::Create<FUpdateStatus>());
 }
 
 TSharedRef<FAnchorpointSourceControlState> FAnchorpointSourceControlProvider::GetStateInternal(const FString& Filename)

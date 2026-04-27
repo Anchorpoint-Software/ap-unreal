@@ -63,6 +63,10 @@ public:
 	 */
 	void UpdateStatusCacheIfPossible(const FAnchorpointStatus& Status);
 	/**
+	 * Discards the cached status so the next query fetches fresh data
+	 */
+	void ClearStatusCache();
+	/**
 	 * Callback executed after a message is received and parsed, but before it is handled
 	 */
 	TMulticastDelegate<void(const FAnchorpointConnectMessage& InMessage)> OnPreMessageHandled;
@@ -92,7 +96,7 @@ private:
 	/**
 	 * Refreshes the Source Control status of the files in the message 
 	 */
-	void RefreshStatus(const FAnchorpointConnectMessage& Message);
+	void RefreshStatus(TArray<FString> FilesToUpdate = TArray<FString>());
 	/**
 	 * Checks if the project has been saved and if not, returns an error message
 	 */
@@ -147,6 +151,10 @@ private:
 	 */
 	void OnLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor);
 	/**
+	 * Callback executed when a package (asset or actor) is saved to disk 
+	 */
+	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
+	/**
 	 * Callback executed to determine what icon should be shown next to the revision control status bar
 	 */
 	const FSlateBrush* GetDrawerIcon() const;
@@ -174,6 +182,14 @@ private:
 	 * Mutex used to ensure the status cache is not accessed or modified concurrently.
 	 */
 	mutable FCriticalSection StatusCacheLock;
+	/**
+	 * Handle for the deferred status refresh scheduled after package saves
+	 */
+	FTimerHandle RefreshTimerHandle;
+	/**
+	 * Delay (in seconds) before the deferred status refresh fires
+	 */
+	float RefreshDelay = 1.0f;
 	/**
 	 * Command line console object used to handle the fake Anchorpoint CLI messages
 	 */
