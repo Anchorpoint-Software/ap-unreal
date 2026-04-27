@@ -101,6 +101,10 @@ private:
 	 * Checks if the project has been saved and if not, returns an error message
 	 */
 	TOptional<FString> CheckProjectSaveStatus(const TArray<FString>& Files);
+	/*
+	 * Tries to patch the cached status when an asset save.
+	 */
+	bool PatchCachedStatusOnSave(const FString& InPackageFilename);
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */
