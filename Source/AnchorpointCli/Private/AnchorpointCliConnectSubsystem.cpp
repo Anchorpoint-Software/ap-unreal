@@ -257,6 +257,31 @@ TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const
 	return !ErrorMessage.IsEmpty() ? ErrorMessage : TOptional<FString>();
 }
 
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InPackageFilename)
+{
+	if (!StatusCache)
+	{
+		return false; // No cache available to patch
+	}
+
+	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
+	FSourceControlStatePtr State = Provider.GetState(InPackageFilename, EStateCacheUsage::Use);
+
+	if (!State)
+	{
+		return false; // We cannot reason about this asset without knowing it's state.
+	}
+
+	if (State->IsAdded())
+	{
+		// Re-saving an added asset won't change it's state. It might change it from AddedInMemory to Added (on disk) but nothing else.
+		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		return true;
+	}
+
+	return false;
+}
+
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
 {
 	if (bSyncInProgress)
@@ -620,6 +645,12 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
 {
+	if (PatchCachedStatusOnSave(InPackageFilename))
+	{
+		// We successfully applied a patch, no need to run a full update.
+		return;
+	}
+
 	// Whatever state we had is officially no longer valid.
 	ClearStatusCache();
 

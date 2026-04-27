@@ -4,7 +4,6 @@
 
 #include <Algo/Compare.h>
 #include <Async/Async.h>
-#include <ISourceControlModule.h>
 #include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
 
@@ -160,9 +159,8 @@ bool RunUpdateStatus(const TArray<FString>& InputPaths, TArray<FAnchorpointSourc
 	if (AllRelevantFiles.IsEmpty())
 	{
 		// For project-wide search (not input paths), we will perform this revert on all files in the source control provider's cache
-		ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-		FAnchorpointSourceControlProvider* AnchorpointProvider = static_cast<FAnchorpointSourceControlProvider*>(&Provider);
-		AnchorpointProvider->StateCache.GenerateKeyArray(AllRelevantFiles);
+		FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
+		Provider.StateCache.GenerateKeyArray(AllRelevantFiles);
 	}
 
 	// In case we have files that are not in the status, we add them
