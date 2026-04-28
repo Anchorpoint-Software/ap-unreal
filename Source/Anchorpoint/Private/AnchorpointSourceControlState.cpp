@@ -256,6 +256,13 @@ bool FAnchorpointSourceControlState::CanCheckout() const
 
 bool FAnchorpointSourceControlState::IsCheckedOut() const
 {
+	if (IsConfigFile())
+	{
+		//NOTE: To be able to submit files they need to be either: added, deleted or checked out.
+		// So even though ini files don't need to be checked out, we need to mark them as such to be able to submit them
+		return true;
+	}
+
 	return State == EAnchorpointState::Added
 		|| State == EAnchorpointState::AddedInMemory
 		|| State == EAnchorpointState::LockedModified
