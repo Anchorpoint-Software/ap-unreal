@@ -1,4 +1,23 @@
 
+# 0.65
+
+- Log the plugin version during module startup
+
+# 0.64
+
+- Ship prebuilt zips for Unreal Engine 5.4
+
+# 0.63
+
+- Fix submit for ini files
+
+# 0.62
+
+- Fix files added via import being locked
+- Fix getting stuck in checkout when the status cache is missing
+- Patch cached status when added assets are re-saved
+- Document how to enable verbose logging
+
 # 0.61
 
 - Allow ini file check-ins from the editor
