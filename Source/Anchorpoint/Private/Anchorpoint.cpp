@@ -7,10 +7,12 @@
 #include <ContentBrowserDataMenuContexts.h>
 #include <ISourceControlModule.h>
 #include <SourceControlHelpers.h>
+#include <Interfaces/IPluginManager.h>
 #include <RevisionControlStyle/RevisionControlStyle.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointLog.h"
 #include "AnchorpointSourceControlOperations.h"
 #include "AnchorpointStyle.h"
 
@@ -32,6 +34,11 @@ FAnchorpointSourceControlSettings& FAnchorpointModule::GetSettings()
 
 void FAnchorpointModule::StartupModule()
 {
+	if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("Anchorpoint")))
+	{
+		UE_LOG(LogAnchorpoint, Display, TEXT("Anchorpoint plugin %s starting up"), *Plugin->GetDescriptor().VersionName);
+	}
+
 	// Style setup
 
 	// NOTE: Unreal's recommended way to style/customize RevisionControl Styles is to inherit from FDefaultRevisionControlStyle
