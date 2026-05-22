@@ -50,7 +50,6 @@ public:
 	FResolveInfo PendingResolveInfo;
 #endif
 
-private:
 	/** Being ISourceControlState interface */
 	virtual int32 GetHistorySize() const override;
 	virtual TSharedPtr<ISourceControlRevision> GetHistoryItem(int32 HistoryIndex) const override;
@@ -95,5 +94,6 @@ private:
 	virtual bool CanRevert() const override;
 	/** End ISourceControlState interface */
 
+private:
 	bool IsConfigFile() const;
 };
