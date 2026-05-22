@@ -298,9 +298,10 @@ bool FAnchorpointSourceControlState::GetOtherBranchHeadModification(FString& Hea
 
 bool FAnchorpointSourceControlState::IsCurrent() const
 {
-	// TODO: Hack to disable the `Sync` option
-	return true;
+	// NOTE: Hack to disable the `Sync` option because git doesn't allow single file sync
 	// return State != EAnchorpointState::OutDated;
+
+	return true;
 }
 
 bool FAnchorpointSourceControlState::IsSourceControlled() const

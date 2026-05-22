@@ -403,6 +403,26 @@ bool FAnchorpointSourceControlProvider::AllowsDiffAgainstDepot() const
 	return true;
 }
 
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+TOptional<bool> FAnchorpointSourceControlProvider::HasChangesToSync() const
+{
+	//NOTE: We don't support 'Sync' anyway. @see AnchorpointSourceControlState::IsCurrent()
+	return TOptional<bool>();
+}
+
+TOptional<bool> FAnchorpointSourceControlProvider::HasChangesToCheckIn() const
+{
+	for (const auto& State : StateCache)
+	{
+		if (State.Value->CanCheckIn())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+#else
 TOptional<bool> FAnchorpointSourceControlProvider::IsAtLatestRevision() const
 {
 	// ToImplement: Here we should check if the file is up to date with the latest
@@ -414,6 +434,7 @@ TOptional<int> FAnchorpointSourceControlProvider::GetNumLocalChanges() const
 	// ToImplement: Here we should check have many files we changed on disk
 	return TOptional<int>();
 }
+#endif
 
 void FAnchorpointSourceControlProvider::Tick()
 {

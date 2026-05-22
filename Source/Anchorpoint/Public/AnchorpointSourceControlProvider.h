@@ -59,8 +59,13 @@ public:
 	virtual bool UsesFileRevisions() const override;
 	virtual bool UsesSnapshots() const override;
 	virtual bool AllowsDiffAgainstDepot() const override;
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+	virtual TOptional<bool> HasChangesToSync() const override;
+	virtual TOptional<bool> HasChangesToCheckIn() const override;
+#else
 	virtual TOptional<bool> IsAtLatestRevision() const override;
 	virtual TOptional<int> GetNumLocalChanges() const override;
+#endif
 	virtual void Tick() override;
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
