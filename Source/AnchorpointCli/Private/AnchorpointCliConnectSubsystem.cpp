@@ -276,8 +276,12 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InP
 
 	if (State->IsAdded())
 	{
-		// Re-saving an added asset won't change it's state. It might change it from AddedInMemory to Added (on disk) but nothing else.
-		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		// Re-saving an added asset won't change its state. It might change it from AddedInMemory to Added (on disk) but nothing else.
+		if (!StatusCache->Staged.Contains(InPackageFilename) && !StatusCache->NotStaged.Contains(InPackageFilename))
+		{
+			StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		}
+
 		return true;
 	}
 
