@@ -257,7 +257,7 @@ TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const
 	return !ErrorMessage.IsEmpty() ? ErrorMessage : TOptional<FString>();
 }
 
-bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InPackageFilename)
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FString& InPackageFilename)
 {
 	FScopeLock ScopeLock(&StatusCacheLock);
 
@@ -651,9 +651,9 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
 {
-	if (PatchCachedStatusOnSave(InPackageFilename))
+	if (PatchCachedStatusOnPackageSave(InPackageFilename))
 	{
-		// We successfully applied a patch, no need to run a full update.
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for Saved Package: %s"), *InPackageFilename);
 		return;
 	}
 

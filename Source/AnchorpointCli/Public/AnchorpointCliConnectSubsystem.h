@@ -102,9 +102,9 @@ private:
 	 */
 	TOptional<FString> CheckProjectSaveStatus(const TArray<FString>& Files);
 	/*
-	 * Tries to patch the cached status when an asset save.
+	 * Tries to patch the cached status when an asset is saved.
 	 */
-	bool PatchCachedStatusOnSave(const FString& InPackageFilename);
+	bool PatchCachedStatusOnPackageSave(const FString& InPackageFilename);
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */
