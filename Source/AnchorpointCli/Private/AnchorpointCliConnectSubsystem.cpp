@@ -259,6 +259,8 @@ TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const
 
 bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InPackageFilename)
 {
+	FScopeLock ScopeLock(&StatusCacheLock);
+
 	if (!StatusCache)
 	{
 		return false; // No cache available to patch
