@@ -331,6 +331,33 @@ TValueOrError<FAnchorpointStatus, FString> AnchorpointCliOperations::GetStatus(c
 	return MakeValue(Status);
 }
 
+TValueOrError<FAnchorpointLocks, FString> AnchorpointCliOperations::GetLockedFiles()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetLockedFiles);
+
+	FString ListCommand = TEXT("lock list");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(ListCommand);
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	//NOTE: The parsing here is a bit different because we get: `["file": "user"]` (array of key -> value) as output
+	// compared to `ap status` which returns `{ locked_files: {"file": "user"} }` (nested object with key -> value)
+
+	FAnchorpointLocks Locks;
+	for (const TSharedPtr<FJsonValue>& Lock : ProcessOutput.OutputAsJsonArray())
+	{
+		TSharedPtr<FJsonObject> LockObject = Lock->AsObject();
+		for (const TTuple<FString, TSharedPtr<FJsonValue>>& LockedFile : LockObject->Values)
+		{
+			Locks.Add(ConvertApInternalToFull(LockedFile.Key), LockedFile.Value->AsString());
+		}
+	}
+
+	return MakeValue(Locks);
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);
