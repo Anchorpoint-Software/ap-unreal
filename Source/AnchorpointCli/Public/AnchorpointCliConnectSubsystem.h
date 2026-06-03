@@ -105,6 +105,10 @@ private:
 	 * Tries to patch the cached status when an asset is saved.
 	 */
 	bool PatchCachedStatusOnPackageSave(const FString& InPackageFilename);
+	/*
+	 * Tries to patch the cached status when locks are updated.
+	 */
+	bool PatchCachedStatusOnLockUpdate();
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */

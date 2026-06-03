@@ -288,6 +288,25 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FStri
 	return false;
 }
 
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
+{
+	FScopeLock ScopeLock(&StatusCacheLock);
+
+	if (!StatusCache)
+	{
+		return false; // No cache available to patch
+	}
+
+	TValueOrError<TMap<FString, FString>, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
+	if (!Locks.HasValue())
+	{
+		return false; // Command failed, no usable result available
+	}
+
+	StatusCache->Locked = Locks.GetValue();
+	return true;
+}
+
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
 {
 	if (bSyncInProgress)
@@ -431,7 +450,19 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 
 	OnPreMessageHandled.Broadcast(Message);
 
-	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
+	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked"))
+	{
+		if (PatchCachedStatusOnLockUpdate())
+		{
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Locked Files Message: %s"), *MessageType);
+		}
+		else
+		{
+			ClearStatusCache();
+			RefreshStatus(Message.Files);
+		}
+	}
+	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
 		ClearStatusCache();
 		RefreshStatus(Message.Files);
