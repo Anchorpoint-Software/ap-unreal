@@ -362,15 +362,27 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 	// TSharedRef<FRevert> RevertOperation = StaticCastSharedRef<FRevert>(InCommand.Operation);
 	// RevertOperation->IsSoftRevert()
 
+	TArray<FString> FilesToSkip;
 	TArray<FString> FilesToDelete;
 	TArray<FString> FilesToRevert;
+	TArray<FString> FilesToUnlock;
 
 	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
 
 	for (const FString& File : InCommand.Files)
 	{
-		TSharedRef<FAnchorpointSourceControlState> CurrentState = Provider.GetStateInternal(File);
-		if (CurrentState->State == EAnchorpointState::Added)
+		const TSharedRef<FAnchorpointSourceControlState> CurrentState = Provider.GetStateInternal(File);
+		const EAnchorpointState State = CurrentState->State;
+
+		if (State == EAnchorpointState::UnlockedUnchanged)
+		{
+			FilesToSkip.Add(File);
+		}
+		else if (State == EAnchorpointState::LockedUnchanged)
+		{
+			FilesToUnlock.Add(File);
+		}
+		else if (State == EAnchorpointState::Added || State == EAnchorpointState::AddedInMemory)
 		{
 			FilesToDelete.Add(File);
 		}
@@ -386,13 +398,19 @@ bool FAnchorpointRevertWorker::Execute(FAnchorpointSourceControlCommand& InComma
 		InCommand.ErrorMessages.Add(DeleteResult.GetError());
 	}
 
+	TValueOrError<FString, FString> UnlockResult = AnchorpointCliOperations::UnlockFiles(FilesToUnlock);
+	if (UnlockResult.HasError())
+	{
+		InCommand.ErrorMessages.Add(UnlockResult.GetError());
+	}
+
 	TValueOrError<FString, FString> RevertResult = AnchorpointCliOperations::Revert(FilesToRevert);
 	if (RevertResult.HasError())
 	{
 		InCommand.ErrorMessages.Add(RevertResult.GetError());
 	}
 
-	InCommand.bCommandSuccessful = DeleteResult.HasValue() && RevertResult.HasValue();
+	InCommand.bCommandSuccessful = DeleteResult.HasValue() && UnlockResult.HasValue() && RevertResult.HasValue();
 	return InCommand.bCommandSuccessful;
 }
 
