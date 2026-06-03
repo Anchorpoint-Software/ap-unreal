@@ -223,21 +223,16 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 	return true;
 }
 
-void UAnchorpointCliConnectSubsystem::RefreshStatus(TArray<FString> FilesToUpdate)
+void UAnchorpointCliConnectSubsystem::RefreshStatus(bool bForce, TArray<FString> TargetFiles)
 {
 	TSharedRef<FUpdateStatus> UpdateRequest = ISourceControlOperation::Create<FUpdateStatus>();
-	if (bCanUseStatusCache)
-	{
-		// When using status caching, we always want to run a force status command for the whole project (no specific files) and clear our cache
-		UpdateRequest->SetForceUpdate(true);
-		FilesToUpdate.Empty();
-	}
+	UpdateRequest->SetForceUpdate(bForce);
 
 	AsyncTask(ENamedThreads::GameThread,
-	          [this, UpdateRequest, FilesToUpdate]()
+	          [this, UpdateRequest, TargetFiles]()
 	          {
 		          UE_LOG(LogAnchorpointCli, Display, TEXT("Update Status requested by Cli Connect"));
-		          ISourceControlModule::Get().GetProvider().Execute(UpdateRequest, FilesToUpdate, EConcurrency::Asynchronous);
+		          ISourceControlModule::Get().GetProvider().Execute(UpdateRequest, TargetFiles, EConcurrency::Asynchronous);
 	          });
 }
 
@@ -455,17 +450,18 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 		if (PatchCachedStatusOnLockUpdate())
 		{
 			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Locked Files Message: %s"), *MessageType);
+			RefreshStatus(false, {});
 		}
 		else
 		{
 			ClearStatusCache();
-			RefreshStatus(Message.Files);
+			RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 		}
 	}
 	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
@@ -499,26 +495,26 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 		StopSync(Message);
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project opened"))
 	{
 		bCanUseStatusCache = true;
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project closed"))
 	{
 		bCanUseStatusCache = false;
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project dirty"))
 	{
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else
 	{
@@ -685,6 +681,8 @@ void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackag
 	if (PatchCachedStatusOnPackageSave(InPackageFilename))
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for Saved Package: %s"), *InPackageFilename);
+		RefreshStatus(false, {});
+
 		return;
 	}
 
@@ -692,7 +690,10 @@ void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackag
 	ClearStatusCache();
 
 	// This will automatically clear and re-add if it's already on-going
-	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::RefreshStatus, TArray<FString>());
+	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		RefreshStatus(bCanUseStatusCache, {});
+	});
 	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
 }
 

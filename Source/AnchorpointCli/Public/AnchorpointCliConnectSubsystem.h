@@ -96,7 +96,7 @@ private:
 	/**
 	 * Refreshes the Source Control status of the files in the message 
 	 */
-	void RefreshStatus(TArray<FString> FilesToUpdate = TArray<FString>());
+	void RefreshStatus(bool bForce, TArray<FString> TargetFiles);
 	/**
 	 * Checks if the project has been saved and if not, returns an error message
 	 */
