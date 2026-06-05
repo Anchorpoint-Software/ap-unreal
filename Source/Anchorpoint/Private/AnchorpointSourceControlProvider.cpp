@@ -598,16 +598,24 @@ TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::C
 bool FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus(FAnchorpointStatus& InOutStatus, const FString& InPackageFilename)
 {
 	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	FSourceControlStatePtr State = Provider.GetState(InPackageFilename, EStateCacheUsage::Use);
+	FSourceControlStatePtr PackageState = Provider.GetState(InPackageFilename, EStateCacheUsage::Use);
 
-	if (!State)
+	if (!PackageState)
 	{
 		return false; // We cannot reason about this asset without knowing it's state.
 	}
 
-	if (State->IsAdded())
+	const TSharedPtr<FAnchorpointSourceControlState> State = StaticCastSharedPtr<FAnchorpointSourceControlState>(PackageState);
+
+	if (State->State == EAnchorpointState::Added)
 	{
-		// Re-saving an added asset won't change its state. It might change it from AddedInMemory to Added (on disk) but nothing else.
+		// Re-saving an added asset won't change its state.
+		return true;
+	}
+
+	if (State->State == EAnchorpointState::AddedInMemory)
+	{
+		// Re-saving AddedInMemory will change state to added once it is saved on disk, so make sure it's part of the status
 		if (!InOutStatus.Staged.Contains(InPackageFilename) && !InOutStatus.NotStaged.Contains(InPackageFilename))
 		{
 			InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
@@ -616,12 +624,17 @@ bool FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus(FAnchorpointStat
 		return true;
 	}
 
-	if (!State->IsModified())
+	if (State->State == EAnchorpointState::LockedModified || State->State == EAnchorpointState::UnlockedModified)
 	{
-		// Re-saving an unchanged asset will certainly mark it as modified.
-		InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
-
+		// Re-saving an already modified asset will only keep it modified.
 		return true;
+	}
+
+	if (State->State == EAnchorpointState::UnlockedUnchanged)
+	{
+		// Re-saving an unchanged asset will certainly mark it as modified. 
+		// At this point we cannot reason if it's LockedModified or UnlockedModified.
+		InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
 	}
 
 	return false;
