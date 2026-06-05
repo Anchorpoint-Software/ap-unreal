@@ -11,14 +11,24 @@
 
 namespace
 {
-	// Clamp output to the first '{' and last '}' to discard corrupted messages around the JSON payload
+	// Clamp output to the first '{' and last '}' or ('[' and ']') to discard corrupted messages around the JSON payload
 	void ClampToJsonObject(FString& InOutString)
 	{
-		const int32 FirstBrace = InOutString.Find(TEXT("{"), ESearchCase::CaseSensitive, ESearchDir::FromStart);
-		const int32 LastBrace = InOutString.Find(TEXT("}"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-		if (FirstBrace != INDEX_NONE && LastBrace > FirstBrace)
+		const int32 FirstBrace = InOutString.Find(TEXT("{"));
+		const int32 FirstBracket = InOutString.Find(TEXT("["));
+
+		// Pick whichever container opens first, treating a missing opener as "never opens" so it always loses
+		auto OpenPos = [](int32 Index) { return Index == INDEX_NONE ? MAX_int32 : Index; };
+		const bool bIsObject = OpenPos(FirstBrace) < OpenPos(FirstBracket);
+		const TCHAR* StartToken = bIsObject ? TEXT("{") : TEXT("[");
+		const TCHAR* EndToken = bIsObject ? TEXT("}") : TEXT("]");
+
+		const int32 Start = InOutString.Find(StartToken, ESearchCase::CaseSensitive, ESearchDir::FromStart);
+		const int32 End = InOutString.Find(EndToken, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+
+		if (End > Start)
 		{
-			InOutString = InOutString.Mid(FirstBrace, LastBrace - FirstBrace + 1);
+			InOutString = InOutString.Mid(Start, End - Start + 1);
 		}
 	}
 }
