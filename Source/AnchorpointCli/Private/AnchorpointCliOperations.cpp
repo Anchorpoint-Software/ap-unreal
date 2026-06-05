@@ -193,15 +193,21 @@ TValueOrError<FString, FString> AnchorpointCliOperations::GetCurrentUser()
 		return MakeValue(CurrentUser);
 	}
 
+	static FCriticalSection CurrentUserMutex;
+	FScopeLock CurrentUserUpdateLock(&CurrentUserMutex);
+
+	if (!CurrentUser.IsEmpty())
+	{
+		// There is a chance it was resolved by the time we acquired the mutex
+		return MakeValue(CurrentUser);
+	}
+
 	FString UserCommand = TEXT("user list");
 	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(UserCommand);
 	if (!ProcessOutput.DidSucceed())
 	{
 		return MakeError(ProcessOutput.GetBestError());
 	}
-
-	static FCriticalSection CurrentUserMutex;
-	FScopeLock CurrentUserUpdateLock(&CurrentUserMutex);
 
 	TArray<TSharedPtr<FJsonValue>> Users = ProcessOutput.OutputAsJsonArray();
 	for (const TSharedPtr<FJsonValue>& User : Users)
