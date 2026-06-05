@@ -9,6 +9,8 @@
 class FAnchorpointSourceControlState;
 class FAnchorpointSourceControlCommand;
 class IAnchorpointSourceControlWorker;
+struct FAnchorpointStatus;
+struct FAnchorpointConnectMessage;
 
 class FAnchorpointSourceControlProvider : public ISourceControlProvider
 {
@@ -81,6 +83,15 @@ public:
 	FDateTime GetLastSyncTime() const;
 
 	TMap<FString, TSharedRef<FAnchorpointSourceControlState>> StateCache;
+
+	/**
+	 * Tries to patch the cached status when an asset is saved.
+	 */
+	bool OnAssetSavedPatchStatus(FAnchorpointStatus& InOutStatus, const FString& InPackageFilename);
+	/**
+	 * Tries to patch the cached status when a message is received.
+	 */
+	bool OnMessageReceivedPatchStatus(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage);
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);

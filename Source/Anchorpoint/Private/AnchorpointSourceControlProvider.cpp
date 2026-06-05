@@ -10,8 +10,10 @@
 #include <FileHelpers.h>
 #include <Interfaces/IPluginManager.h>
 
+#include "AnchorpointCli.h"
 #include "AnchorpointCliConnectSubsystem.h"
 #include "AnchorpointCliOperations.h"
+#include "AnchorpointCliStatus.h"
 #include "AnchorpointHacks.h"
 #include "AnchorpointLog.h"
 #include "AnchorpointPopup.h"
@@ -490,6 +492,9 @@ void FAnchorpointSourceControlProvider::OnConnected()
 {
 	if (UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>())
 	{
+		ConnectSubsystem->OnAssetSavedPatchStatus.BindRaw(this, &FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus);
+		ConnectSubsystem->OnMessageReceivedPatchStatus.BindRaw(this, &FAnchorpointSourceControlProvider::OnMessageReceivedPatchStatus);
+
 		ConnectSubsystem->RefreshConnection();
 	}
 }
@@ -588,6 +593,69 @@ TSharedPtr<IAnchorpointSourceControlWorker> FAnchorpointSourceControlProvider::C
 	}
 
 	return nullptr;
+}
+
+bool FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus(FAnchorpointStatus& InOutStatus, const FString& InPackageFilename)
+{
+	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
+	FSourceControlStatePtr State = Provider.GetState(InPackageFilename, EStateCacheUsage::Use);
+
+	if (!State)
+	{
+		return false; // We cannot reason about this asset without knowing it's state.
+	}
+
+	if (State->IsAdded())
+	{
+		// Re-saving an added asset won't change its state. It might change it from AddedInMemory to Added (on disk) but nothing else.
+		if (!InOutStatus.Staged.Contains(InPackageFilename) && !InOutStatus.NotStaged.Contains(InPackageFilename))
+		{
+			InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		}
+
+		return true;
+	}
+
+	if (!State->IsModified())
+	{
+		// Re-saving an unchanged asset will certainly mark it as modified.
+		InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
+
+		return true;
+	}
+
+	return false;
+}
+
+bool FAnchorpointSourceControlProvider::OnMessageReceivedPatchStatus(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage)
+{
+	const FString& MessageType = InMessage.Type;
+
+	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked"))
+	{
+		TValueOrError<FAnchorpointLocks, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
+		if (!Locks.HasValue())
+		{
+			return false; // Command failed, no usable result available
+		}
+
+		InOutStatus.Locked = Locks.GetValue();
+		return true;
+	}
+
+	if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
+	{
+		TValueOrError<FAnchorpointOutdated, FString> Outdated = AnchorpointCliOperations::GetOutdatedFiles();
+		if (!Outdated.HasValue())
+		{
+			return false; // Command failed, no usable result available
+		}
+
+		InOutStatus.Outdated = Outdated.GetValue();
+		return true;
+	}
+
+	return false;
 }
 
 void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const
