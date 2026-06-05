@@ -292,7 +292,7 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
 		return false; // No cache available to patch
 	}
 
-	TValueOrError<TMap<FString, FString>, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
+	TValueOrError<FAnchorpointLocks, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
 	if (!Locks.HasValue())
 	{
 		return false; // Command failed, no usable result available
