@@ -17,6 +17,8 @@ enum class EAnchorpointFileOperation
 
 EAnchorpointFileOperation LexFromString(const FString& InString);
 
+using FAnchorpointLocks = TMap<FString, FString>;
+
 /**
  * Wrapper struct for all the data returned by the Anchorpoint status command
  */
@@ -42,7 +44,7 @@ struct ANCHORPOINTCLI_API FAnchorpointStatus
 	/**
 	 * Map of all files that are locked and the user that locked them
 	 */
-	TMap<FString, FString> Locked;
+	FAnchorpointLocks Locked;
 	/**
 	 * List of all that are outdated and need to be updated
 	 */

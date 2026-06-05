@@ -223,21 +223,16 @@ bool UAnchorpointCliConnectSubsystem::Tick(const float InDeltaTime)
 	return true;
 }
 
-void UAnchorpointCliConnectSubsystem::RefreshStatus(TArray<FString> FilesToUpdate)
+void UAnchorpointCliConnectSubsystem::RefreshStatus(bool bForce, TArray<FString> TargetFiles)
 {
 	TSharedRef<FUpdateStatus> UpdateRequest = ISourceControlOperation::Create<FUpdateStatus>();
-	if (bCanUseStatusCache)
-	{
-		// When using status caching, we always want to run a force status command for the whole project (no specific files) and clear our cache
-		UpdateRequest->SetForceUpdate(true);
-		FilesToUpdate.Empty();
-	}
+	UpdateRequest->SetForceUpdate(bForce);
 
 	AsyncTask(ENamedThreads::GameThread,
-	          [this, UpdateRequest, FilesToUpdate]()
+	          [this, UpdateRequest, TargetFiles]()
 	          {
 		          UE_LOG(LogAnchorpointCli, Display, TEXT("Update Status requested by Cli Connect"));
-		          ISourceControlModule::Get().GetProvider().Execute(UpdateRequest, FilesToUpdate, EConcurrency::Asynchronous);
+		          ISourceControlModule::Get().GetProvider().Execute(UpdateRequest, TargetFiles, EConcurrency::Asynchronous);
 	          });
 }
 
@@ -257,8 +252,10 @@ TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const
 	return !ErrorMessage.IsEmpty() ? ErrorMessage : TOptional<FString>();
 }
 
-bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InPackageFilename)
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FString& InPackageFilename)
 {
+	FScopeLock ScopeLock(&StatusCacheLock);
+
 	if (!StatusCache)
 	{
 		return false; // No cache available to patch
@@ -274,12 +271,35 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnSave(const FString& InP
 
 	if (State->IsAdded())
 	{
-		// Re-saving an added asset won't change it's state. It might change it from AddedInMemory to Added (on disk) but nothing else.
-		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		// Re-saving an added asset won't change its state. It might change it from AddedInMemory to Added (on disk) but nothing else.
+		if (!StatusCache->Staged.Contains(InPackageFilename) && !StatusCache->NotStaged.Contains(InPackageFilename))
+		{
+			StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
+		}
+
 		return true;
 	}
 
 	return false;
+}
+
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
+{
+	FScopeLock ScopeLock(&StatusCacheLock);
+
+	if (!StatusCache)
+	{
+		return false; // No cache available to patch
+	}
+
+	TValueOrError<TMap<FString, FString>, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
+	if (!Locks.HasValue())
+	{
+		return false; // Command failed, no usable result available
+	}
+
+	StatusCache->Locked = Locks.GetValue();
+	return true;
 }
 
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
@@ -425,10 +445,23 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 
 	OnPreMessageHandled.Broadcast(Message);
 
-	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
+	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked"))
+	{
+		if (PatchCachedStatusOnLockUpdate())
+		{
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Locked Files Message: %s"), *MessageType);
+			RefreshStatus(false, {});
+		}
+		else
+		{
+			ClearStatusCache();
+			RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
+		}
+	}
+	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
@@ -462,26 +495,26 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 		StopSync(Message);
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project opened"))
 	{
 		bCanUseStatusCache = true;
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project closed"))
 	{
 		bCanUseStatusCache = false;
 
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else if (MessageType == TEXT("project dirty"))
 	{
 		ClearStatusCache();
-		RefreshStatus(Message.Files);
+		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
 	}
 	else
 	{
@@ -645,9 +678,11 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
 {
-	if (PatchCachedStatusOnSave(InPackageFilename))
+	if (PatchCachedStatusOnPackageSave(InPackageFilename))
 	{
-		// We successfully applied a patch, no need to run a full update.
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for Saved Package: %s"), *InPackageFilename);
+		RefreshStatus(false, {});
+
 		return;
 	}
 
@@ -655,7 +690,10 @@ void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackag
 	ClearStatusCache();
 
 	// This will automatically clear and re-add if it's already on-going
-	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::RefreshStatus, TArray<FString>());
+	FTimerDelegate RefreshDelegate = FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		RefreshStatus(bCanUseStatusCache, {});
+	});
 	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
 }
 

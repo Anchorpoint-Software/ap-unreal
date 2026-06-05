@@ -9,6 +9,30 @@
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliProcess.h"
 
+namespace
+{
+	// Clamp output to the first '{' and last '}' or ('[' and ']') to discard corrupted messages around the JSON payload
+	void ClampToJsonObject(FString& InOutString)
+	{
+		const int32 FirstBrace = InOutString.Find(TEXT("{"));
+		const int32 FirstBracket = InOutString.Find(TEXT("["));
+
+		// Pick whichever container opens first, treating a missing opener as "never opens" so it always loses
+		auto OpenPos = [](int32 Index) { return Index == INDEX_NONE ? MAX_int32 : Index; };
+		const bool bIsObject = OpenPos(FirstBrace) < OpenPos(FirstBracket);
+		const TCHAR* StartToken = bIsObject ? TEXT("{") : TEXT("[");
+		const TCHAR* EndToken = bIsObject ? TEXT("}") : TEXT("]");
+
+		const int32 Start = InOutString.Find(StartToken, ESearchCase::CaseSensitive, ESearchDir::FromStart);
+		const int32 End = InOutString.Find(EndToken, ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+
+		if (End > Start)
+		{
+			InOutString = InOutString.Mid(Start, End - Start + 1);
+		}
+	}
+}
+
 bool FCliResult::DidSucceed() const
 {
 	return ReturnCode.IsSet() && ReturnCode.GetValue() == 0;
@@ -165,6 +189,12 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 	}
 
 	FCliResult Result = Process->GetResult();
+
+	if (InParameters.bRequestJsonOutput)
+	{
+		ClampToJsonObject(Result.StdErrOutput);
+	}
+
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stdout output: %s"), *Result.StdOutOutput);
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stderr output: %s"), *Result.StdErrOutput);
 

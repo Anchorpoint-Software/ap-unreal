@@ -96,15 +96,19 @@ private:
 	/**
 	 * Refreshes the Source Control status of the files in the message 
 	 */
-	void RefreshStatus(TArray<FString> FilesToUpdate = TArray<FString>());
+	void RefreshStatus(bool bForce, TArray<FString> TargetFiles);
 	/**
 	 * Checks if the project has been saved and if not, returns an error message
 	 */
 	TOptional<FString> CheckProjectSaveStatus(const TArray<FString>& Files);
 	/*
-	 * Tries to patch the cached status when an asset save.
+	 * Tries to patch the cached status when an asset is saved.
 	 */
-	bool PatchCachedStatusOnSave(const FString& InPackageFilename);
+	bool PatchCachedStatusOnPackageSave(const FString& InPackageFilename);
+	/*
+	 * Tries to patch the cached status when locks are updated.
+	 */
+	bool PatchCachedStatusOnLockUpdate();
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */

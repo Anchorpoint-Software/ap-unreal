@@ -42,6 +42,7 @@ namespace AnchorpointCliOperations
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> GetUserDisplayName(const FString& InUserEmail);
 
 	ANCHORPOINTCLI_API TValueOrError<FAnchorpointStatus, FString> GetStatus(const TArray<FString>& InFiles, bool bForced = false);
+	ANCHORPOINTCLI_API TValueOrError<FAnchorpointLocks, FString> GetLockedFiles();
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> DisableAutoLock();
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> LockFiles(const TArray<FString>& InFiles);
 	ANCHORPOINTCLI_API TValueOrError<FString, FString> UnlockFiles(const TArray<FString>& InFiles);
