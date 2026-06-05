@@ -35,26 +35,45 @@ FAnchorpointStatus FAnchorpointStatus::FromJson(const TSharedRef<FJsonObject>& I
 	TRACE_CPUPROFILER_EVENT_SCOPE(FAnchorpointStatus::FromString);
 
 	FAnchorpointStatus Result;
-	Result.CurrentBranch = InJsonObject->GetStringField(TEXT("current_branch"));
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : InJsonObject->GetObjectField(TEXT("staged"))->Values)
+	if (FString CurrentBranch; InJsonObject->TryGetStringField(TEXT("current_branch"), CurrentBranch))
 	{
-		FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(StagedFile.Key);
-		Result.Staged.Add(FullFilePath, LexFromString(StagedFile.Value->AsString()));
+		Result.CurrentBranch = CurrentBranch;
 	}
-	for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : InJsonObject->GetObjectField(TEXT("not_staged"))->Values)
+
+	if (const TSharedPtr<FJsonObject>* Staged; InJsonObject->TryGetObjectField(TEXT("staged"), Staged))
 	{
-		FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(NotStagedFile.Key);
-		Result.NotStaged.Add(FullFilePath, LexFromString(NotStagedFile.Value->AsString()));
+		for (const TTuple<FString, TSharedPtr<FJsonValue>> StagedFile : (*Staged)->Values)
+		{
+			FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(StagedFile.Key);
+			Result.Staged.Add(FullFilePath, LexFromString(StagedFile.Value->AsString()));
+		}
 	}
-	for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : InJsonObject->GetObjectField(TEXT("locked_files"))->Values)
+
+	if (const TSharedPtr<FJsonObject>* NotStaged; InJsonObject->TryGetObjectField(TEXT("not_staged"), NotStaged))
 	{
-		FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(LockedFile.Key);
-		Result.Locked.Add(FullFilePath, LockedFile.Value->AsString());
+		for (const TTuple<FString, TSharedPtr<FJsonValue>> NotStagedFile : (*NotStaged)->Values)
+		{
+			FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(NotStagedFile.Key);
+			Result.NotStaged.Add(FullFilePath, LexFromString(NotStagedFile.Value->AsString()));
+		}
 	}
-	for (const TSharedPtr<FJsonValue> OutDatedFile : InJsonObject->GetArrayField(TEXT("outdated_files")))
+
+	if (const TSharedPtr<FJsonObject>* LockedFiles; InJsonObject->TryGetObjectField(TEXT("locked_files"), LockedFiles))
 	{
-		FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(OutDatedFile->AsString());
-		Result.Outdated.Add(FullFilePath);
+		for (TTuple<FString, TSharedPtr<FJsonValue>> LockedFile : (*LockedFiles)->Values)
+		{
+			FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(LockedFile.Key);
+			Result.Locked.Add(FullFilePath, LockedFile.Value->AsString());
+		}
+	}
+
+	if (const TArray<TSharedPtr<FJsonValue>>* OutdatedFiles; InJsonObject->TryGetArrayField(TEXT("outdated_files"), OutdatedFiles))
+	{
+		for (const TSharedPtr<FJsonValue> OutDatedFile : *OutdatedFiles)
+		{
+			FString FullFilePath = AnchorpointCliOperations::ConvertApInternalToFull(OutDatedFile->AsString());
+			Result.Outdated.Add(FullFilePath);
+		}
 	}
 
 	return Result;
