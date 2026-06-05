@@ -244,7 +244,8 @@ bool FAnchorpointConnectWorker::Execute(FAnchorpointSourceControlCommand& InComm
 		          }
 	          });
 
-	FAnchorpointCliModule::Get().OnAnchorpointConnected.Broadcast();
+	FAnchorpointSourceControlProvider& Provider = FAnchorpointModule::Get().GetProvider();
+	Provider.OnConnected();
 
 	InCommand.bCommandSuccessful = true;
 	return InCommand.bCommandSuccessful;

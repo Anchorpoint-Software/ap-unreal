@@ -88,6 +88,10 @@ public:
 	 * Checks if the integration has the project currently connected to the Anchorpoint CLI
 	 */
 	bool IsProjectConnected() const; 
+	/**
+	 * Called externally when something relevant happened to refresh the connection immediately
+	 */
+	void RefreshConnection();
 
 private:
 	//~ Begin UEditorSubsystem Interface
@@ -124,10 +128,6 @@ private:
 	 */
 	void StopSync(const FAnchorpointConnectMessage& Message);
 
-	/**
-	 * Callback executed when the Anchorpoint Source Control Provider is initialized
-	 */
-	void OnAnchorpointProviderConnected();
 	/**
 	 * Callback executed when a message is received from the Anchorpoint CLI
 	 */

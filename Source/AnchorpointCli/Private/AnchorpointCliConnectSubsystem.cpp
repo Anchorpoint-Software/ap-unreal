@@ -127,6 +127,11 @@ bool UAnchorpointCliConnectSubsystem::IsProjectConnected() const
 	return IsCliConnected() && bCanUseStatusCache;
 }
 
+void UAnchorpointCliConnectSubsystem::RefreshConnection()
+{
+	TickConnection();
+}
+
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -134,8 +139,6 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	UPackage::PackageSavedWithContextEvent.AddUObject(this, &UAnchorpointCliConnectSubsystem::HandlePackageSaved);
 
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
-
-	FAnchorpointCliModule::Get().OnAnchorpointConnected.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected);
 
 	FakeAnchorpointCliMessage = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("FakeAnchorpointCliMessage"),
@@ -380,12 +383,6 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 
 	bSyncInProgress = false;
 	RespondToMessage(Message.Id);
-}
-
-void UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected()
-{
-	// Extra ticks in case a relevant event happened.
-	TickConnection();
 }
 
 void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMessage& Message)

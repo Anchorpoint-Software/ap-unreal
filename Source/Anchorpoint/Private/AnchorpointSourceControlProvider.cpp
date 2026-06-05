@@ -486,6 +486,14 @@ TSharedRef<SWidget> FAnchorpointSourceControlProvider::MakeSettingsWidget() cons
 	return SNew(SAnchorpointSourceControlSettingsWidget);
 }
 
+void FAnchorpointSourceControlProvider::OnConnected()
+{
+	if (UAnchorpointCliConnectSubsystem* ConnectSubsystem = GEditor->GetEditorSubsystem<UAnchorpointCliConnectSubsystem>())
+	{
+		ConnectSubsystem->RefreshConnection();
+	}
+}
+
 void FAnchorpointSourceControlProvider::OnStatesChanged()
 {
 	// List of files we already warned the user about - once this file is spotted with a non-conflicting state,

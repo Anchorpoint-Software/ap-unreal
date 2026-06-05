@@ -70,6 +70,10 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
+	/**
+	 * Executed when the `Connect` source control command is executed by Anchorpoint
+	 */
+	void OnConnected();
 	void OnStatesChanged();
 	void TickDuringModal(float DeltaTime);
 
@@ -87,9 +91,8 @@ public:
 
 	FSourceControlStateChanged OnSourceControlStateChanged;
 	TArray<FAnchorpointSourceControlCommand*> CommandQueue;
-	
-	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
+	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
 	enum class EActiveModalState
 	{
