@@ -9,6 +9,20 @@
 #include "AnchorpointCliLog.h"
 #include "AnchorpointCliProcess.h"
 
+namespace
+{
+	// Clamp output to the first '{' and last '}' to discard corrupted messages around the JSON payload
+	void ClampToJsonObject(FString& InOutString)
+	{
+		const int32 FirstBrace = InOutString.Find(TEXT("{"), ESearchCase::CaseSensitive, ESearchDir::FromStart);
+		const int32 LastBrace = InOutString.Find(TEXT("}"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		if (FirstBrace != INDEX_NONE && LastBrace > FirstBrace)
+		{
+			InOutString = InOutString.Mid(FirstBrace, LastBrace - FirstBrace + 1);
+		}
+	}
+}
+
 bool FCliResult::DidSucceed() const
 {
 	return ReturnCode.IsSet() && ReturnCode.GetValue() == 0;
@@ -165,6 +179,12 @@ FCliResult AnchorpointCliCommands::RunApCommand(const FCliParameters& InParamete
 	}
 
 	FCliResult Result = Process->GetResult();
+
+	if (InParameters.bRequestJsonOutput)
+	{
+		ClampToJsonObject(Result.StdErrOutput);
+	}
+
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stdout output: %s"), *Result.StdOutOutput);
 	UE_LOG(LogAnchorpointCli, Verbose, TEXT("CLI stderr output: %s"), *Result.StdErrOutput);
 
