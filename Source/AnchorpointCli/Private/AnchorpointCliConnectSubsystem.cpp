@@ -302,6 +302,25 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
 	return true;
 }
 
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnOutdatedUpdate()
+{
+	FScopeLock ScopeLock(&StatusCacheLock);
+
+	if (!StatusCache)
+	{
+		return false; // No cache available to patch
+	}
+
+	TValueOrError<FAnchorpointOutdated, FString> Outdated = AnchorpointCliOperations::GetOutdatedFiles();
+	if (!Outdated.HasValue())
+	{
+		return false; // Command failed, no usable result available
+	}
+
+	StatusCache->Outdated = Outdated.GetValue();
+	return true;
+}
+
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
 {
 	if (bSyncInProgress)
@@ -460,8 +479,16 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
-		ClearStatusCache();
-		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
+		if (PatchCachedStatusOnOutdatedUpdate())
+		{
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Outdated Files Message: %s"), *MessageType);
+			RefreshStatus(false, {});
+		}
+		else
+		{
+			ClearStatusCache();
+			RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
+		}
 	}
 	else if (MessageType == TEXT("project saved"))
 	{

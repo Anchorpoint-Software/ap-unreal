@@ -106,9 +106,13 @@ private:
 	 */
 	bool PatchCachedStatusOnPackageSave(const FString& InPackageFilename);
 	/*
-	 * Tries to patch the cached status when locks are updated.
+	 * Tries to patch the cached status when locked files are updated.
 	 */
 	bool PatchCachedStatusOnLockUpdate();
+	/*
+	 * Tries to patch the cached status when outdated files are updated.
+	 */
+	bool PatchCachedStatusOnOutdatedUpdate();
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */
