@@ -280,6 +280,14 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FStri
 		return true;
 	}
 
+	if (!State->IsModified())
+	{
+		// Re-saving an unchanged asset will certainly mark it as modified.
+		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
+
+		return true;
+	}
+
 	return false;
 }
 
@@ -292,13 +300,32 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
 		return false; // No cache available to patch
 	}
 
-	TValueOrError<TMap<FString, FString>, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
+	TValueOrError<FAnchorpointLocks, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
 	if (!Locks.HasValue())
 	{
 		return false; // Command failed, no usable result available
 	}
 
 	StatusCache->Locked = Locks.GetValue();
+	return true;
+}
+
+bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnOutdatedUpdate()
+{
+	FScopeLock ScopeLock(&StatusCacheLock);
+
+	if (!StatusCache)
+	{
+		return false; // No cache available to patch
+	}
+
+	TValueOrError<FAnchorpointOutdated, FString> Outdated = AnchorpointCliOperations::GetOutdatedFiles();
+	if (!Outdated.HasValue())
+	{
+		return false; // Command failed, no usable result available
+	}
+
+	StatusCache->Outdated = Outdated.GetValue();
 	return true;
 }
 
@@ -460,8 +487,16 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 	}
 	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
-		ClearStatusCache();
-		RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
+		if (PatchCachedStatusOnOutdatedUpdate())
+		{
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Outdated Files Message: %s"), *MessageType);
+			RefreshStatus(false, {});
+		}
+		else
+		{
+			ClearStatusCache();
+			RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
+		}
 	}
 	else if (MessageType == TEXT("project saved"))
 	{
