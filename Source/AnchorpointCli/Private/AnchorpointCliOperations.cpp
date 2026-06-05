@@ -364,6 +364,33 @@ TValueOrError<FAnchorpointLocks, FString> AnchorpointCliOperations::GetLockedFil
 	return MakeValue(Locks);
 }
 
+TValueOrError<FAnchorpointOutdated, FString> AnchorpointCliOperations::GetOutdatedFiles()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::GetOutdatedFiles);
+
+	FString StatusCommand = TEXT("status --outdated");
+	FCliResult ProcessOutput = AnchorpointCliCommands::RunApCommand(StatusCommand);
+	if (!ProcessOutput.DidSucceed())
+	{
+		return MakeError(ProcessOutput.GetBestError());
+	}
+
+	TSharedPtr<FJsonObject> Object = ProcessOutput.OutputAsJsonObject();
+	if (!Object.IsValid())
+	{
+		return MakeError(FString::Printf(TEXT("Failed to parse output to JSON.")));
+	}
+
+	FString Error;
+	if (Object->TryGetStringField(TEXT("error"), Error))
+	{
+		return MakeError(FString::Printf(TEXT("CLI error: %s"), *Error));
+	}
+
+	FAnchorpointStatus Status = FAnchorpointStatus::FromJson(Object.ToSharedRef());
+	return MakeValue(Status.Outdated);
+}
+
 TValueOrError<FString, FString> AnchorpointCliOperations::DisableAutoLock()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(AnchorpointCliOperations::DisableAutoLock);

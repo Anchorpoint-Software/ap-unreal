@@ -17,6 +17,7 @@ enum class EAnchorpointFileOperation
 
 EAnchorpointFileOperation LexFromString(const FString& InString);
 
+using FAnchorpointOutdated = TArray<FString>;
 using FAnchorpointLocks = TMap<FString, FString>;
 
 /**
@@ -48,7 +49,7 @@ struct ANCHORPOINTCLI_API FAnchorpointStatus
 	/**
 	 * List of all that are outdated and need to be updated
 	 */
-	TArray<FString> Outdated;
+	FAnchorpointOutdated Outdated;
 
 	/**
 	 * Helper function to get all the files mentioned by any of the states above
