@@ -280,6 +280,14 @@ bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FStri
 		return true;
 	}
 
+	if (!State->IsModified())
+	{
+		// Re-saving an unchanged asset will certainly mark it as modified.
+		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
+
+		return true;
+	}
+
 	return false;
 }
 
