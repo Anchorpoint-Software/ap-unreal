@@ -630,11 +630,13 @@ bool FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus(FAnchorpointStat
 		return true;
 	}
 
-	if (State->State == EAnchorpointState::UnlockedUnchanged)
+	if (State->State == EAnchorpointState::LockedUnchanged || State->State == EAnchorpointState::UnlockedUnchanged)
 	{
 		// Re-saving an unchanged asset will certainly mark it as modified. 
 		// At this point we cannot reason if it's LockedModified or UnlockedModified.
 		InOutStatus.NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
+ 
+		return true;
 	}
 
 	return false;
