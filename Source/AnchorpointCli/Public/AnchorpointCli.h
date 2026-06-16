@@ -17,9 +17,4 @@ public:
 	FString GetApplicationPath() const;
 
 	bool IsCurrentProvider() const;
-
-	/**
-	 * Delegate executed when the `Connect` source control command is executed by Anchorpoint
-	 */
-	FSimpleMulticastDelegate OnAnchorpointConnected;
 };

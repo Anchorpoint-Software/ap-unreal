@@ -9,6 +9,8 @@
 class FAnchorpointSourceControlState;
 class FAnchorpointSourceControlCommand;
 class IAnchorpointSourceControlWorker;
+struct FAnchorpointStatus;
+struct FAnchorpointConnectMessage;
 
 class FAnchorpointSourceControlProvider : public ISourceControlProvider
 {
@@ -70,6 +72,10 @@ public:
 	virtual TSharedRef<SWidget> MakeSettingsWidget() const override;
 	//~ End ISourceControlProvider Interface
 
+	/**
+	 * Executed when the `Connect` source control command is executed by Anchorpoint
+	 */
+	void OnConnected();
 	void OnStatesChanged();
 	void TickDuringModal(float DeltaTime);
 
@@ -77,6 +83,19 @@ public:
 	FDateTime GetLastSyncTime() const;
 
 	TMap<FString, TSharedRef<FAnchorpointSourceControlState>> StateCache;
+
+	/**
+	 * Tries to patch the cached status when an asset is saved.
+	 */
+	bool OnAssetSavedPatchStatus(FAnchorpointStatus& InOutStatus, const FString& InPackageFilename);
+	/**
+	 * Tries to patch the cached status when a message is received.
+	 */
+	bool OnMessageReceivedPatchStatus(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage);
+	/**
+	 * Tries to patch the cached status when an asset is created in memory (e.g. via duplication).
+	 */
+	bool OnInMemoryAssetCreatedPatchStatus(FAnchorpointStatus& InOutStatus, UObject* InAsset);
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);
@@ -87,9 +106,8 @@ public:
 
 	FSourceControlStateChanged OnSourceControlStateChanged;
 	TArray<FAnchorpointSourceControlCommand*> CommandQueue;
-	
-	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
+	FText GetPromptTextForOperation(const FSourceControlOperationRef& InOperation) const;
 
 	enum class EActiveModalState
 	{

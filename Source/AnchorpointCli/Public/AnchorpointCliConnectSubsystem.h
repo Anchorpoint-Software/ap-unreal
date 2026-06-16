@@ -71,6 +71,21 @@ public:
 	 */
 	TMulticastDelegate<void(const FAnchorpointConnectMessage& InMessage)> OnPreMessageHandled;
 	/**
+	 * Delegate executed when an asset is saved allowing implementer to patch the cached status instead of refreshing it
+	 */
+	using FOnAssetSavedPatchStatus = TDelegate<bool(FAnchorpointStatus& InOutStatus, const FString& InPackageFilename)>;
+	FOnAssetSavedPatchStatus OnAssetSavedPatchStatus;
+	/**
+	 * Delegate executed when a message is received allowing implementer to patch the cached status instead of refreshing it
+	 */
+	using FOnMessageReceivedPatchStatus = TDelegate<bool(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage)>;
+	FOnMessageReceivedPatchStatus OnMessageReceivedPatchStatus;
+	/**
+	 * Delegate executed when an asset is created in memory allowing implementer to patch the cached status instead of refreshing it
+	 */
+	using FOnInMemoryAssetCreatedPatchStatus = TDelegate<bool(FAnchorpointStatus& InOutStatus, UObject* InAsset)>;
+	FOnInMemoryAssetCreatedPatchStatus OnInMemoryAssetCreatedPatchStatus;
+	/**
 	 * Checks if the integration is currently connected to the Anchorpoint CLI
 	 */
 	bool IsCliConnected() const;
@@ -78,6 +93,10 @@ public:
 	 * Checks if the integration has the project currently connected to the Anchorpoint CLI
 	 */
 	bool IsProjectConnected() const; 
+	/**
+	 * Called externally when something relevant happened to refresh the connection immediately
+	 */
+	void RefreshConnection();
 
 private:
 	//~ Begin UEditorSubsystem Interface
@@ -101,18 +120,6 @@ private:
 	 * Checks if the project has been saved and if not, returns an error message
 	 */
 	TOptional<FString> CheckProjectSaveStatus(const TArray<FString>& Files);
-	/*
-	 * Tries to patch the cached status when an asset is saved.
-	 */
-	bool PatchCachedStatusOnPackageSave(const FString& InPackageFilename);
-	/*
-	 * Tries to patch the cached status when locked files are updated.
-	 */
-	bool PatchCachedStatusOnLockUpdate();
-	/*
-	 * Tries to patch the cached status when outdated files are updated.
-	 */
-	bool PatchCachedStatusOnOutdatedUpdate();
 	/**
 	 * Stats the sync process by unlinking the files in the message
 	 */
@@ -126,10 +133,6 @@ private:
 	 */
 	void StopSync(const FAnchorpointConnectMessage& Message);
 
-	/**
-	 * Callback executed when the Anchorpoint Source Control Provider is initialized
-	 */
-	void OnAnchorpointProviderConnected();
 	/**
 	 * Callback executed when a message is received from the Anchorpoint CLI
 	 */
@@ -163,9 +166,13 @@ private:
 	 */
 	void OnLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor);
 	/**
-	 * Callback executed when a package (asset or actor) is saved to disk 
+	 * Callback executed when a package (asset or actor) is saved to disk
 	 */
 	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
+	/**
+	 * Callback executed when an asset is created in memory (e.g. via duplication) before it is ever saved to disk
+	 */
+	void HandleInMemoryAssetCreated(UObject* InAsset);
 	/**
 	 * Callback executed to determine what icon should be shown next to the revision control status bar
 	 */
@@ -174,6 +181,21 @@ private:
 	 * Callback executed to determine what tooltip text should be shown for the icon next to the revision control status bar 
 	 */
 	FText GetDrawerText() const;
+	template <typename... DelegateArgs, typename... CallArgs>
+	/**
+	 * Safely runs delegates which need to modify the cached status or early outs if not possible
+	 */
+	bool TryPatchStatus(const TDelegate<bool(FAnchorpointStatus&, DelegateArgs...)>& Delegate, CallArgs&&... FuncArgs)
+	{
+		if (!Delegate.IsBound() || !StatusCache)
+		{
+			return false;
+		}
+
+		FScopeLock ScopeLock(&StatusCacheLock);
+		return Delegate.Execute(*StatusCache, Forward<CallArgs>(FuncArgs)...);
+	}
+
 	/**
 	 * The process that is running the Anchorpoint CLI connect command
 	 */

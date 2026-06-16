@@ -15,6 +15,8 @@
 #include <Widgets/Notifications/SNotificationList.h>
 #include <UObject/ObjectSaveContext.h>
 #include <LevelEditor.h>
+#include <AssetRegistry/AssetRegistryModule.h>
+#include <AssetRegistry/IAssetRegistry.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
@@ -127,15 +129,21 @@ bool UAnchorpointCliConnectSubsystem::IsProjectConnected() const
 	return IsCliConnected() && bCanUseStatusCache;
 }
 
+void UAnchorpointCliConnectSubsystem::RefreshConnection()
+{
+	TickConnection();
+}
+
 void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
 	UPackage::PackageSavedWithContextEvent.AddUObject(this, &UAnchorpointCliConnectSubsystem::HandlePackageSaved);
 
-	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
+	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+	AssetRegistry.OnInMemoryAssetCreated().AddUObject(this, &UAnchorpointCliConnectSubsystem::HandleInMemoryAssetCreated);
 
-	FAnchorpointCliModule::Get().OnAnchorpointConnected.AddUObject(this, &UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected);
+	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
 
 	FakeAnchorpointCliMessage = IConsoleManager::Get().RegisterConsoleCommand(
 		TEXT("FakeAnchorpointCliMessage"),
@@ -250,83 +258,6 @@ TOptional<FString> UAnchorpointCliConnectSubsystem::CheckProjectSaveStatus(const
 	}
 
 	return !ErrorMessage.IsEmpty() ? ErrorMessage : TOptional<FString>();
-}
-
-bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnPackageSave(const FString& InPackageFilename)
-{
-	FScopeLock ScopeLock(&StatusCacheLock);
-
-	if (!StatusCache)
-	{
-		return false; // No cache available to patch
-	}
-
-	ISourceControlProvider& Provider = ISourceControlModule::Get().GetProvider();
-	FSourceControlStatePtr State = Provider.GetState(InPackageFilename, EStateCacheUsage::Use);
-
-	if (!State)
-	{
-		return false; // We cannot reason about this asset without knowing it's state.
-	}
-
-	if (State->IsAdded())
-	{
-		// Re-saving an added asset won't change its state. It might change it from AddedInMemory to Added (on disk) but nothing else.
-		if (!StatusCache->Staged.Contains(InPackageFilename) && !StatusCache->NotStaged.Contains(InPackageFilename))
-		{
-			StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Added);
-		}
-
-		return true;
-	}
-
-	if (!State->IsModified())
-	{
-		// Re-saving an unchanged asset will certainly mark it as modified.
-		StatusCache->NotStaged.Add(InPackageFilename, EAnchorpointFileOperation::Modified);
-
-		return true;
-	}
-
-	return false;
-}
-
-bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnLockUpdate()
-{
-	FScopeLock ScopeLock(&StatusCacheLock);
-
-	if (!StatusCache)
-	{
-		return false; // No cache available to patch
-	}
-
-	TValueOrError<FAnchorpointLocks, FString> Locks = AnchorpointCliOperations::GetLockedFiles();
-	if (!Locks.HasValue())
-	{
-		return false; // Command failed, no usable result available
-	}
-
-	StatusCache->Locked = Locks.GetValue();
-	return true;
-}
-
-bool UAnchorpointCliConnectSubsystem::PatchCachedStatusOnOutdatedUpdate()
-{
-	FScopeLock ScopeLock(&StatusCacheLock);
-
-	if (!StatusCache)
-	{
-		return false; // No cache available to patch
-	}
-
-	TValueOrError<FAnchorpointOutdated, FString> Outdated = AnchorpointCliOperations::GetOutdatedFiles();
-	if (!Outdated.HasValue())
-	{
-		return false; // Command failed, no usable result available
-	}
-
-	StatusCache->Outdated = Outdated.GetValue();
-	return true;
 }
 
 void UAnchorpointCliConnectSubsystem::StartSync(const FAnchorpointConnectMessage& Message)
@@ -459,12 +390,6 @@ void UAnchorpointCliConnectSubsystem::StopSync(const FAnchorpointConnectMessage&
 	RespondToMessage(Message.Id);
 }
 
-void UAnchorpointCliConnectSubsystem::OnAnchorpointProviderConnected()
-{
-	// Extra ticks in case a relevant event happened.
-	TickConnection();
-}
-
 void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMessage& Message)
 {
 	const FString& MessageType = Message.Type;
@@ -472,24 +397,11 @@ void UAnchorpointCliConnectSubsystem::HandleMessage(const FAnchorpointConnectMes
 
 	OnPreMessageHandled.Broadcast(Message);
 
-	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked"))
+	if (MessageType == TEXT("files locked") || MessageType == TEXT("files unlocked") || MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
 	{
-		if (PatchCachedStatusOnLockUpdate())
+		if (TryPatchStatus(OnMessageReceivedPatchStatus, Message))
 		{
-			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Locked Files Message: %s"), *MessageType);
-			RefreshStatus(false, {});
-		}
-		else
-		{
-			ClearStatusCache();
-			RefreshStatus(bCanUseStatusCache, bCanUseStatusCache ? TArray<FString>() : Message.Files);
-		}
-	}
-	else if (MessageType == TEXT("files outdated") || MessageType == TEXT("files updated"))
-	{
-		if (PatchCachedStatusOnOutdatedUpdate())
-		{
-			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Outdated Files Message: %s"), *MessageType);
+			UE_LOG(LogAnchorpointCli, Verbose, TEXT("Cached Status was patched for Message: %s"), *MessageType);
 			RefreshStatus(false, {});
 		}
 		else
@@ -713,7 +625,7 @@ void UAnchorpointCliConnectSubsystem::OnLevelEditorCreated(TSharedPtr<ILevelEdit
 
 void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext)
 {
-	if (PatchCachedStatusOnPackageSave(InPackageFilename))
+	if (TryPatchStatus(OnAssetSavedPatchStatus, InPackageFilename))
 	{
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for Saved Package: %s"), *InPackageFilename);
 		RefreshStatus(false, {});
@@ -730,6 +642,15 @@ void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackag
 		RefreshStatus(bCanUseStatusCache, {});
 	});
 	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
+}
+
+void UAnchorpointCliConnectSubsystem::HandleInMemoryAssetCreated(UObject* InAsset)
+{
+	if (TryPatchStatus(OnInMemoryAssetCreatedPatchStatus, InAsset))
+	{
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for in-memory asset: %s"), *InAsset->GetPathName());
+		RefreshStatus(false, {});
+	}
 }
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const
