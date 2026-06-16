@@ -494,6 +494,7 @@ void FAnchorpointSourceControlProvider::OnConnected()
 	{
 		ConnectSubsystem->OnAssetSavedPatchStatus.BindRaw(this, &FAnchorpointSourceControlProvider::OnAssetSavedPatchStatus);
 		ConnectSubsystem->OnMessageReceivedPatchStatus.BindRaw(this, &FAnchorpointSourceControlProvider::OnMessageReceivedPatchStatus);
+		ConnectSubsystem->OnInMemoryAssetCreatedPatchStatus.BindRaw(this, &FAnchorpointSourceControlProvider::OnInMemoryAssetCreatedPatchStatus);
 
 		ConnectSubsystem->RefreshConnection();
 	}
@@ -671,6 +672,20 @@ bool FAnchorpointSourceControlProvider::OnMessageReceivedPatchStatus(FAnchorpoin
 	}
 
 	return false;
+}
+
+bool FAnchorpointSourceControlProvider::OnInMemoryAssetCreatedPatchStatus(FAnchorpointStatus& InOutStatus, UObject* InAsset)
+{
+	const auto Package = InAsset ? InAsset->GetPackage() : nullptr;
+	if (!Package)
+	{
+		return false;
+	}
+
+	const FString Filename = USourceControlHelpers::PackageFilename(Package);
+	InOutStatus.NotStaged.Add(Filename, EAnchorpointFileOperation::Added);
+
+	return true;
 }
 
 void FAnchorpointSourceControlProvider::OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const

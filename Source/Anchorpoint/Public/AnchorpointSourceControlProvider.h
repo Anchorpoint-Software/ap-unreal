@@ -92,6 +92,10 @@ public:
 	 * Tries to patch the cached status when a message is received.
 	 */
 	bool OnMessageReceivedPatchStatus(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage);
+	/**
+	 * Tries to patch the cached status when an asset is created in memory (e.g. via duplication).
+	 */
+	bool OnInMemoryAssetCreatedPatchStatus(FAnchorpointStatus& InOutStatus, UObject* InAsset);
 
 	void OutputCommandMessages(const FAnchorpointSourceControlCommand& InCommand) const;
 	TSharedPtr<IAnchorpointSourceControlWorker> CreateWorker(const FName& OperationName);

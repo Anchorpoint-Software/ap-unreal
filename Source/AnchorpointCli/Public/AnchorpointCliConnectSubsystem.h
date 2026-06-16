@@ -81,6 +81,11 @@ public:
 	using FOnMessageReceivedPatchStatus = TDelegate<bool(FAnchorpointStatus& InOutStatus, const FAnchorpointConnectMessage& InMessage)>;
 	FOnMessageReceivedPatchStatus OnMessageReceivedPatchStatus;
 	/**
+	 * Delegate executed when an asset is created in memory allowing implementer to patch the cached status instead of refreshing it
+	 */
+	using FOnInMemoryAssetCreatedPatchStatus = TDelegate<bool(FAnchorpointStatus& InOutStatus, UObject* InAsset)>;
+	FOnInMemoryAssetCreatedPatchStatus OnInMemoryAssetCreatedPatchStatus;
+	/**
 	 * Checks if the integration is currently connected to the Anchorpoint CLI
 	 */
 	bool IsCliConnected() const;
@@ -161,9 +166,13 @@ private:
 	 */
 	void OnLevelEditorCreated(TSharedPtr<ILevelEditor> LevelEditor);
 	/**
-	 * Callback executed when a package (asset or actor) is saved to disk 
+	 * Callback executed when a package (asset or actor) is saved to disk
 	 */
 	void HandlePackageSaved(const FString& InPackageFilename, UPackage* InPackage, FObjectPostSaveContext InObjectSaveContext);
+	/**
+	 * Callback executed when an asset is created in memory (e.g. via duplication) before it is ever saved to disk
+	 */
+	void HandleInMemoryAssetCreated(UObject* InAsset);
 	/**
 	 * Callback executed to determine what icon should be shown next to the revision control status bar
 	 */

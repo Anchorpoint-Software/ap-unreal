@@ -15,6 +15,8 @@
 #include <Widgets/Notifications/SNotificationList.h>
 #include <UObject/ObjectSaveContext.h>
 #include <LevelEditor.h>
+#include <AssetRegistry/AssetRegistryModule.h>
+#include <AssetRegistry/IAssetRegistry.h>
 
 #include "AnchorpointCli.h"
 #include "AnchorpointCliLog.h"
@@ -137,6 +139,9 @@ void UAnchorpointCliConnectSubsystem::Initialize(FSubsystemCollectionBase& Colle
 	Super::Initialize(Collection);
 
 	UPackage::PackageSavedWithContextEvent.AddUObject(this, &UAnchorpointCliConnectSubsystem::HandlePackageSaved);
+
+	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+	AssetRegistry.OnInMemoryAssetCreated().AddUObject(this, &UAnchorpointCliConnectSubsystem::HandleInMemoryAssetCreated);
 
 	FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateUObject(this, &UAnchorpointCliConnectSubsystem::Tick), 30.0f);
 
@@ -637,6 +642,15 @@ void UAnchorpointCliConnectSubsystem::HandlePackageSaved(const FString& InPackag
 		RefreshStatus(bCanUseStatusCache, {});
 	});
 	GEditor->GetTimerManager()->SetTimer(RefreshTimerHandle, RefreshDelegate, RefreshDelay, false);
+}
+
+void UAnchorpointCliConnectSubsystem::HandleInMemoryAssetCreated(UObject* InAsset)
+{
+	if (TryPatchStatus(OnInMemoryAssetCreatedPatchStatus, InAsset))
+	{
+		UE_LOG(LogAnchorpointCli, Verbose, TEXT("CachedStatus was patched for in-memory asset: %s"), *InAsset->GetPathName());
+		RefreshStatus(false, {});
+	}
 }
 
 const FSlateBrush* UAnchorpointCliConnectSubsystem::GetDrawerIcon() const

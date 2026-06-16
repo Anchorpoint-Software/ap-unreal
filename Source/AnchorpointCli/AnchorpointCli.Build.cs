@@ -8,6 +8,7 @@ public class AnchorpointCli : ModuleRules
 	{
 		PrivateDependencyModuleNames.AddRange(new[]
 		{
+			"AssetRegistry",
 			"Core",
 			"CoreUObject",
 			"EditorScriptingUtilities",
