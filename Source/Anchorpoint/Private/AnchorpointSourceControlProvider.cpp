@@ -400,6 +400,13 @@ bool FAnchorpointSourceControlProvider::UsesSnapshots() const
 	return false;
 }
 
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 8)
+bool FAnchorpointSourceControlProvider::UsesSoftRevertOnDelete() const
+{
+	return false;
+}
+#endif
+
 bool FAnchorpointSourceControlProvider::AllowsDiffAgainstDepot() const
 {
 	return true;
