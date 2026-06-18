@@ -1,4 +1,24 @@
 
+# 0.68
+
+- Ship prebuilt zips for Unreal Engine 5.8
+
+# 0.67
+
+- Re-implement status patching based on the provider's internal state
+- Patch status for in-memory assets
+- Fix missing LockedUnchanged state
+- Add support for Unreal Engine 5.8 (official release)
+
+# 0.66
+
+- Patch cached status when saving unchanged or outdated files
+- Add a fast lock-status query and an outdated-only status command
+- Prevent concurrent CLI runs for the same request
+- Harden CLI and JSON output parsing against missing fields and bracket variants
+- Faster revert for locked unchanged files
+- Add support for Unreal Engine 5.8
+
 # 0.65
 
 - Log the plugin version during module startup
