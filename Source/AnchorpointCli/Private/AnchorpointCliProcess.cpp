@@ -54,6 +54,12 @@ void FAnchorpointCliProcessOutputData::ReadData(void* InReadPipe)
 	}
 }
 
+FAnchorpointCliProcess::FAnchorpointCliProcess()
+{
+	static std::atomic<uint32> AnchorpointProcessIndex{0};
+	ProcessIndex = AnchorpointProcessIndex.fetch_add(1);
+}
+
 FAnchorpointCliProcess::~FAnchorpointCliProcess()
 {
 	if (ProcessHandle.IsValid())
@@ -84,11 +90,12 @@ bool FAnchorpointCliProcess::Launch(const FCliParameters& InParameters)
 
 	if (InParameters.bUseIniFile && !FParse::Param(FCommandLine::Get(), TEXT("AnchorpointUseCliArgs")))
 	{
-		FString IniConfigFile = FPaths::EngineIntermediateDir() / TEXT("Anchorpoint") / TEXT("ap-command.ini");
+		FString IniConfigFile = FString::Printf(TEXT("ap-command-%d.ini"), ProcessIndex);
+		FString IniConfigPath = FPaths::EngineIntermediateDir() / TEXT("Anchorpoint") / IniConfigFile;
 		FString IniConfigContent = AnchorpointCliCommands::ConvertCommandToIni(InParameters.Command, false, InParameters.bRequestJsonOutput);
-		FFileHelper::SaveStringToFile(IniConfigContent, *IniConfigFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+		FFileHelper::SaveStringToFile(IniConfigContent, *IniConfigPath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
 
-		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigFile);
+		CommandLineArgs = FString::Printf(TEXT("--config=\"%s\""), *IniConfigPath);
 		UE_LOG(LogAnchorpointCli, Verbose, TEXT("Ini content: %s"), *IniConfigContent);
 	}
 	else
@@ -130,9 +137,7 @@ bool FAnchorpointCliProcess::Launch(const FString& Executable, const FString& Pa
 		return false;
 	}
 
-	static std::atomic<uint32> AnchorpointProcessIndex{0};
-	const FString ProcessName = FString::Printf(TEXT("AnchorpointProcessIndex %d"), AnchorpointProcessIndex.fetch_add(1));
-
+	const FString ProcessName = FString::Printf(TEXT("AnchorpointProcessIndex %u"), ProcessIndex);
 	Thread = FRunnableThread::Create(this, *ProcessName, 128 * 1024, TPri_AboveNormal);
 
 	return true;
