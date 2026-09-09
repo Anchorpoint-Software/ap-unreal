@@ -181,10 +181,10 @@ private:
 	 * Callback executed to determine what tooltip text should be shown for the icon next to the revision control status bar 
 	 */
 	FText GetDrawerText() const;
-	template <typename... DelegateArgs, typename... CallArgs>
 	/**
 	 * Safely runs delegates which need to modify the cached status or early outs if not possible
 	 */
+	template <typename... DelegateArgs, typename... CallArgs>
 	bool TryPatchStatus(const TDelegate<bool(FAnchorpointStatus&, DelegateArgs...)>& Delegate, CallArgs&&... FuncArgs)
 	{
 		if (!Delegate.IsBound() || !StatusCache)
