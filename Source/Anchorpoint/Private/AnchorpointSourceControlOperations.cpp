@@ -3,6 +3,7 @@
 #include "AnchorpointSourceControlOperations.h"
 
 #include <Algo/Compare.h>
+#include <Algo/AllOf.h>
 #include <Async/Async.h>
 #include <SourceControlHelpers.h>
 #include <SourceControlOperations.h>
@@ -440,8 +441,14 @@ bool FAnchorpointUpdateStatusWorker::Execute(FAnchorpointSourceControlCommand& I
 	}
 	if (Algo::Compare(InCommand.Files, SourceControlHelpers::GetSourceControlLocations()))
 	{
-		// NOTE: The "Submit Content" (FSourceControlWindows::ChoosePackagesToCheckIn) button doesn’t force a source control refresh,  
+		// NOTE: The "Submit Content" (FSourceControlWindows::ChoosePackagesToCheckIn) button doesn’t force a source control refresh,
 		// so recently checked-out assets may have stale states. We detect this case by verifying the command’s target file.
+		bForcedUpdate = true;
+	}
+	if (Algo::AllOf(InCommand.Files, [](const FString& File) { return File.EndsWith(TEXT(".collection")); }))
+	{
+		// NOTE: Collections are not assets instead they are plain files are written with FFileHelper
+		// On top of that they have very aggressive usages (file is created and immediately submitted), so we can't fully rely on the cache.
 		bForcedUpdate = true;
 	}
 

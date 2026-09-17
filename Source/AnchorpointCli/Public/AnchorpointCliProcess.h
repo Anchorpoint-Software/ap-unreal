@@ -110,6 +110,7 @@ struct FAnchorpointCliProcessOutputData
 class FAnchorpointCliProcess : public FRunnable
 {
 public:
+	FAnchorpointCliProcess();
 	virtual ~FAnchorpointCliProcess() override;
 
 	/**
@@ -160,6 +161,8 @@ private:
 	TQueue<FString> MessagesToSend;
 
 	FProcHandle ProcessHandle;
+
+	uint32 ProcessIndex = INDEX_NONE;
 	bool bIsRunFinished = false;
 	bool bIsCanceling = false;
 
