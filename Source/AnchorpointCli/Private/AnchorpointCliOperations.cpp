@@ -421,6 +421,11 @@ TValueOrError<FString, FString> AnchorpointCliOperations::LockFiles(const TArray
 
 	for (const FString& File : InFiles)
 	{
+		if (!AnchorpointCliOperations::IsUnderRepositoryPath(File))
+		{
+			return MakeError(FString::Printf(TEXT("Cannot lock file outside the Anchorpoint project: %s"), *File));
+		}
+
 		LockParams.Add(FString::Printf(TEXT("\"%s\""), *AnchorpointCliOperations::ConvertFullPathToApInternal(File)));
 	}
 
